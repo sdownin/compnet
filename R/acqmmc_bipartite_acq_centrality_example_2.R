@@ -75,21 +75,60 @@ plot2 <- function(gx, layout=layout.fruchterman.reingold, vertex.size=15, focal.
 }
 
 
+# ##
+# # Bipartite Graph Acquisition -- PREVIOUS VERSION
+# ##
+# biAcq.prev <- function(gi, acquirer, target, decay=-0.2, project=T, verbose=T)
+# {
+#   if (project) {
+#     gi.l <- bipartite.projection(gi, multiplicity = T, remove.type = F)
+#     vcs <- sapply(gi.l,vcount)
+#     gi <- gi.l[[ which.max(vcs) ]]
+#     V(gi)$type <- unlist(V(gi)$type)
+#     V(gi)$name <- unlist(V(gi)$name)
+#   }
+#   
+#   tdf <- as_data_frame(gi, what='vertices')
+#   tdf$before <- power_centrality(gi, exponent = decay)
+#   tdf$after <- NA
+#   
+#   vnamemap <- names(V(gi))
+#   vmap <- as.integer(V(gi))
+#   
+#   revord <- which(vnamemap==target) < which(vnamemap==acquirer)
+#   comb.func <- ifelse(revord, 'last', 'first')
+#   
+#   vmap[vnamemap==target] <- vmap[vnamemap==acquirer]
+#   
+#   vertex.attr.comb <- list(type=ifelse(revord, 'last', 'first'),
+#                            name=ifelse(revord, 'last', 'first'))
+#   
+#   gi.2 <- igraph::contract.vertices(gi, vmap, vertex.attr.comb = vertex.attr.comb)
+#   gi.2 <- igraph::simplify(gi.2, remove.multiple = T, remove.loops = T, edge.attr.comb = list(weight='sum'))
+#   gi.2 <- igraph::induced.subgraph(gi.2, V(gi.2)[igraph::degree(gi.2)>0])
+#   
+#   tdf$after[tdf$name!=target] <- power_centrality(gi.2, exponent = decay)
+#   tdf$delta <- tdf$after - tdf$before
+#   
+#   if (verbose)
+#     print(tdf)
+#   
+#   return(list(df=tdf, g=gi.2))
+# }
+
 ##
 # Bipartite Graph Acquisition
 ##
-biAcq <- function(gi, acquirer, target, decay=-0.2, project=T, verbose=T)
+biAcq <- function(gi, acquirer, target, project=T, verbose=T)
 {
-  if (project) {
-    gi <- bipartite.projection(gi, remove.type = F)$proj2
+  if (project & is.bipartite.safe(gi)) {
+    gi.l <- bipartite.projection(gi, multiplicity = T, remove.type = F)
+    vcs <- sapply(gi.l,vcount)
+    gi <- gi.l[[ which.max(vcs) ]]
     V(gi)$type <- unlist(V(gi)$type)
     V(gi)$name <- unlist(V(gi)$name)
   }
-  
-  tdf <- as_data_frame(gi, what='vertices')
-  tdf$before <- power_centrality(gi, exponent = decay)
-  tdf$after <- NA
-  
+
   vnamemap <- names(V(gi))
   vmap <- as.integer(V(gi))
   
@@ -100,18 +139,13 @@ biAcq <- function(gi, acquirer, target, decay=-0.2, project=T, verbose=T)
   
   vertex.attr.comb <- list(type=ifelse(revord, 'last', 'first'),
                            name=ifelse(revord, 'last', 'first'))
+  edge.attr.comb <- list(weight='sum')
   
   gi.2 <- igraph::contract.vertices(gi, vmap, vertex.attr.comb = vertex.attr.comb)
-  gi.2 <- igraph::simplify(gi.2, remove.multiple = T, remove.loops = T, edge.attr.comb = list(weight='sum'))
+  gi.2 <- igraph::simplify(gi.2, remove.multiple = T, remove.loops = T, edge.attr.comb = edge.attr.comb)
   gi.2 <- igraph::induced.subgraph(gi.2, V(gi.2)[igraph::degree(gi.2)>0])
-  
-  tdf$after[tdf$name!=target] <- power_centrality(gi.2, exponent = decay)
-  tdf$delta <- tdf$after - tdf$before
-  
-  if (verbose)
-    print(tdf)
-  
-  return(list(df=tdf, g=gi.2))
+
+  return(gi.2)
 }
 
 ##
@@ -163,6 +197,18 @@ df.pow <- function(gx, betas=c(-.3,-.2,-.1,-.01,0))
   return(df)
 }
 
+## 
+# checks if graph is actually bipartite by `type` attribute
+#   - if only one `type` then not actually bipartite
+#   - if more than one `type` then is biparite
+##
+is.bipartite.safe <- function(g)
+{
+  if (!igraph::is.bipartite(g) | ! 'type' %in% igraph::list.vertex.attributes(g)) 
+    return(FALSE)
+  return(length(unique(V(g)$type)) > 1)
+}
+
 ##
 # Combine two bipartite networks
 #   - keeps original names of vertex and edge properties  (unlike igraph "+" operator:  g3 <- g1 + g2)
@@ -187,7 +233,7 @@ bipartiteCombine <- function(gx1, gx2) {
 which.mmc <- function(g, focal, keep.focal=F, proj.max=T) {
   if (class(g) != 'igraph') stop('g must be an igraph object')
   if (!igraph::is.weighted(g)) E(g)$weight <- 1
-  if (igraph::is.bipartite(g))
+  if (is.bipartite.safe(g))
     return(which.mmc.bipartite(g, focal, keep.focal, proj.max))
   ## NOT BIPARTITE
   if (! focal %in% 1:vcount(g)) 
@@ -251,7 +297,7 @@ mmcSubgraph <- function(g, focal) {
 #   - bipartite, return adjmat for the mode with more (proj.max=T) or fewer (proj.max=F) nodes
 ##
 getAdjacencyMatrix <- function(g, focal, proj.max=T) {
-  if (igraph::is.bipartite(g)) {
+  if (is.bipartite.safe(g)) {
     g2.l <- bipartite.projection(g, multiplicity = T, remove.type = F)
     vcs <- sapply(g2.l,vcount)
     idx.proj <- ifelse(proj.max, which.max(vcs), which.min(vcs))
