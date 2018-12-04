@@ -174,7 +174,8 @@ bipartiteCombine <- function(gx1, gx2) {
     stop('graphs must have name and type attributes.')
   idx.name <- which(nz=='name')
   idx.type <- which(nz=='type')
-  .vt <- .vt[ ,c(idx.name,idx.type)] ## rearrange "name" column first
+  idx.rest <- which( ! nz %in% c('name','type'))
+  .vt <- .vt[ ,c(idx.name,idx.type,idx.rest)] ## rearrange "name" column first
   .el <- rbind(as_data_frame(gx1,'edges'),as_data_frame(gx2,'edges'))
   gx <- graph.data.frame(d = .el, directed = F, vertices = .vt)
   return(gx)
