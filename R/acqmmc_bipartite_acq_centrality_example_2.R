@@ -281,10 +281,14 @@ which.mmc.bipartite <- function(g, focal, keep.focal=F, proj.max=T) {
 #   - subsets to firms with MMC relations to another firm
 #   - removes non-MMC edges (weight <= 1)
 ##
-mmcSubgraph <- function(g, focal) {
-  vids <- which.mmc(g, focal, keep.focal=T)
-  ## MMC VERTEX SUBGRAPH
-  g.sub <- igraph::induced.subgraph(g, vids = vids)
+mmcSubgraph <- function(g, focal=NA) {
+  if (!is.na(focal)) {
+    ## MMC VERTEX SUBGRAPH if `focal` is set
+    vids <- which.mmc(g, focal, keep.focal=T)
+    g.sub <- igraph::induced.subgraph(g, vids = vids)
+  } else {
+    g.sub <- g
+  }
   ## DROP NON-MMC EDGES
   edges <- which(E(g.sub)$weight <= 1)
   g.sub <- igraph::delete.edges(g.sub, edges)
@@ -296,7 +300,7 @@ mmcSubgraph <- function(g, focal) {
 #   - unipartite, just return adjmat
 #   - bipartite, return adjmat for the mode with more (proj.max=T) or fewer (proj.max=F) nodes
 ##
-getAdjacencyMatrix <- function(g, focal, proj.max=T) {
+getAdjacencyMatrix <- function(g, proj.max=T) {
   if (is.bipartite.safe(g)) {
     g2.l <- bipartite.projection(g, multiplicity = T, remove.type = F)
     vcs <- sapply(g2.l,vcount)
@@ -310,16 +314,81 @@ getAdjacencyMatrix <- function(g, focal, proj.max=T) {
 }
 
 
-mmcSum <- function(g, focal, proj.max=T) {
-  adjm <- getAdjacencyMatrix(g, focal, proj.max)
-  vids.mmc <- which(adjm[focal,] > 1)
-  return(sum(adjm[focal,vids.mmc]))
+# mmcSum <- function(g, focal, proj.max=T) {
+#   adjm <- getAdjacencyMatrix(g, focal, proj.max)
+#   vids.mmc <- which(adjm[focal,] > 1)
+#   return(sum(adjm[focal,vids.mmc]))
+# }
+# 
+# 
+# mmcCount <- function(g, focal, proj.max=T) {
+#   adjm <- getAdjacencyMatrix(g, focal, proj.max)
+#   return(length(which(adjm[focal,] > 1)))
+# }
+
+mmcEdgeSum <- function(g, name.remove=T) {
+  if ( ! 'weight' %in% igraph::list.edge.attributes(g)) 
+    stop('g must have edge weights')
+  adj <- getAdjacencyMatrix(g, T)
+  sums <- apply(adj, 1, function(x)  sum(x[x>1]) )
+  if (name.remove)
+    sums <- unname(sums)
+  return(sums)
 }
 
+mmcEdgeCount <- function(g, name.remove=T) {
+  if ( ! 'weight' %in% igraph::list.edge.attributes(g)) 
+    stop('g must have edge weights')
+  adj <- getAdjacencyMatrix(g, T)
+  counts <- apply(adj, 1, function(x) length(x[x>1]) )
+  if (name.remove)
+    counts <- unname(counts)
+  return(counts)
+}
 
-mmcCount <- function(g, focal, proj.max=T) {
-  adjm <- getAdjacencyMatrix(g, focal, proj.max)
-  return(length(which(adjm[focal,] > 1)))
+maxCliqueSize <- function(g, vid, min=3)
+{
+  cls <- igraph::cliques(g, min = min)
+  idx <- which(sapply(cls,function(x) vid %in% x))
+  return(max(sapply(cls[idx], length)))
+}
+
+##
+#
+##
+getMmcTargetDataframe <- function(gx.m, vid.a)
+{
+  gx.m.ego <- igraph::make_ego_graph(gx.m, 1, vid.a)[[1]]
+  return(data.frame(
+    name=unlist(V(gx.m)$name), 
+    sum=mmcEdgeSum(gx.m)[vid.a], ## sum of mmc
+    degree=mmcEdgeCount(gx.m)[vid.a],  ## number of mmc competitiors 
+    clust=igraph::transitivity(gx.m, type = 'global'),
+    closeness=unname(igraph::closeness(gx.m, vid.a)),
+    eigen=unname(igraph::eigen_centrality(gx.m)$vector[vid.a]),
+    pow.n1=unname(igraph::power_centrality(gx.m, vid.a, exponent = -0.1)),
+    pow.n3=unname(igraph::power_centrality(gx.m, vid.a, exponent = -0.3)),
+    eccen=unname(igraph::eccentricity(gx.m, vid.a)),
+    ##
+    central.clos=igraph::centr_clo(gx.m)$centralization / igraph::centr_clo_tmax(gx.m),
+    central.eign=igraph::centr_eigen(gx.m)$centralization / igraph::centr_eigen_tmax(gx.m),
+    central.betw=igraph::centr_betw(gx.m)$centralization / igraph::centr_betw_tmax(gx.m),
+    central.degr=igraph::centr_degree(gx.m)$centralization / igraph::centr_degree_tmax(gx.m),
+    ##
+    subgraph=unname(igraph::subgraph.centrality(gx.m)[vid.a]),
+    density=igraph::graph.density(gx.m), 
+    constraint=unname(igraph::constraint(gx.m, vid.a)),
+    max.clique=maxCliqueSize(gx.m, vid.a),
+    ##
+    ego.density=igraph::graph.density(gx.m.ego),  
+    ego.closeness=unname(igraph::closeness(gx.m.ego, vid.a)),
+    ego.eigen=unname(igraph::eigen_centrality(gx.m.ego)$vector[vid.a]),
+    ego.pow.n1=unname(igraph::power_centrality(gx.m.ego, vid.a, exponent = -0.1)),
+    ego.pow.n3=unname(igraph::power_centrality(gx.m.ego, vid.a, exponent = -0.3)),
+    ego.eccen=unname(igraph::eccentricity(gx.m.ego, vid.a)),
+    ##
+    stringsAsFactors = F
+  ))
 }
 
 ##-----------------------------------------------------------------------------------
@@ -429,6 +498,17 @@ plot2(gx.ff,
 )
 # dev.off()
 
+vid.a <- 4
+vid.ts <- c(15,16)
+par(mfrow=c(2,3), mar=c(.1,.1,1.5,.1))
+for (vid.t in vid.ts) 
+{
+  plot2(gx, main="Pre-Acquisition")
+  plot2(biAcq(gx, vid.a, vid.t), main=sprintf("%s==>%s",vid.a,vid.t))
+  plot2(mmcSubgraph(biAcq(gx, vid.a, vid.t), vid.a), 
+        main=sprintf("%s==>%s MMC Subgraph",vid.a,vid.t))
+}
+
 
 ##==================================
 ##
@@ -440,34 +520,24 @@ plot2(gx.ff,
 ##
 ##
 ##----------------------------------
-acq.df <- data.frame(
-  name=unlist(V(gx.ff)$name), 
-  mmc.sum=NA, 
-  mmc.degree=NA, 
-  mmc.clust=NA,
-  mmc.max.clique=NA,
-  mmc.centralization=NA,
-  mmc.closeness=NA,
-  mmc.eigen=NA,
-  mmc.eccen=NA,
-  mmc.subgraph=NA,
-  exposure=NA, 
-  constraint=NA,
-  diff.mmc.dyads=NA, 
-  diff.mmc.sum=NA, 
-  diff.exposure=NA, 
-  ##
-  stringsAsFactors = F
-)
+
+vid.a <- 4 ## focal firm
+
+## MMC subgraph 
+gx.m <- mmcSubgraph(gx.ff, vid.a)
+gx.m.ego <- igraph::make_ego_graph(gx.m,1,vid.a)[[1]]
+
+## target Choice dataframe
+acq.t <- getMmcMetricDataframe(gx.m, vid.a)
+diff.t <- acq.t
+
 acq.df.0 <- as.list(acq.df[1,])
 ## base adjacency matrix
-adjmat <- getAdjacencyMatrix(gx.ff, attr = 'weight', sparse = F)
-## base mmc measures
-ffidx <- which(V(gx.ff)$name==focal.firm)
-mmcidx <- which(adjmat[, ffidx] > 1)
-mmc.dyads0 <- length(adjmat[mmcidx, ffidx])
-mmc.sum0 <- sum(adjmat[mmcidx, ffidx])
+adjmat <- getAdjacencyMatrix(gx.ff)
 
+## MMC subgraph 
+
+## base mmc measures
 acq.df.0$mmc.sum <- mmcSum(gx.ff, 4)
 acq.df.0$mmc.degree <-  mmcCount(gx.ff, 4)
 
