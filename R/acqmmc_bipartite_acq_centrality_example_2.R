@@ -314,6 +314,23 @@ getAdjacencyMatrix <- function(g, proj.max=T) {
 }
 
 
+## 
+# Get vertex IDs 
+#  - if bipartite, return vids of maximal projection (largest size mode)
+##
+getMaxProjNames <- function(gx)
+{
+  if (! 'name' %in% igraph::list.vertex.attributes(gx))
+    stop('gx must have vertex name attribute')
+  if(!is.bipartite.safe(gx)) {
+    return(V(gx)$name)
+  }
+  g2.l <- bipartite.projection(gx, multiplicity = T, remove.type = F)
+  vcs <- sapply(g2.l,vcount)
+  g2 <- g2.l[[ which.max(vcs) ]]
+  return(V(g2)$name)
+}
+
 # mmcSum <- function(g, focal, proj.max=T) {
 #   adjm <- getAdjacencyMatrix(g, focal, proj.max)
 #   vids.mmc <- which(adjm[focal,] > 1)
@@ -521,40 +538,34 @@ for (vid.t in vid.ts)
 ##
 ##----------------------------------
 
-vid.a <- 4 ## focal firm
+## focal firm
+focal.firm <- 4
+focal.name <- as.character(focal.firm)
 
 ## MMC subgraph 
-gx.m <- mmcSubgraph(gx.ff, vid.a)
-gx.m.ego <- igraph::make_ego_graph(gx.m,1,vid.a)[[1]]
+gx.m <- mmcSubgraph(gx.ff, focal.firm)
+gx.m.ego <- igraph::make_ego_graph(gx.m,1,focal.firm)[[1]]
 
 ## target Choice dataframe
-acq.t <- getMmcMetricDataframe(gx.m, vid.a)
+acq.t <- getMmcTargetDataframe(gx.m, focal.firm)
 diff.t <- acq.t
 
-acq.df.0 <- as.list(acq.df[1,])
-## base adjacency matrix
-adjmat <- getAdjacencyMatrix(gx.ff)
 
-## MMC subgraph 
-
-## base mmc measures
-acq.df.0$mmc.sum <- mmcSum(gx.ff, 4)
-acq.df.0$mmc.degree <-  mmcCount(gx.ff, 4)
-
-
-for (i in 1:vcount(gx.ff)) {
-  target.firm <- as.character(i)
+for (i in getMaxProjNames(gx)) {
+  
+  target.firm <- as.numeric(i)
+  target.name <- as.character(i)
   
   if (target.firm != focal.firm) {
+    
     ## NODE COLLAPSE BIPARTITE GRAPH
-    tmp <- biAcq(gx, focal.firm, target.firm, project = T)
-    gx2.ff <- tmp$g
-    exposure.df <- tmp$df
+    gx2.ff <- biAcq(gx, focal.firm, target.firm, project = T)
+
     V(gx2.ff)$type <- unlist(V(gx2.ff)$type)
     V(gx2.ff)$name <- unlist(V(gx2.ff)$name)
     
     ## ADJACENCY
-    adjmat <- as_adjacency_matrix(gx2.ff, attr = 'weight', sparse = F)
+    adjmat <- getAdjacencyMatrix(gx2.ff)
     ## SUM MMC
     ffidx <- which(V(gx2.ff)$name==focal.firm)
     mmcidx <- which(adjmat[, ffidx] > 1)
@@ -565,12 +576,14 @@ for (i in 1:vcount(gx.ff)) {
     exposure.diff <- exposure.df[which(exposure.df$name==focal.firm), 'delta']
     ## dataframe
     idx <- which(as.character(acq.df$name)==target.firm)
+    
     acq.df$mmc.dyads[idx] <- mmc.dyads
     acq.df$mmc.sum[idx] <- mmc.sum
     acq.df$exposure[idx] <- exposure
     acq.df$diff.mmc.dyads[idx] <- mmc.dyads - mmc.dyads0
     acq.df$diff.mmc.sum[idx] <- mmc.sum - mmc.sum0
     acq.df$diff.exposure[idx] <- exposure.diff
+    
     ## PLOT
     vshapes <- sapply(V(gx2.ff)$type,function(x)ifelse(x,'circle','square'))
     pngfile <- sprintf("%s\\firm_firm_mmc_acquisition%s_1.png",dirname, target.firm)
