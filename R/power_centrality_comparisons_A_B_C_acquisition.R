@@ -29,6 +29,20 @@ map <- function(x, min=5, max=23) {
   return(sapply(x, function(i) (scalediff*(i - xmin)/maxdiff) + min ))
 }
 
+## plot graph
+plotGraph <- function(graph, ...) {
+  .par <- par()
+  par(mar=c(.1,.1,.1,.1))
+  igraph::plot.igraph(
+    x=graph,
+    vertex.label.cex=.7,
+    vertex.size=9,
+    edge.wdith=1.5,
+    ...
+  )
+  par(.par)
+}
+
 ##=============================================================
 ##              Make Competition Network
 ##-------------------------------------------------------------

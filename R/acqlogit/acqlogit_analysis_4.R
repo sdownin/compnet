@@ -54,11 +54,12 @@ cb  <- source(file.path(getwd(),'R','acqlogit','cb_data_prep.R'))$value      ## 
 ## focal firm's competition network
 ##---------------------------------
 name_i <- 'ibm'
-d <- 3
+d <- 2
 
 ## LOAD DATALIST
 # data.in <- readRDS(sprintf("acqlogit_data/acqlogit_compnet_processed_acquisitions_synergies_list_%s_d%s.rds",name_i,d))
-data.in <- readRDS(sprintf("%s/acqlogit_compnet_processed_acquisitions_synergies_list_%s_d%s.rds",acq_data_dir,name_i,d))
+# data.in <- readRDS(sprintf("%s/acqlogit_compnet_processed_acquisitions_synergies_list_%s_d%s.rds",acq_data_dir,name_i,d))
+data.in <- readRDS(sprintf("%s/acqlogit_compnet_processed_acquisitions_synergies_ABSORB_list_%s_d%s.rds",acq_data_dir,name_i,d))
 l <- data.in$l
 l.cov <- data.in$l.cov
 
@@ -81,7 +82,12 @@ df.sub$ij.age.diff <- df.sub$i.age - df.sub$j.age
 dists.nonInf <- df.sub$ij.dist[df.sub$ij.dist < Inf]
 df.sub$ij.dist[df.sub$ij.dist == Inf] <- round(sd(dists.nonInf)) + max(dists.nonInf) ## 1 SD above max
 
+## scale closeness
 df.sub$ij.syn.closeness2 <- df.sub$ij.syn.closeness * 1e4
+
+## scale acquisition experience ratio
+df.sub$i.acqs.100 <- df.sub$i.acqs * 100
+df.sub$j.acqs.100 <- df.sub$j.acqs * 100
 
 ## COUNTERFACTUAL ACQUISITION PAIRING SIMILARITY
 df.sub$ij.sim <- NA
@@ -141,30 +147,34 @@ check.cols <- c('i.ln_asset','i.cash','i.roa','i.m2b',
                 'j.age','i.age','i.deg.full','j.deg.full','ij.same.region',
                 'i.fm.mmc.sum','i.acqs','j.acqs','ij.cossim','ij.dist',
                 'j.constraint','i.constraint',
-                'ij.syn.constraint','ij.syn.closeness')
+                'ij.syn.constraint','ij.syn.closeness',
+                'i.div')
 for (col in check.cols) {
-  df.sub <- df.sub[which(!is.na(df.sub[,col])), ]
+  df.sub <- df.sub[which(!is.na(df.sub[,col]) & !is.nan(df.sub[,col])), ]
 }
 
 ##==================================================
 ##  ORGSCI 2018-11-08
 ##--------------------------------------------------
 
-
 mg0 <- mclogit(
-  cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
-    
-    j.age + I(j.age^2) + i.age +
+  cbind(y,t) ~  
+    i.ln_asset + i.cash + i.roa + i.m2b + i.div +
+    j.age + 
+    # I(j.age^2) + 
+    i.age +
     i.deg.full + j.deg.full +
-    ij.same.region +  
-    i.fm.mmc.sum + i.acqs + j.acqs +
-    ij.cossim + 
+    ij.same.region +
+    i.fm.mmc.sum + i.acqs.100 + j.acqs.100 +
+    ij.cossim +
     ij.dist +
-    j.constraint + i.constraint + i.pow.n1 +
+    j.constraint +
+    i.constraint + 
+    i.pow.n3 +
     ij.syn.constraint +
     # ij.syn.degree +
     # ij.syn.closeness2 +
-    ij.syn.pow.n1
+    ij.syn.pow.n3
   ,
   data = df.sub)
 summary(mg0)
@@ -172,17 +182,19 @@ summary(mg0)
 mg1 <- mclogit(
   cbind(y,t) ~  
     i.ln_asset + i.cash + i.roa + i.m2b + i.div +
-    j.age +  i.age + I(j.age^2) +
+    j.age +  i.age + 
+    # I(j.age^2) +
     i.deg.full + j.deg.full +
     ij.same.region +  
-    i.fm.mmc.sum + i.acqs + j.acqs +
+    i.fm.mmc.sum + i.acqs.100 + j.acqs.100 +
     ij.cossim + 
     ij.dist +
-    j.constraint + i.constraint + i.pow.n1 +
+    j.constraint +
+    i.constraint + i.pow.n3 +
     ij.syn.constraint +
     # ij.syn.degree +
-    # ij.syn.closeness2 + 
-    ij.syn.pow.n1 + 
+    # ij.syn.closeness2 +
+    ij.syn.pow.n3 +
     I(i.fm.mmc.sum^2)
   ,
   data = df.sub)
@@ -190,17 +202,20 @@ summary(mg1)
 
 mg2 <- mclogit(
   cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
-    j.age + I(j.age^2) +  i.age +
+    j.age + 
+    # I(j.age^2) + 
+    i.age +
     i.deg.full + j.deg.full +
     ij.same.region +  
-    i.fm.mmc.sum + i.acqs + j.acqs +
+    i.fm.mmc.sum + i.acqs.100 + j.acqs.100 +
     ij.cossim + 
     ij.dist +
-    j.constraint + i.constraint + i.pow.n1 +
+    j.constraint +
+    i.constraint + i.pow.n3 +
     ij.syn.constraint +
     # ij.syn.degree +
-    # ij.syn.closeness2 + 
-    ij.syn.pow.n1 + 
+    # ij.syn.closeness2 +
+    ij.syn.pow.n3 + 
     I(i.fm.mmc.sum^2) + 
     I(i.fm.mmc.sum^2):ij.syn.constraint
   ,
@@ -208,26 +223,8 @@ mg2 <- mclogit(
 summary(mg2)
 
 
-mg3 <- mclogit(
-  cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
-    j.age + I(j.age^2) +  i.age +
-    i.deg.full + j.deg.full +
-    ij.same.region +  
-    i.fm.mmc.sum + i.acqs + j.acqs +
-    ij.cossim + 
-    ij.dist +
-    j.constraint + i.constraint + i.pow.n1 +
-    ij.syn.constraint +
-    # ij.syn.degree +
-    # ij.syn.closeness2 + 
-    ij.syn.pow.n1 + 
-    I(i.fm.mmc.sum^2) + 
-    I(i.fm.mmc.sum^2):ij.syn.closeness2
-  ,
-  data = df.sub)
-summary(mg3)
 # 
-# mg4 <- mclogit(
+# mg3 <- mclogit(
 #   cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
 #     j.age + I(j.age^2) +  i.age +
 #     i.deg.full + j.deg.full +
@@ -244,54 +241,82 @@ summary(mg3)
 #     I(i.fm.mmc.sum^2):ij.syn.degree
 #   ,
 #   data = df.sub)
-# summary(mg4)
+# summary(mg3)
+
+mg4 <- mclogit(
+  cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
+    j.age + 
+    # I(j.age^2) +  
+    i.age +
+    i.deg.full + j.deg.full +
+    ij.same.region +  
+    i.fm.mmc.sum + i.acqs.100 + j.acqs.100 +
+    ij.cossim + 
+    ij.dist +
+    j.constraint +
+    i.constraint + i.pow.n3 +
+    ij.syn.constraint +
+    # ij.syn.degree +
+    # ij.syn.closeness2 +
+    ij.syn.pow.n3 + 
+    I(i.fm.mmc.sum^2) + 
+    I(i.fm.mmc.sum^2):ij.syn.pow.n3
+  ,
+  data = df.sub)
+summary(mg4)
 
 mg5 <- mclogit(
   cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
-    j.age + I(j.age^2) +  i.age +
+    j.age + 
+    # I(j.age^2) +  
+    i.age +
     i.deg.full + j.deg.full +
     ij.same.region +  
-    i.fm.mmc.sum + i.acqs + j.acqs +
+    i.fm.mmc.sum + i.acqs.100 + j.acqs.100 +
     ij.cossim + 
     ij.dist +
-    j.constraint + i.constraint + i.pow.n1 +
+    j.constraint +
+    i.constraint + i.pow.n3 +
     ij.syn.constraint +
     # ij.syn.degree +
-    # ij.syn.closeness2 + 
-    ij.syn.pow.n1 + 
+    # ij.syn.closeness2 +
+    ij.syn.pow.n3 + 
     I(i.fm.mmc.sum^2) + 
-    I(i.fm.mmc.sum^2):ij.syn.pow.n1
+    I(i.fm.mmc.sum^2):ij.syn.constraint + 
+    # I(i.fm.mmc.sum^2):ij.syn.closeness2 
+    # I(i.fm.mmc.sum^2):ij.syn.degree + 
+    I(i.fm.mmc.sum^2):ij.syn.pow.n3
   ,
   data = df.sub)
 summary(mg5)
 
 mg6 <- mclogit(
   cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
-    j.age + I(j.age^2) +  i.age +
+    j.age + 
+    # I(j.age^2) +  
+    i.age +
     i.deg.full + j.deg.full +
-    ij.same.region +  
-    i.fm.mmc.sum + i.acqs + j.acqs +
-    ij.cossim + 
+    ij.same.region +
+    i.fm.mmc.sum + i.acqs.100 + j.acqs.100 +
+    ij.cossim +
     ij.dist +
-    j.constraint + i.constraint + i.pow.n1 +
+    j.constraint +
+    i.constraint + i.pow.n3 +
     ij.syn.constraint +
     # ij.syn.degree +
-    # ij.syn.closeness2 + 
-    ij.syn.pow.n1 + 
-    I(i.fm.mmc.sum^2) + 
-    I(i.fm.mmc.sum^2):ij.syn.constraint + 
-    # I(i.fm.mmc.sum^2):ij.syn.closeness2 + 
-    # I(i.fm.mmc.sum^2):ij.syn.degree + 
-    I(i.fm.mmc.sum^2):ij.syn.pow.n1 
+    ij.syn.closeness2 +
+    ij.syn.pow.n3 +
+    I(i.fm.mmc.sum^2) +
+    I(i.fm.mmc.sum^2):ij.syn.closeness2
   ,
   data = df.sub)
 summary(mg6)
 
-tabmost <- mtable(mg0,mg1,mg2,mg3)
+tabmost <- mtable(mg0,mg1,mg2,mg4,mg5,mg6)
 print(tabmost)
 ## SAVE FILE
 memisc::write.mtable(tabmost, 
-        file = sprintf("acqlogit_data/acqlogit_reg_table_%s_d%s_OrgSci20181111.tsv",name_i,d))
+        file = sprintf("acqlogit_data/acqlogit_reg_table_ABSORB_%s_d%s_OrgSci20181111.tsv",name_i,d))
 
 
 ## Chisq Deviance Test
@@ -300,6 +325,7 @@ anova(mg0,mg2, test='Chisq')
 anova(mg0,mg3, test='Chisq')
 anova(mg0,mg4, test='Chisq')
 anova(mg0,mg5, test='Chisq')
+anova(mg0,mg6, test='Chisq')
 
 ## Correlations and descriptives stats
 library(psych)
@@ -380,6 +406,26 @@ write.csv(as.data.frame(xdescr),
 
 
 
+mgz <- mclogit(
+  cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +
+    j.age + I(j.age^2) +  i.age +
+    i.deg.full + j.deg.full +
+    ij.same.region +
+    i.fm.mmc.sum + i.acqs.100 + j.acqs.100 +
+    ij.cossim +
+    ij.dist +
+    j.constraint +
+    i.constraint + i.pow.n3 +
+    i.rival.acq.3 + 
+    ij.syn.constraint +
+    # ij.syn.degree +
+    # ij.syn.closeness2 +
+    ij.syn.pow.n3 +
+    I(i.fm.mmc.sum^2) +
+    I(i.fm.mmc.sum^2):ij.syn.constraint
+  ,
+  data = df.sub)
+summary(mgz)
 
 # mg3 <- mclogit(
 #   cbind(y,t) ~  i.ln_asset + i.cash + i.roa + i.m2b + i.div +

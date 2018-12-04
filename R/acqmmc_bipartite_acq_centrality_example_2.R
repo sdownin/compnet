@@ -11,11 +11,20 @@ setwd(dirname)
 ##
 #
 ##
-plot2 <- function(gx, layout=layout.random, vertex.size=15, focal.firm=NA, fam='sans', edge.curved=F, seed=11111, ...)
+plot2 <- function(gx, layout=layout.fruchterman.reingold, vertex.size=15, focal.firm=NA, fam='sans', edge.curved=F, seed=11111, ...)
 {
+  if ('type' %in% igraph::list.vertex.attributes(gx)) {
+    vcolors <- sapply(V(gx)$type, function(x)ifelse(x, "SkyBlue2", "gray"))
+    lcolors <-  sapply(V(gx)$type, function(x)ifelse(x, "darkblue", "black"))
+    vshapes <- sapply(1:vcount(gx),function(x)ifelse(V(gx)$type[x], "circle", "square"))
+    isBipartite <- length(unique(V(gx)$type)) > 1
+  } else {
+    vcolors <- rep("SkyBlue2", vcount(gx))
+    lcolors <-  rep("darkblue", vcount(gx))
+    vshapes <- rep("circle", vcount(gx))
+    isBipartite <- FALSE
+  }
   vAttrs = names(igraph::vertex.attributes(gx))
-  vcolors <- sapply(V(gx)$type, function(x)ifelse(x, "SkyBlue2", "gray"))
-  lcolors <-  sapply(V(gx)$type, function(x)ifelse(x, "darkblue", "black"))
   fonts <- rep(1, vcount(gx))
   framecols <- rep('black', vcount(gx))
   framewidths <- rep(1, vcount(gx)) 
@@ -23,7 +32,6 @@ plot2 <- function(gx, layout=layout.random, vertex.size=15, focal.firm=NA, fam='
     vcolors[V(gx)$name==focal.firm] <- 'darkblue'
     lcolors[V(gx)$name==focal.firm] <- 'white'
   }
-  isBipartite <- length(unique(V(gx)$type)) > 1
   if(!isBipartite) {
     adjmat <- as_adjacency_matrix(gx, attr = 'weight', sparse = F)
     ffidx <- which(V(gx)$name==focal.firm)
@@ -44,7 +52,7 @@ plot2 <- function(gx, layout=layout.random, vertex.size=15, focal.firm=NA, fam='
        label.dist = 0, 
        vertex.label=sapply(1:vcount(gx), function(x) ifelse("name" %in% vAttrs, V(gx)$name[x], x)),
        vertex.color = vcolors, 
-       vertex.shape = sapply(1:vcount(gx),function(x)ifelse(V(gx)$type[x], "circle", "square")),
+       vertex.shape = vshapes,
        vertex.size = vertex.size, 
        vertex.frame.color=framecols, 
        vertex.frame.width=framewidths, 
@@ -70,7 +78,7 @@ plot2 <- function(gx, layout=layout.random, vertex.size=15, focal.firm=NA, fam='
 ##
 # Bipartite Graph Acquisition
 ##
-biAcq <- function(gi, acquirer, target, project=T, verbose=T)
+biAcq <- function(gi, acquirer, target, decay=-0.2, project=T, verbose=T)
 {
   if (project) {
     gi <- bipartite.projection(gi, remove.type = F)$proj2
@@ -79,7 +87,7 @@ biAcq <- function(gi, acquirer, target, project=T, verbose=T)
   }
   
   tdf <- as_data_frame(gi, what='vertices')
-  tdf$before <- power_centrality(gi, exponent = -.1)
+  tdf$before <- power_centrality(gi, exponent = decay)
   tdf$after <- NA
   
   vnamemap <- names(V(gi))
@@ -92,17 +100,17 @@ biAcq <- function(gi, acquirer, target, project=T, verbose=T)
   
   vertex.attr.comb <- list(type=ifelse(revord, 'last', 'first'),
                            name=ifelse(revord, 'last', 'first'))
-
+  
   gi.2 <- igraph::contract.vertices(gi, vmap, vertex.attr.comb = vertex.attr.comb)
   gi.2 <- igraph::simplify(gi.2, remove.multiple = T, remove.loops = T, edge.attr.comb = list(weight='sum'))
   gi.2 <- igraph::induced.subgraph(gi.2, V(gi.2)[igraph::degree(gi.2)>0])
   
-  tdf$after[tdf$name!=target] <- power_centrality(gi.2, exponent = -.2)
+  tdf$after[tdf$name!=target] <- power_centrality(gi.2, exponent = decay)
   tdf$delta <- tdf$after - tdf$before
   
   if (verbose)
     print(tdf)
-
+  
   return(list(df=tdf, g=gi.2))
 }
 
@@ -110,8 +118,8 @@ biAcq <- function(gi, acquirer, target, project=T, verbose=T)
 #
 ##
 mapTo <- function(x,   #vector of degrees
-                   minmax=c(9,20),  # vector of length 2: min and max
-                   log=F           # logicial for log transform
+                  minmax=c(9,20),  # vector of length 2: min and max
+                  log=F           # logicial for log transform
 ) { 
   if (any(minmax < 0)) stop ("Negative output range is not allowed.\nPlease assign minmax argument as vector of 2 non-negative values (x>=0) and rerun function.")
   n <- length(x)
@@ -143,9 +151,9 @@ mapTo <- function(x,   #vector of degrees
   return(y)
 }
 
-centPow <- function(gx, beta=-0.1)
+centPow <- function(gx, decay=-0.1)
 {
-  return(power_centrality(gx, exponent = beta))
+  return(power_centrality(gx, exponent = decay))
 }
 
 df.pow <- function(gx, betas=c(-.3,-.2,-.1,-.01,0))
@@ -153,6 +161,118 @@ df.pow <- function(gx, betas=c(-.3,-.2,-.1,-.01,0))
   df <- data.frame(name=V(gx)$name)
   for (beta in betas) df[ , as.character(beta)] <- centPow(gx, beta)
   return(df)
+}
+
+##
+# Combine two bipartite networks
+#   - keeps original names of vertex and edge properties  (unlike igraph "+" operator:  g3 <- g1 + g2)
+##
+bipartiteCombine <- function(gx1, gx2) {
+  .vt <- unique(rbind(as_data_frame(gx1,'vertices'),as_data_frame(gx2,'vertices')))
+  nz <- names(.vt)
+  if ((! 'name' %in% nz) & (! 'type' %in% nz)) 
+    stop('graphs must have name and type attributes.')
+  idx.name <- which(nz=='name')
+  idx.type <- which(nz=='type')
+  .vt <- .vt[ ,c(idx.name,idx.type)] ## rearrange "name" column first
+  .el <- rbind(as_data_frame(gx1,'edges'),as_data_frame(gx2,'edges'))
+  gx <- graph.data.frame(d = .el, directed = F, vertices = .vt)
+  return(gx)
+}
+
+##
+# Gets vertex indices of firms in dyads that have multi-market contact 
+##
+which.mmc <- function(g, focal, keep.focal=F, proj.max=T) {
+  if (class(g) != 'igraph') stop('g must be an igraph object')
+  if (!igraph::is.weighted(g)) E(g)$weight <- 1
+  if (igraph::is.bipartite(g))
+    return(which.mmc.bipartite(g, focal, keep.focal, proj.max))
+  ## NOT BIPARTITE
+  if (! focal %in% 1:vcount(g)) 
+    stop('focal firm index must be in vertices of g')
+  adjm <- igraph::as_adjacency_matrix(g, attr = 'weight', sparse = F)
+  vids <- unname(which(adjm[focal,] > 1))
+  if (keep.focal) {
+    return(sort(unique(c(vids, focal))))
+  } else {
+    return(sort(unique(vids)))
+  }
+}
+##
+# Gets BIPARTITE graph vertex indices of firms in dyads that have multi-market contact 
+##
+which.mmc.bipartite <- function(g, focal, keep.focal=F, proj.max=T) {
+  g2.l <- bipartite.projection(g, multiplicity = T, remove.type = F)
+  vcs <- sapply(g2.l,vcount)
+  idx.proj <- ifelse(proj.max, which.max(vcs), which.min(vcs))
+  g2 <- g2.l[[idx.proj]]
+  if (! focal %in% 1:vcount(g2)) 
+    stop('focal firm index must be in vertices of g')
+  adjm2 <- igraph::as_adjacency_matrix(g2, attr = 'weight', sparse = F)
+  proj.vids <- unname(which(adjm2[focal,] > 1))
+  if (keep.focal) {
+    proj.vids <- sort(c(proj.vids, focal))
+  }
+  proj.names <- V(g2)$name[proj.vids]
+  ##
+  vids.f <- which(V(g)$name %in% proj.names)
+  vids.m <- c()
+  for (v in vids.f) {
+    vids.m <- unique(c(vids.m, as.integer(igraph::neighbors(g, v))))
+  }
+  vids.focal <- which(V(g)$name==as.character(focal))
+  if (keep.focal) {
+    return(sort(c(vids.f, vids.m, vids.focal)))
+  } else {
+    return(sort(c(vids.f, vids.m)))
+  }
+}
+
+##
+# Creates MMC subgraph
+#   - subsets to firms with MMC relations to another firm
+#   - removes non-MMC edges (weight <= 1)
+##
+mmcSubgraph <- function(g, focal) {
+  vids <- which.mmc(g, focal, keep.focal=T)
+  ## MMC VERTEX SUBGRAPH
+  g.sub <- igraph::induced.subgraph(g, vids = vids)
+  ## DROP NON-MMC EDGES
+  edges <- which(E(g.sub)$weight <= 1)
+  g.sub <- igraph::delete.edges(g.sub, edges)
+  return(g.sub)
+}
+
+##
+# Gets adjacency matrix -- for either Bipartite or unipartite graphs 
+#   - unipartite, just return adjmat
+#   - bipartite, return adjmat for the mode with more (proj.max=T) or fewer (proj.max=F) nodes
+##
+getAdjacencyMatrix <- function(g, focal, proj.max=T) {
+  if (igraph::is.bipartite(g)) {
+    g2.l <- bipartite.projection(g, multiplicity = T, remove.type = F)
+    vcs <- sapply(g2.l,vcount)
+    idx.proj <- ifelse(proj.max, which.max(vcs), which.min(vcs))
+    g2 <- g2.l[[idx.proj]]
+    adjm <- igraph::as_adjacency_matrix(g2, attr = 'weight', sparse = F)
+  } else {
+    adjm <- igraph::as_adjacency_matrix(g, attr = 'weight', sparse = F)
+  }
+  return(adjm)
+}
+
+
+mmcSum <- function(g, focal, proj.max=T) {
+  adjm <- getAdjacencyMatrix(g, focal, proj.max)
+  vids.mmc <- which(adjm[focal,] > 1)
+  return(sum(adjm[focal,vids.mmc]))
+}
+
+
+mmcCount <- function(g, focal, proj.max=T) {
+  adjm <- getAdjacencyMatrix(g, focal, proj.max)
+  return(length(which(adjm[focal,] > 1)))
 }
 
 ##-----------------------------------------------------------------------------------
@@ -188,29 +308,44 @@ df.pow <- function(gx, betas=c(-.3,-.2,-.1,-.01,0))
 ##----------------------------------
 
 ## Main Cluster
-n1 <- 4   ## markets
-n2 <- 12  ## firms
+# n1 <- 4   ## markets
+# n2 <- 12  ## firms
+c1 <- list(m = 4, f = 12)
 ## Cluster 2
-c2.n1 <- 
-c2.n2 <- 
+c2 <- list(m = 2, f = 6)
 
 
 focal.firm <- '4'
 
 ## CREATE RANDOM BIPARTITE FIRM_MARKET
 set.seed(1133241)  #1133241
-gx=sample_bipartite(n1,n2,'gnp',.62)
-V(gx)$name <- c(LETTERS[1:n1], 1:n2)
-E(gx)$weight <- 1
+gx1 <- sample_bipartite(c1$m,c1$f,'gnp',.62)
+V(gx1)$name <- c(LETTERS[1:c1$m], 1:c1$f)
+E(gx1)$weight <- 1
+
+set.seed(11341)  #1133241
+gx2 <- sample_bipartite(c2$m,c2$f,'gnp',.72)
+V(gx2)$name <- c(LETTERS[(c1$m+1):(c1$m+c2$m)], (c1$f+1):(c1$f+c2$f))
+E(gx2)$weight <- 1
+
+gx <- bipartiteCombine(gx1, gx2)
+# .vt <- unique(rbind(as_data_frame(gx1,'vertices'),as_data_frame(gx2,'vertices')))
+# nz <- names(.vt)
+# idx.name <- which(nz=='name')
+# idx.type <- which(nz=='type')
+# .vt <- .vt[ ,c(idx.name,idx.type)] ## rearrange "name" column first
+# .el <- rbind(as_data_frame(gx1,'edges'),as_data_frame(gx2,'edges'))
+# gx <- graph.data.frame(d = .el, directed = F, vertices = .vt)
+
 
 ## BIMODAL FIRM_MARKET PLOT
 vshapes <- sapply(V(gx)$type,function(x)ifelse(x,'circle','square'))
 par(mar=c(.1,.1,.1,.1), mfrow=c(1,2))
 plot2(gx, 
-     layout=layout.bipartite,
-     vertex.shape=vshapes,
-     vertex.size=18,
-     focal.firm=focal.firm)
+      layout=layout.bipartite,
+      vertex.shape=vshapes,
+      vertex.size=18,
+      focal.firm=focal.firm)
 plot2(gx, 
       layout=layout.kamada.kawai,
       vertex.shape=vshapes,
@@ -221,6 +356,7 @@ par(mfrow=c(1,1))
 ## UNIMODAL FIRM_FIRM
 gx.ff <- bipartite.projection(gx, remove.type = F)$proj2
 V(gx.ff)$type <- unlist(V(gx.ff)$type)
+
 ## UNIMODAL FIRM_FIRM ADJACENCY MATRIX
 adjmat <- as_adjacency_matrix(gx.ff, attr = 'weight', sparse = F)
 print(adjmat)
@@ -257,17 +393,37 @@ plot2(gx.ff,
 ##
 ##
 ##----------------------------------
-acq.df <- data.frame(name=unlist(V(gx.ff)$name), 
-                     mmc.dyads=NA, mmc.sum=NA, exposure=NA, 
-                     diff.mmc.dyads=NA, diff.mmc.sum=NA, diff.exposure=NA, 
-                     stringsAsFactors = F)
+acq.df <- data.frame(
+  name=unlist(V(gx.ff)$name), 
+  mmc.sum=NA, 
+  mmc.degree=NA, 
+  mmc.clust=NA,
+  mmc.max.clique=NA,
+  mmc.centralization=NA,
+  mmc.closeness=NA,
+  mmc.eigen=NA,
+  mmc.eccen=NA,
+  mmc.subgraph=NA,
+  exposure=NA, 
+  constraint=NA,
+  diff.mmc.dyads=NA, 
+  diff.mmc.sum=NA, 
+  diff.exposure=NA, 
+  ##
+  stringsAsFactors = F
+)
+acq.df.0 <- as.list(acq.df[1,])
 ## base adjacency matrix
-adjmat <- as_adjacency_matrix(gx.ff, attr = 'weight', sparse = F)
+adjmat <- getAdjacencyMatrix(gx.ff, attr = 'weight', sparse = F)
 ## base mmc measures
 ffidx <- which(V(gx.ff)$name==focal.firm)
 mmcidx <- which(adjmat[, ffidx] > 1)
 mmc.dyads0 <- length(adjmat[mmcidx, ffidx])
 mmc.sum0 <- sum(adjmat[mmcidx, ffidx])
+
+acq.df.0$mmc.sum <- mmcSum(gx.ff, 4)
+acq.df.0$mmc.degree <-  mmcCount(gx.ff, 4)
+
 
 for (i in 1:vcount(gx.ff)) {
   target.firm <- as.character(i)
@@ -279,7 +435,7 @@ for (i in 1:vcount(gx.ff)) {
     exposure.df <- tmp$df
     V(gx2.ff)$type <- unlist(V(gx2.ff)$type)
     V(gx2.ff)$name <- unlist(V(gx2.ff)$name)
-
+    
     ## ADJACENCY
     adjmat <- as_adjacency_matrix(gx2.ff, attr = 'weight', sparse = F)
     ## SUM MMC
@@ -302,13 +458,13 @@ for (i in 1:vcount(gx.ff)) {
     vshapes <- sapply(V(gx2.ff)$type,function(x)ifelse(x,'circle','square'))
     pngfile <- sprintf("%s\\firm_firm_mmc_acquisition%s_1.png",dirname, target.firm)
     png(pngfile, width = 5, height = 5, units = 'in', res = 250)
-      par(mar=c(.1,.1,.1,.1))
-      plot2(gx2.ff, 
-            layout=layout.fruchterman.reingold,
-            vertex.shape=vshapes,
-            vertex.size= 18, ##1.1*mapTo(centPow(gx2.ff, beta = -.1)),
-            focal.firm=focal.firm
-      )
+    par(mar=c(.1,.1,.1,.1))
+    plot2(gx2.ff, 
+          layout=layout.fruchterman.reingold,
+          vertex.shape=vshapes,
+          vertex.size= 18, ##1.1*mapTo(centPow(gx2.ff, beta = -.1)),
+          focal.firm=focal.firm
+    )
     dev.off()
   }
 }
@@ -568,7 +724,7 @@ plot(gi,
      layout=layout.bipartite,
      vertex.shape=vshapes,
      vertex.size=power_centrality(gi, exponent = -0.2)*30
-     )
+)
 
 df <- as_data_frame(gi, what='vertices')
 for (i in 1:6) {
