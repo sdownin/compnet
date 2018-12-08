@@ -13,7 +13,8 @@ setwd(dirname)
 ##
 plot2 <- function(gx, layout=layout.fruchterman.reingold, vertex.size=15, focal.firm=NA, fam='sans', edge.curved=F, seed=11111, ...)
 {
-  if ('type' %in% igraph::list.vertex.attributes(gx)) {
+  vAttrs <- igraph::list.vertex.attributes(gx) 
+  if ('type' %in% vAttrs) {
     vcolors <- sapply(V(gx)$type, function(x)ifelse(x, "SkyBlue2", "gray"))
     lcolors <-  sapply(V(gx)$type, function(x)ifelse(x, "darkblue", "black"))
     vshapes <- sapply(1:vcount(gx),function(x)ifelse(V(gx)$type[x], "circle", "square"))
@@ -24,7 +25,6 @@ plot2 <- function(gx, layout=layout.fruchterman.reingold, vertex.size=15, focal.
     vshapes <- rep("circle", vcount(gx))
     isBipartite <- FALSE
   }
-  vAttrs = names(igraph::vertex.attributes(gx))
   fonts <- rep(1, vcount(gx))
   framecols <- rep('black', vcount(gx))
   framewidths <- rep(1, vcount(gx)) 
@@ -119,32 +119,50 @@ plot2 <- function(gx, layout=layout.fruchterman.reingold, vertex.size=15, focal.
 ##
 # Bipartite Graph Acquisition
 ##
-biAcq <- function(gi, acquirer, target, project=T, verbose=T)
+biAcq <- function(gi, acquirer.name, target.name, project=F, verbose=T)
 {
-  if (project & is.bipartite.safe(gi)) {
+  if ( ! 'name' %in% igraph::list.vertex.attributes(gi)) 
+    stop('gi must have name attribute.')
+  
+  is.bi <- is.bipartite.safe(gi)
+  
+  if (project & is.bi) {
     gi.l <- bipartite.projection(gi, multiplicity = T, remove.type = F)
     vcs <- sapply(gi.l,vcount)
     gi <- gi.l[[ which.max(vcs) ]]
     V(gi)$type <- unlist(V(gi)$type)
     V(gi)$name <- unlist(V(gi)$name)
+    is.bi <- is.bipartite.safe(gi)
   }
+  
+  acquirer <- which(V(gi)$name==acquirer.name)
+  target   <- which(V(gi)$name==target.name)
 
+  if (length(acquirer)==0 | length(target)==0) {
+    stop(sprintf('has acquirer=%s; has target=%s', length(acquirer)>0, length(target)>0))
+  }
+  
   vnamemap <- names(V(gi))
   vmap <- as.integer(V(gi))
   
-  revord <- which(vnamemap==target) < which(vnamemap==acquirer)
+  revord <- which(vnamemap==target.name) < which(vnamemap==acquirer.name)
   comb.func <- ifelse(revord, 'last', 'first')
   
-  vmap[vnamemap==target] <- vmap[vnamemap==acquirer]
+  vmap[vnamemap==target.name] <- vmap[vnamemap==acquirer.name]
   
   vertex.attr.comb <- list(type=ifelse(revord, 'last', 'first'),
                            name=ifelse(revord, 'last', 'first'))
-  edge.attr.comb <- list(weight='sum')
   
+  if (is.bi) {
+    edge.attr.comb <- list(weight=ifelse(revord, 'last', 'first'))
+  } else {
+    edge.attr.comb <- list(weight='sum')
+  }
+
   gi.2 <- igraph::contract.vertices(gi, vmap, vertex.attr.comb = vertex.attr.comb)
   gi.2 <- igraph::simplify(gi.2, remove.multiple = T, remove.loops = T, edge.attr.comb = edge.attr.comb)
   gi.2 <- igraph::induced.subgraph(gi.2, V(gi.2)[igraph::degree(gi.2)>0])
-
+  
   return(gi.2)
 }
 
@@ -199,8 +217,8 @@ df.pow <- function(gx, betas=c(-.3,-.2,-.1,-.01,0))
 
 ## 
 # checks if graph is actually bipartite by `type` attribute
-#   - if only one `type` then not actually bipartite
-#   - if more than one `type` then is biparite
+#   - if only one `type` then not functionally bipartite
+#   - if more than one `type` then is functionally biparite
 ##
 is.bipartite.safe <- function(g)
 {
@@ -313,6 +331,19 @@ getAdjacencyMatrix <- function(g, proj.max=T) {
   return(adjm)
 }
 
+##
+#
+##
+getGraphProjection <- function(g, max.proj=T, remove.type=T)
+{
+  if (!is.bipartite.safe(g))
+    return(g)
+  g2.l <- bipartite.projection(g, multiplicity = T, remove.type = remove.type)
+  vcs <- sapply(g2.l,vcount)
+  which.proj <- ifelse(max.proj, which.max, which.min)
+  g2 <- g2.l[[ which.proj(vcs) ]]
+  return(g2)
+}
 
 ## 
 # Get vertex IDs 
@@ -322,12 +353,7 @@ getMaxProjNames <- function(gx)
 {
   if (! 'name' %in% igraph::list.vertex.attributes(gx))
     stop('gx must have vertex name attribute')
-  if(!is.bipartite.safe(gx)) {
-    return(V(gx)$name)
-  }
-  g2.l <- bipartite.projection(gx, multiplicity = T, remove.type = F)
-  vcs <- sapply(g2.l,vcount)
-  g2 <- g2.l[[ which.max(vcs) ]]
+  g2 <- getGraphProjection(gx)
   return(V(g2)$name)
 }
 
@@ -343,7 +369,7 @@ getMaxProjNames <- function(gx)
 #   return(length(which(adjm[focal,] > 1)))
 # }
 
-mmcEdgeSum <- function(g, name.remove=T) {
+getMmcEdgeSum <- function(g, name.remove=T) {
   if ( ! 'weight' %in% igraph::list.edge.attributes(g)) 
     stop('g must have edge weights')
   adj <- getAdjacencyMatrix(g, T)
@@ -353,7 +379,7 @@ mmcEdgeSum <- function(g, name.remove=T) {
   return(sums)
 }
 
-mmcEdgeCount <- function(g, name.remove=T) {
+getMmcEdgeCount <- function(g, name.remove=T) {
   if ( ! 'weight' %in% igraph::list.edge.attributes(g)) 
     stop('g must have edge weights')
   adj <- getAdjacencyMatrix(g, T)
@@ -363,23 +389,81 @@ mmcEdgeCount <- function(g, name.remove=T) {
   return(counts)
 }
 
-maxCliqueSize <- function(g, vid, min=3)
+getMaxMmcCliqueSize <- function(g, vid, min=3)
 {
   cls <- igraph::cliques(g, min = min)
+  if (length(cls)==0)
+    return(0)
   idx <- which(sapply(cls,function(x) vid %in% x))
   return(max(sapply(cls[idx], length)))
 }
 
+
+
 ##
 #
 ##
-getMmcTargetDataframe <- function(gx.m, vid.a)
+# getMmcTargetDataframe <- function(gx.m, vid.a, is.ego=FALSE)
+# {
+#   if (is.ego) {
+#     gx.m <- igraph::make_ego_graph(gx.m, 1, vid.a)[[1]]  
+#     vid.a <- which(as.character(V(gx.m)$name) == as.character(vid.a))
+#   }
+#   return(data.frame(
+#     name=unlist(V(gx.m)$name), 
+#     ##
+#     sum=mmcEdgeSum(gx.m)[vid.a], ## sum of mmc
+#     degree=mmcEdgeCount(gx.m)[vid.a],  ## number of mmc competitiors 
+#     ##
+#     clust=igraph::transitivity(gx.m, type = 'global'),
+#     closeness=unname(igraph::closeness(gx.m, vid.a)),
+#     eigen=unname(igraph::eigen_centrality(gx.m)$vector[vid.a]),
+#     pow.n1=unname(igraph::power_centrality(gx.m, vid.a, exponent = -0.1)),
+#     pow.n3=unname(igraph::power_centrality(gx.m, vid.a, exponent = -0.3)),
+#     eccen=unname(igraph::eccentricity(gx.m, vid.a)),
+#     ##
+#     central.clos=igraph::centr_clo(gx.m)$centralization / igraph::centr_clo_tmax(gx.m),
+#     central.eign=igraph::centr_eigen(gx.m)$centralization / igraph::centr_eigen_tmax(gx.m),
+#     central.betw=igraph::centr_betw(gx.m)$centralization / igraph::centr_betw_tmax(gx.m),
+#     central.degr=igraph::centr_degree(gx.m)$centralization / igraph::centr_degree_tmax(gx.m),
+#     ##
+#     subgraph=unname(igraph::subgraph.centrality(gx.m)[vid.a]),
+#     density=igraph::graph.density(gx.m), 
+#     constraint=unname(igraph::constraint(gx.m, vid.a)),
+#     max.clique=maxCliqueSize(gx.m, vid.a),
+#     ##
+#     stringsAsFactors = F
+#   ))
+# }
+
+##
+#
+##
+getMmcDf <- function(gx.m, vert.name, ego.order=NA, proj.uni=FALSE)
 {
-  gx.m.ego <- igraph::make_ego_graph(gx.m, 1, vid.a)[[1]]
-  return(data.frame(
-    name=unlist(V(gx.m)$name), 
-    sum=mmcEdgeSum(gx.m)[vid.a], ## sum of mmc
-    degree=mmcEdgeCount(gx.m)[vid.a],  ## number of mmc competitiors 
+  vid.a <- which(V(gx.m)$name==vert.name)
+  if (length(vid.a)==0) 
+    stop('vert.name not in graph gx.m')
+  if (proj.uni) {
+    gx.m <- getGraphProjection(gx.m)
+    vid.a <- which(V(gx.m)$name==vert.name)
+  }
+  if (!is.na(ego.order) & ego.order >= 1) {
+    ord <- ifelse(is.bipartite.safe(gx.m), 2*ego.order, 1*ego.order)  ## bipartite twice distance
+    gx.m <- igraph::make_ego_graph(gx.m, ord, vid.a)[[1]]  
+    vid.a <- which(V(gx.m)$name == vert.name)
+  }
+  is.bi <- is.bipartite.safe(gx.m)
+  df <- data.frame(
+    name=unlist(V(gx.m)$name[vid.a]), 
+    is.bi=is.bi,
+    v=vcount(gx.m),
+    e=ecount(gx.m),
+    ##
+    sum=ifelse(is.bi, NA, getMmcEdgeSum(gx.m)),
+    degree=ifelse(is.bi, NA, getMmcEdgeCount(gx.m)),
+    max.clique=ifelse(is.bi, NA, getMaxMmcCliqueSize(gx.m, vid.a)),
+    ##
     clust=igraph::transitivity(gx.m, type = 'global'),
     closeness=unname(igraph::closeness(gx.m, vid.a)),
     eigen=unname(igraph::eigen_centrality(gx.m)$vector[vid.a]),
@@ -395,14 +479,45 @@ getMmcTargetDataframe <- function(gx.m, vid.a)
     subgraph=unname(igraph::subgraph.centrality(gx.m)[vid.a]),
     density=igraph::graph.density(gx.m), 
     constraint=unname(igraph::constraint(gx.m, vid.a)),
+    ##
+    stringsAsFactors = F
+  )
+  return(df)
+}
+
+##
+#
+##
+getMmcAcquirerDf <- function(gx.m, vert.name, is.ego=FALSE)
+{
+  vid.a <- which(V(gx.m)$name==vert.name)
+  if (is.ego) {
+    ord <- ifelse(is.bipartite.safe(gx.m), 2, 1)  ## 
+    gx.m <- igraph::make_ego_graph(gx.m, ord, vid.a)[[1]]  
+    vid.a <- which(as.character(V(gx.m)$name) == as.character(vid.a))
+  }
+  return(data.frame(
+    name=unlist(V(gx.m)$name[vid.a]), 
+    ## 
+    sum=mmcEdgeSum(gx.m)[vid.a], ## sum of mmc
+    degree=mmcEdgeCount(gx.m)[vid.a],  ## number of mmc competitiors
     max.clique=maxCliqueSize(gx.m, vid.a),
     ##
-    ego.density=igraph::graph.density(gx.m.ego),  
-    ego.closeness=unname(igraph::closeness(gx.m.ego, vid.a)),
-    ego.eigen=unname(igraph::eigen_centrality(gx.m.ego)$vector[vid.a]),
-    ego.pow.n1=unname(igraph::power_centrality(gx.m.ego, vid.a, exponent = -0.1)),
-    ego.pow.n3=unname(igraph::power_centrality(gx.m.ego, vid.a, exponent = -0.3)),
-    ego.eccen=unname(igraph::eccentricity(gx.m.ego, vid.a)),
+    clust=igraph::transitivity(gx.m, type = 'global'),
+    closeness=unname(igraph::closeness(gx.m, vid.a)),
+    eigen=unname(igraph::eigen_centrality(gx.m)$vector[vid.a]),
+    pow.n1=unname(igraph::power_centrality(gx.m, vid.a, exponent = -0.1)),
+    pow.n3=unname(igraph::power_centrality(gx.m, vid.a, exponent = -0.3)),
+    eccen=unname(igraph::eccentricity(gx.m, vid.a)),
+    ##
+    central.clos=igraph::centr_clo(gx.m)$centralization / igraph::centr_clo_tmax(gx.m),
+    central.eign=igraph::centr_eigen(gx.m)$centralization / igraph::centr_eigen_tmax(gx.m),
+    central.betw=igraph::centr_betw(gx.m)$centralization / igraph::centr_betw_tmax(gx.m),
+    central.degr=igraph::centr_degree(gx.m)$centralization / igraph::centr_degree_tmax(gx.m),
+    ##
+    subgraph=unname(igraph::subgraph.centrality(gx.m)[vid.a]),
+    density=igraph::graph.density(gx.m), 
+    constraint=unname(igraph::constraint(gx.m, vid.a)),
     ##
     stringsAsFactors = F
   ))
@@ -461,7 +576,9 @@ gx2 <- sample_bipartite(c2$m,c2$f,'gnp',.72)
 V(gx2)$name <- c(LETTERS[(c1$m+1):(c1$m+c2$m)], (c1$f+1):(c1$f+c2$f))
 E(gx2)$weight <- 1
 
+## COMBINE
 gx <- bipartiteCombine(gx1, gx2)
+
 # .vt <- unique(rbind(as_data_frame(gx1,'vertices'),as_data_frame(gx2,'vertices')))
 # nz <- names(.vt)
 # idx.name <- which(nz=='name')
@@ -542,16 +659,19 @@ for (vid.t in vid.ts)
 focal.firm <- 4
 focal.name <- as.character(focal.firm)
 
-## MMC subgraph 
-gx.m <- mmcSubgraph(gx.ff, focal.firm)
-gx.m.ego <- igraph::make_ego_graph(gx.m,1,focal.firm)[[1]]
+## vert names for either uni or bipartite
+gnames <- getMaxProjNames(gx)
 
-## target Choice dataframe
-acq.t <- getMmcTargetDataframe(gx.m, focal.firm)
-diff.t <- acq.t
+df0.a   <- getMmcDf(gx, focal.name, ego.order=NA)
+df0.a.e <- getMmcDf(gx, focal.name, ego.order=1)
 
+df.a.diff <- data.frame()
+df.a.e.diff <- data.frame()
 
-for (i in getMaxProjNames(gx)) {
+meta.attrs <- c('name','targ','is.bi','v','e')
+mmc.attrs <- names(df0.a)[which( ! names(df0.a) %in% meta.attrs)]
+
+for (i in gnames) {
   
   target.firm <- as.numeric(i)
   target.name <- as.character(i)
@@ -559,48 +679,81 @@ for (i in getMaxProjNames(gx)) {
   if (target.firm != focal.firm) {
     
     ## NODE COLLAPSE BIPARTITE GRAPH
-    gx2.ff <- biAcq(gx, focal.firm, target.firm, project = T)
+    gx2 <- biAcq(gx, focal.name, target.name, project = F)
+    # plot2(gx2)
+    
+    V(gx2)$type <- unlist(V(gx2)$type)
+    V(gx2)$name <- unlist(V(gx2)$name)
+    
+    dfi.a   <- getMmcDf(gx2, focal.name, ego.order=NA)
+    dfi.a.e <- getMmcDf(gx2, focal.name, ego.order=1)
+    
+    ## make diff df
+    dfi.a.diff   <- dfi.a
+    dfi.a.e.diff <- dfi.a.e
 
-    V(gx2.ff)$type <- unlist(V(gx2.ff)$type)
-    V(gx2.ff)$name <- unlist(V(gx2.ff)$name)
+    ## set diff values
+    dfi.a.diff[,mmc.attrs]   <- dfi.a[,mmc.attrs] - df0.a[,mmc.attrs]
+    dfi.a.e.diff[,mmc.attrs] <- dfi.a.e[,mmc.attrs] - df0.a.e[,mmc.attrs]
     
-    ## ADJACENCY
-    adjmat <- getAdjacencyMatrix(gx2.ff)
-    ## SUM MMC
-    ffidx <- which(V(gx2.ff)$name==focal.firm)
-    mmcidx <- which(adjmat[, ffidx] > 1)
-    mmc.dyads <- length(adjmat[mmcidx, ffidx])
-    mmc.sum <- sum(adjmat[mmcidx, ffidx])
-    ## Exposure centrality
-    exposure <- exposure.df[which(exposure.df$name==focal.firm), 'after']
-    exposure.diff <- exposure.df[which(exposure.df$name==focal.firm), 'delta']
+    ## add target
+    dfi.a.diff$targ   <- target.name
+    dfi.a.e.diff$targ <- target.name
+    
+    ## append
+    df.a.diff <- rbind(df.a.diff, dfi.a.diff)
+    df.a.e.diff <- rbind(df.a.e.diff, dfi.a.e.diff)
+    
     ## dataframe
-    idx <- which(as.character(acq.df$name)==target.firm)
+    # idx <- which(as.character(acq.df$name)==target.firm)
     
-    acq.df$mmc.dyads[idx] <- mmc.dyads
-    acq.df$mmc.sum[idx] <- mmc.sum
-    acq.df$exposure[idx] <- exposure
-    acq.df$diff.mmc.dyads[idx] <- mmc.dyads - mmc.dyads0
-    acq.df$diff.mmc.sum[idx] <- mmc.sum - mmc.sum0
-    acq.df$diff.exposure[idx] <- exposure.diff
     
-    ## PLOT
-    vshapes <- sapply(V(gx2.ff)$type,function(x)ifelse(x,'circle','square'))
-    pngfile <- sprintf("%s\\firm_firm_mmc_acquisition%s_1.png",dirname, target.firm)
-    png(pngfile, width = 5, height = 5, units = 'in', res = 250)
-    par(mar=c(.1,.1,.1,.1))
-    plot2(gx2.ff, 
-          layout=layout.fruchterman.reingold,
-          vertex.shape=vshapes,
-          vertex.size= 18, ##1.1*mapTo(centPow(gx2.ff, beta = -.1)),
-          focal.firm=focal.firm
-    )
-    dev.off()
+    # ## PLOT
+    # vshapes <- sapply(V(gx2.ff)$type,function(x)ifelse(x,'circle','square'))
+    # pngfile <- sprintf("%s\\firm_firm_mmc_acquisition%s_1.png",dirname, target.firm)
+    # png(pngfile, width = 5, height = 5, units = 'in', res = 250)
+    #   par(mar=c(.1,.1,.1,.1))
+    #   plot2(gx2.ff, 
+    #         layout=layout.fruchterman.reingold,
+    #         vertex.shape=vshapes,
+    #         vertex.size= 18, ##1.1*mapTo(centPow(gx2.ff, beta = -.1)),
+    #         focal.firm=focal.firm
+    #   )
+    # dev.off()
   }
+  
 }
-print(acq.df)
-csvfilename <- sprintf("%s\\acquisition_mmc_synergies_structure_position_compare_M%s_N%s.csv", dirname, n1, n2)
-write.csv(acq.df, file = csvfilename)
+
+plot2(gx)
+
+sepattrs <- c()
+for (attr in mmc.attrs) {
+  if (length(unique(df.a.diff[,attr] < 0)) > 1)
+    sepattrs <- c(sepattrs, attr)
+}
+cat(sprintf('all separating attrs +/-:\n  %s\n\n', paste(sepattrs, collapse = ", ")))
+View(df.a.diff[,c(meta.attrs,sepattrs)])
+
+sepattrs <- c()
+for (attr in mmc.attrs) {
+  if (length(unique(df.a.e.diff[,attr] < 0)) > 1)
+    sepattrs <- c(sepattrs, attr)
+}
+cat(sprintf('EGO separating attrs +/-:\n  %s\n\n', paste(sepattrs, collapse = ", ")))
+View(df.a.e.diff[,c(meta.attrs,sepattrs)])
+
+
+print(df.a.diff)
+csvfilename <- sprintf("%s\\acquisition_mmc_synergies_structure_position_compare_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
+write.csv(df.a.diff, file = csvfilename)
+
+print(df.a.e.diff)
+csvfilename <- sprintf("%s\\acquisition_mmc_synergies_structure_position_compare_EGO_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
+write.csv(df.a.e.diff, file = csvfilename)
+
+
+
+
 
 
 
