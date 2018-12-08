@@ -321,6 +321,7 @@ mmcSubgraph <- function(g, focal=NA) {
     #        THEN ONLY REMOVE NONMMC-NODES
     ##
     uvids <- unique(c(edf[,1],edf[,2]))
+    uvnames <- V(g.sub.proj)$name[uvids]
     ##
     bi.edf <- edf
     bi.eids <- c()
