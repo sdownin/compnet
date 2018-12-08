@@ -60,7 +60,7 @@ plot2 <- function(gx, layout=layout.fruchterman.reingold, vertex.size=15, focal.
        vertex.label.font=fonts,  # Font: 1 plain, 2 bold, 3, italic, 4 bold italic, 5 symbol
        vertex.label.color=lcolors,
        edge.color = "darkgrey", 
-       edge.width = E(gx)$weight^2,
+       edge.width = 1 + 2 * (E(gx)$weight-1),
        edge.labels = NA, 
        edge.lty=1, 
        margin=0,
@@ -137,7 +137,7 @@ biAcq <- function(gi, acquirer.name, target.name, project=F, verbose=T)
   
   acquirer <- which(V(gi)$name==acquirer.name)
   target   <- which(V(gi)$name==target.name)
-
+  
   if (length(acquirer)==0 | length(target)==0) {
     stop(sprintf('has acquirer=%s; has target=%s', length(acquirer)>0, length(target)>0))
   }
@@ -158,7 +158,7 @@ biAcq <- function(gi, acquirer.name, target.name, project=F, verbose=T)
   } else {
     edge.attr.comb <- list(weight='sum')
   }
-
+  
   gi.2 <- igraph::contract.vertices(gi, vmap, vertex.attr.comb = vertex.attr.comb)
   gi.2 <- igraph::simplify(gi.2, remove.multiple = T, remove.loops = T, edge.attr.comb = edge.attr.comb)
   gi.2 <- igraph::induced.subgraph(gi.2, V(gi.2)[igraph::degree(gi.2)>0])
@@ -312,7 +312,25 @@ mmcSubgraph <- function(g, focal=NA) {
   
   ## DROP NON-MMC EDGES
   if (is.bi) {
-    edges <- 
+    g.sub.proj <- getGraphProjection(g.sub)
+    eids <- which( E(g.sub.proj)$weight > 1 )
+    edf <- as.data.frame(igraph::get.edges(g.sub.proj, eids))
+    ##
+    ## TODO: FIX FOR BIPARTITE NETWORKS
+    ##       IF CANNOT REMOVE NONMMC-BIPARTITE EDGES SEPARATE FROM NODES
+    #        THEN ONLY REMOVE NONMMC-NODES
+    ##
+    uvids <- unique(c(edf[,1],edf[,2]))
+    ##
+    bi.edf <- edf
+    bi.eids <- c()
+    for (i in 1:nrow(edf)) {
+      name1 <- V(g.sub.proj)$name[ edf[i,1] ]
+      name2 <- V(g.sub.proj)$name[ edf[i,2] ]
+      bi.edf[i,1] <- which(V(g.sub)$name == name1)
+      bi.edf[i,2] <- which(V(g.sub)$name == name2)
+      bi.eids <- c(bi.eids, igraph::get.edge.ids(g.sub, c(bi.edf[i,1], bi.edf[i,2])))
+    }
   } else {
     edges <- which(E(g.sub)$weight <= 1)
   }
@@ -578,17 +596,17 @@ focal.firm <- '4'
 
 ## CREATE RANDOM BIPARTITE FIRM_MARKET
 set.seed(1133241)  #1133241
-gx1 <- sample_bipartite(c1$m,c1$f,'gnp',.62)
-V(gx1)$name <- c(LETTERS[1:c1$m], 1:c1$f)
-E(gx1)$weight <- 1
+gx_1 <- sample_bipartite(c1$m,c1$f,'gnp',.62)
+V(gx_1)$name <- c(LETTERS[1:c1$m], 1:c1$f)
+E(gx_1)$weight <- 1
 
 set.seed(11341)  #1133241
-gx2 <- sample_bipartite(c2$m,c2$f,'gnp',.72)
-V(gx2)$name <- c(LETTERS[(c1$m+1):(c1$m+c2$m)], (c1$f+1):(c1$f+c2$f))
-E(gx2)$weight <- 1
+gx_2 <- sample_bipartite(c2$m,c2$f,'gnp',.72)
+V(gx_2)$name <- c(LETTERS[(c1$m+1):(c1$m+c2$m)], (c1$f+1):(c1$f+c2$f))
+E(gx_2)$weight <- 1
 
 ## COMBINE
-gx <- bipartiteCombine(gx1, gx2)
+gx <- bipartiteCombine(gx_1, gx_2)
 
 # .vt <- unique(rbind(as_data_frame(gx1,'vertices'),as_data_frame(gx2,'vertices')))
 # nz <- names(.vt)
@@ -702,7 +720,7 @@ for (i in gnames) {
     ## make diff df
     dfi.a.diff   <- dfi.a
     dfi.a.e.diff <- dfi.a.e
-
+    
     ## set diff values
     dfi.a.diff[,mmc.attrs]   <- dfi.a[,mmc.attrs] - df0.a[,mmc.attrs]
     dfi.a.e.diff[,mmc.attrs] <- dfi.a.e[,mmc.attrs] - df0.a.e[,mmc.attrs]
