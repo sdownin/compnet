@@ -130,8 +130,6 @@ biAcq <- function(gi, acquirer.name, target.name, project=F, verbose=T)
     gi.l <- bipartite.projection(gi, multiplicity = T, remove.type = F)
     vcs <- sapply(gi.l,vcount)
     gi <- gi.l[[ which.max(vcs) ]]
-    V(gi)$type <- unlist(V(gi)$type)
-    V(gi)$name <- unlist(V(gi)$name)
     is.bi <- is.bipartite.safe(gi)
   }
   
@@ -307,38 +305,80 @@ biMmcAdjCheck <- function(i, j)
 #   - subsets to firms with MMC relations to another firm
 #   - removes non-MMC edges (weight <= 1)
 ##
-mmcSubgraph <- function(g, focal.name=NA) {
+mmcSubgraph <- function(g, focal.name=NA, remove.isolates=F) 
+{
   is.bi <- is.bipartite.safe(g)
   focal.firm <- which(V(g)$name == focal.name)
       
-  if (length(focal.firm)>0) {
-    ## MMC VERTEX SUBGRAPH if `focal` is set
-    vids <- which.mmc(g, focal.firm, keep.focal=T)
-    g.sub <- igraph::induced.subgraph(g, vids = vids)
-  } else {
-    g.sub <- g
-  }
+  # if (length(focal.firm)>0) {
+  #   ## MMC VERTEX SUBGRAPH if `focal` is set
+  #   vids <- which.mmc(g, focal.firm, keep.focal=T)
+  #   g.sub <- igraph::induced.subgraph(g, vids = vids)
+  # } else {
+  #   g.sub <- g
+  # }
+  g.sub <- g
   
   ## DROP NON-MMC EDGES
   if (is.bi) {
-    adjm <- getAdjacencyMatrix(g.sub, proj.max = T)
+    # adjm <- getAdjacencyMatrix(g.sub, proj.max = T)
     firmnames <- getMaxProjNames(g.sub)
     vids <- which(V(g.sub)$name %in% firmnames)
-    mids <- which( ! V(g.sub)$name %in% firmnames)
+    # mids <- which( ! V(g.sub)$name %in% firmnames)
     bic <- igraph::bibcoupling(g.sub)  ## shared neighbors (## possibly large matrix, need to subject to only firm vids)
-    nmmc <- which(bic == 1, arr.ind=T) ## 2-col matrix of (row,col) id tuples for non-mmc elements 
-    nmmc <- nmmc[which(nmmc[,1] %in% vids & nmmc[,2] %in% vids), ]
-    edges <- c()
-    for (i in 1:nrow(nmmc)) {
-      ps <- igraph::all_shortest_paths(g.sub, nmmc[i,1], nmmc[i,2])$res
-      for (p in ps) {
-        if (length(p)==3) {  ## [firm]--[market]--[firm] 2-path
-          idx <- as.integer(p)
-          edges <- c(edges, c(idx[1],idx[2]),c(idx[2],idx[3]))
-        }
+    
+    ## firm-firm----------------
+    
+    ## 1. F-F non-MMC dyads
+    ffno <- which(bic == 1, arr.ind=T) ## 2-col matrix of (row,col) id tuples for non-mmc elements 
+    ffno <- ffno[which(ffno[,1] %in% vids & ffno[,2] %in% vids), ]
+    
+    ## 2. F-M-F 3-paths for F-F non-MMC dyads
+    ffnopth <- lapply(1:nrow(ffno), function(i) {
+      tmp <- igraph::all_shortest_paths(g.sub, ffno[i,1], ffno[i,2])$res 
+      x <- igraph::all_shortest_paths(g.sub, ffno[i,1], ffno[i,2])$res
+      ls <- sapply(x, length)
+      idx <- which(ls==3)
+      if (length(idx)>1) return(NA)
+      y <- x[[idx[1]]][2]
+      return(ifelse(!is.null(y), y, NA))
+    })
+    
+    ## MMC firm-firm dyads
+    ffmmc <- which(bic > 1, arr.ind=T) ## 
+    ffmmc <- ffmmc[which(ffmmc[,1] %in% vids & ffmmc[,2] %in% vids), ]
+    
+    ## firm-market--------------
+    
+    outer(vids,vids,Vectorize(function(i,j){
+      x <- igraph::all_shortest_paths(g.sub, i, j)$res
+      ls <- sapply(x, length)
+      idx <- which(ls==3)
+      if (length(idx)>1) return(NA)
+      y <- x[[idx[1]]][2]
+      return(ifelse(!is.null(y), y, NA))
+    }))
+    
+    
+    # ###
+    # bnmids <- sort(unique(c(nmmc[,1],nmmc[,2])))
+    # sapply(bnmids,function(i){
+    #   ls <- sapply(igraph::all_shortest_paths(g.sub, i, vids[ ! vids %in% i])$res, length)
+    #   return(length(ls[ls==3]))
+    # })
+    # ###
+    edge.l <- list()
+    for (i in 1:nrow(ffmmc)) {
+      ps <- igraph::all_shortest_paths(g.sub, ffmmc[i,1], ffmmc[i,2])$res
+      if (length(ps)==1) {
+        pv <- as.integer(ps[[1]])
+        chk1 <- length(which( (mmc[,1]==pv[1] & mmc[,2]==pv[2]) | (mmc[,1]==pv[2] & mmc[,2]==pv[1]) )) == 0
+        chk2 <- length(which( (mmc[,1]==pv[2] & mmc[,2]==pv[3]) | (mmc[,1]==pv[3] & mmc[,2]==pv[2]) )) == 0
+        if (chk1) edge.l <- c(edge.l, list(c(idx[1],idx[2])))
+        if (chk2) edge.l <- c(edge.l, list(c(idx[2],idx[3])))
       }
     }
-    eids <- igraph::get.edge.ids(g.sub, vp = edges, directed = F) ## edge ids of non-mmc firm
+    eids <- sort(unique(igraph::get.edge.ids(g.sub, vp = edges, directed = F))) ## edge ids of non-mmc firm
   } else {
     eids <- which(E(g.sub)$weight <= 1)
   }
@@ -353,6 +393,67 @@ mmcSubgraph <- function(g, focal.name=NA) {
   
   return(g.sub)
 }
+
+# mmcSubgraphDEBUG <- function(g, focal.name=NA, remove.isolates=F) 
+# {
+#   is.bi <- is.bipartite.safe(g)
+#   focal.firm <- which(V(g)$name == focal.name)
+#   
+#   # if (length(focal.firm)>0) {
+#   #   ## MMC VERTEX SUBGRAPH if `focal` is set
+#   #   vids <- which.mmc(g, focal.firm, keep.focal=T)
+#   #   g.sub <- igraph::induced.subgraph(g, vids = vids)
+#   # } else {
+#   #   g.sub <- g
+#   # }
+#   g.sub <- g
+#   
+#   ## DROP NON-MMC EDGES
+#   if (is.bi) {
+#     # adjm <- getAdjacencyMatrix(g.sub, proj.max = T)
+#     firmnames <- getMaxProjNames(g.sub)
+#     vids <- which(V(g.sub)$name %in% firmnames)
+#     # mids <- which( ! V(g.sub)$name %in% firmnames)
+#     bic <- igraph::bibcoupling(g.sub)  ## shared neighbors (## possibly large matrix, need to subject to only firm vids)
+#     ## MMC firm-firm dyads
+#     mmc <- which(bic > 1, arr.ind=T) ## 
+#     mmc <- mmc[which(mmc[,1] %in% vids & mmc[,2] %in% vids), ]
+#     ## non-MMC firm-firm dyads
+#     nmmc <- which(bic == 1, arr.ind=T) ## 2-col matrix of (row,col) id tuples for non-mmc elements 
+#     nmmc <- nmmc[which(nmmc[,1] %in% vids & nmmc[,2] %in% vids), ]
+#     # ###
+#     # bnmids <- sort(unique(c(nmmc[,1],nmmc[,2])))
+#     # sapply(bnmids,function(i){
+#     #   ls <- sapply(igraph::all_shortest_paths(g.sub, i, vids[ ! vids %in% i])$res, length)
+#     #   return(length(ls[ls==3]))
+#     # })
+#     # ###
+#     edge.l <- list()
+#     for (i in 1:nrow(nmmc)) {
+#       ps <- igraph::all_shortest_paths(g.sub, nmmc[i,1], nmmc[i,2])$res
+#       if (length(ps)==1) {
+#         pv <- as.integer(ps[[1]])
+#         chk1 <- length(which( (mmc[,1]==pv[1] & mmc[,2]==pv[2]) | (mmc[,1]==pv[2] & mmc[,2]==pv[1]) )) == 0
+#         chk2 <- length(which( (mmc[,1]==pv[2] & mmc[,2]==pv[3]) | (mmc[,1]==pv[3] & mmc[,2]==pv[2]) )) == 0
+#         if (chk1) edge.l <- c(edge.l, list(c(idx[1],idx[2])))
+#         if (chk2) edge.l <- c(edge.l, list(c(idx[2],idx[3])))
+#       }
+#     }
+#     eids <- sort(unique(igraph::get.edge.ids(g.sub, vp = edges, directed = F))) ## edge ids of non-mmc firm
+#   } else {
+#     eids <- which(E(g.sub)$weight <= 1)
+#   }
+#   
+#   if (length(eids) > 0) {
+#     g.sub <- igraph::delete.edges(g.sub, eids)
+#   }
+#   
+#   if (remove.isolates) {
+#     g.sub <- igraph::induced.subgraph(g.sub, vids = which(igraph::degree(g.sub)==0))
+#   }
+#   
+#   return(g.sub)
+# }
 
 ##
 # Gets adjacency matrix -- for either Bipartite or unipartite graphs 
@@ -721,14 +822,11 @@ for (i in gnames) {
     
     ## NODE COLLAPSE BIPARTITE GRAPH
     gx2 <- biAcq(gx, focal.name, target.name, project = F)
-    # plot2(gx2)
-    
-    V(gx2)$type <- unlist(V(gx2)$type)
-    V(gx2)$name <- unlist(V(gx2)$name)
-    
+    plot2(gx2)
+
     ## MMC Subgraph
-    gx2.sub <- mmcSubgraph(gx2)
-    gx2.sub.e <- mmcSubgraph(gx2, focal = focal.name)
+    gx2.sub <- mmcSubgraph(gx2, remove.isolates=T)
+    gx2.sub.e <- mmcSubgraph(gx2, focal = focal.name, remove.isolates=T)
     
     ## Get MMC metrics
     dfi.a   <- getMmcDf(gx2.sub, focal.name)

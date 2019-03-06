@@ -1,3 +1,4 @@
+
 library(igraph)
 library(Matrix)
 
@@ -130,8 +131,6 @@ biAcq <- function(gi, acquirer.name, target.name, project=F, verbose=T)
     gi.l <- bipartite.projection(gi, multiplicity = T, remove.type = F)
     vcs <- sapply(gi.l,vcount)
     gi <- gi.l[[ which.max(vcs) ]]
-    V(gi)$type <- unlist(V(gi)$type)
-    V(gi)$name <- unlist(V(gi)$name)
     is.bi <- is.bipartite.safe(gi)
   }
   
@@ -150,11 +149,11 @@ biAcq <- function(gi, acquirer.name, target.name, project=F, verbose=T)
   
   vmap[vnamemap==target.name] <- vmap[vnamemap==acquirer.name]
   
-  vertex.attr.comb <- list(type=ifelse(revord, 'last', 'first'),
-                           name=ifelse(revord, 'last', 'first'))
+  vertex.attr.comb <- list(type=function(x)ifelse(revord, x[length(x)], x[1]),
+                           name=function(x)ifelse(revord, x[length(x)], x[1]))
   
   if (is.bi) {
-    edge.attr.comb <- list(weight=ifelse(revord, 'last', 'first'))
+    edge.attr.comb <- list(weight=function(x)ifelse(revord, x[length(x)], x[1]))
   } else {
     edge.attr.comb <- list(weight='sum')
   }
@@ -297,9 +296,73 @@ which.mmc.bipartite <- function(g, focal, keep.focal=F, proj.max=T) {
 ##
 #
 ##
-biMmcAdjCheck <- function(i, j)
+getNotMmcBipartiteEdgeIds <- function(g.sub)
 {
+  # adjm <- getAdjacencyMatrix(g.sub, proj.max = T)
+  firmnames <- getMaxProjNames(g.sub)
+  vids <- which(V(g.sub)$name %in% firmnames)
+  # mids <- which( ! V(g.sub)$name %in% firmnames)
+  bic <- igraph::bibcoupling(g.sub)  ## shared neighbors (## possibly large matrix, need to subject to only firm vids)
   
+  ##------------------------------
+  ##  NOT MMC eids
+  ##------------------------------
+  ## 1. F-F non-MMC dyads
+  ffno <- which(bic == 1, arr.ind=T) ## 2-col matrix of (row,col) id tuples for non-mmc elements 
+  ffno <- ffno[which(ffno[,1] %in% vids & ffno[,2] %in% vids), ]
+  
+  ## 2. F-M-F No-MMC 3-paths: cache as (F,M),(M,F) tuples
+  fm.no <- c()  ## Firm-Market-Firm No-MMC paths: saved as (F1-M, M-F2, ...)
+  urow1 <- unique(ffno[,1])
+  cat(' fetching Non-MMC bipartite dyads...\n')
+  for (i in 1:length(urow1)) {
+    if (i %% 50 == 0) cat(sprintf('  %s (%.2f%s)\n',i,100*i/length(urow1),'%'))
+    r1i.r2js <- ffno[which(ffno[,1] == urow1[i]),2]
+    xi.paths <- igraph::all_shortest_paths(g.sub, urow1[i], r1i.r2js)$res
+    ls <- sapply(xi.paths, length)
+    idx <- which(ls==3)
+    for (j in idx) {
+      x <- as.integer(xi.paths[[j]])
+      fm.no <- c(fm.no, c(x[1],x[2], x[2],x[3]))
+    }
+  }
+  cat(' done.\n')
+  ## 3. save bipartite F-M edge IDs for non-MMC dyads
+  eid.no <- unique(igraph::get.edge.ids(g.sub, vp = fm.no, directed = F, error = F, multi = F))
+  
+  ##------------------------------
+  ##  MMC eids  (filter out)
+  ##-------------------------------
+  ## 4. MMC firm-firm dyads
+  ff.mmc <- which(bic > 1, arr.ind=T) ## 
+  ff.mmc <- ff.mmc[which(ff.mmc[,1] %in% vids & ff.mmc[,2] %in% vids), ]
+  
+  ## 5. F-M-F MMC 3-paths
+  fm.mmc <- integer()  ##  cache MMC tuples (F,M),(M,F),(...)
+  urow1 <- unique(ff.mmc[,1])
+  cat(' fetching MMC bipartite dyads...\n')
+  for (i in 1:length(urow1)) {
+    if (i %% 50 == 0) cat(sprintf('  %s (%.2f%s)\n',i,100*i/length(urow1),'%'))
+    r1i.r2js <- ff.mmc[which(ff.mmc[,1] == urow1[i]),2]
+    xi.paths <- igraph::all_shortest_paths(g.sub, urow1[i], r1i.r2js)$res
+    ls <- sapply(xi.paths, length)
+    idx <- which(ls==3)
+    for (j in idx) {
+      x <- as.integer(xi.paths[[j]])
+      fm.mmc <- c(fm.mmc, c(x[1],x[2], x[2],x[3]))
+    }
+  }
+  cat(' done.\n')
+  ## 6. save bipartite F-M edge IDs for MMC dyads
+  eid.mmc <- unique(igraph::get.edge.ids(g.sub, vp = fm.mmc, directed = F, error = F, multi = F))
+  
+  ##--------------------------------
+  ## Check is Non-MMC and is NOT MMC
+  ##--------------------------------
+  ## 7. filter only the Non-MMC F-M dyads that are not included in any MMC F-M dyads (which comprise MMC F-F dyads)
+  eids <- eid.no[ which( ! eid.no %in% eid.mmc) ]
+  
+  return(eids)
 }
 
 ##
@@ -307,40 +370,27 @@ biMmcAdjCheck <- function(i, j)
 #   - subsets to firms with MMC relations to another firm
 #   - removes non-MMC edges (weight <= 1)
 ##
-mmcSubgraph <- function(g, focal.name=NA) {
+# ## filter to ego-mmc network (?)
+# focal.firm <- which(V(g)$name == focal.name)
+# if (length(focal.firm)>0) {
+#   ## MMC VERTEX SUBGRAPH if `focal` is set
+#   vids <- which.mmc(g, focal.firm, keep.focal=T)
+#   g.sub <- igraph::induced.subgraph(g, vids = vids)
+# } else {
+#   g.sub <- g
+# }
+##
+mmcSubgraph <- function(g, remove.isolates=F) 
+{
   is.bi <- is.bipartite.safe(g)
-  focal.firm <- which(V(g)$name == focal.name)
-      
-  if (length(focal.firm)>0) {
-    ## MMC VERTEX SUBGRAPH if `focal` is set
-    vids <- which.mmc(g, focal.firm, keep.focal=T)
-    g.sub <- igraph::induced.subgraph(g, vids = vids)
-  } else {
-    g.sub <- g
-  }
+
+  g.sub <- g
   
   ## DROP NON-MMC EDGES
-  if (is.bi) {
-    adjm <- getAdjacencyMatrix(g.sub, proj.max = T)
-    firmnames <- getMaxProjNames(g.sub)
-    vids <- which(V(g.sub)$name %in% firmnames)
-    mids <- which( ! V(g.sub)$name %in% firmnames)
-    bic <- igraph::bibcoupling(g.sub)  ## shared neighbors (## possibly large matrix, need to subject to only firm vids)
-    nmmc <- which(bic == 1, arr.ind=T) ## 2-col matrix of (row,col) id tuples for non-mmc elements 
-    nmmc <- nmmc[which(nmmc[,1] %in% vids & nmmc[,2] %in% vids), ]
-    edges <- c()
-    for (i in 1:nrow(nmmc)) {
-      ps <- igraph::all_shortest_paths(g.sub, nmmc[i,1], nmmc[i,2])$res
-      for (p in ps) {
-        if (length(p)==3) {  ## [firm]--[market]--[firm] 2-path
-          idx <- as.integer(p)
-          edges <- c(edges, c(idx[1],idx[2]),c(idx[2],idx[3]))
-        }
-      }
-    }
-    eids <- igraph::get.edge.ids(g.sub, vp = edges, directed = F) ## edge ids of non-mmc firm
-  } else {
-    eids <- which(E(g.sub)$weight <= 1)
+  if (is.bi) { 
+    eids <- getNotMmcBipartiteEdgeIds(g.sub) 
+  } else { 
+    which(E(g.sub)$weight <= 1) 
   }
   
   if (length(eids) > 0) {
@@ -348,11 +398,72 @@ mmcSubgraph <- function(g, focal.name=NA) {
   }
   
   if (remove.isolates) {
-    g.sub <- igraph::induced.subgraph(g.sub, vids = which(igraph::degree(g.sub)==0))
+    g.sub <- igraph::induced.subgraph(g.sub, vids = which(igraph::degree(g.sub)>0) )
   }
   
   return(g.sub)
 }
+
+# mmcSubgraphDEBUG <- function(g, focal.name=NA, remove.isolates=F) 
+# {
+#   is.bi <- is.bipartite.safe(g)
+#   focal.firm <- which(V(g)$name == focal.name)
+#   
+#   # if (length(focal.firm)>0) {
+#   #   ## MMC VERTEX SUBGRAPH if `focal` is set
+#   #   vids <- which.mmc(g, focal.firm, keep.focal=T)
+#   #   g.sub <- igraph::induced.subgraph(g, vids = vids)
+#   # } else {
+#   #   g.sub <- g
+#   # }
+#   g.sub <- g
+#   
+#   ## DROP NON-MMC EDGES
+#   if (is.bi) {
+#     # adjm <- getAdjacencyMatrix(g.sub, proj.max = T)
+#     firmnames <- getMaxProjNames(g.sub)
+#     vids <- which(V(g.sub)$name %in% firmnames)
+#     # mids <- which( ! V(g.sub)$name %in% firmnames)
+#     bic <- igraph::bibcoupling(g.sub)  ## shared neighbors (## possibly large matrix, need to subject to only firm vids)
+#     ## MMC firm-firm dyads
+#     mmc <- which(bic > 1, arr.ind=T) ## 
+#     mmc <- mmc[which(mmc[,1] %in% vids & mmc[,2] %in% vids), ]
+#     ## non-MMC firm-firm dyads
+#     nmmc <- which(bic == 1, arr.ind=T) ## 2-col matrix of (row,col) id tuples for non-mmc elements 
+#     nmmc <- nmmc[which(nmmc[,1] %in% vids & nmmc[,2] %in% vids), ]
+#     # ###
+#     # bnmids <- sort(unique(c(nmmc[,1],nmmc[,2])))
+#     # sapply(bnmids,function(i){
+#     #   ls <- sapply(igraph::all_shortest_paths(g.sub, i, vids[ ! vids %in% i])$res, length)
+#     #   return(length(ls[ls==3]))
+#     # })
+#     # ###
+#     edge.l <- list()
+#     for (i in 1:nrow(nmmc)) {
+#       ps <- igraph::all_shortest_paths(g.sub, nmmc[i,1], nmmc[i,2])$res
+#       if (length(ps)==1) {
+#         pv <- as.integer(ps[[1]])
+#         chk1 <- length(which( (mmc[,1]==pv[1] & mmc[,2]==pv[2]) | (mmc[,1]==pv[2] & mmc[,2]==pv[1]) )) == 0
+#         chk2 <- length(which( (mmc[,1]==pv[2] & mmc[,2]==pv[3]) | (mmc[,1]==pv[3] & mmc[,2]==pv[2]) )) == 0
+#         if (chk1) edge.l <- c(edge.l, list(c(idx[1],idx[2])))
+#         if (chk2) edge.l <- c(edge.l, list(c(idx[2],idx[3])))
+#       }
+#     }
+#     eids <- sort(unique(igraph::get.edge.ids(g.sub, vp = edges, directed = F))) ## edge ids of non-mmc firm
+#   } else {
+#     eids <- which(E(g.sub)$weight <= 1)
+#   }
+#   
+#   if (length(eids) > 0) {
+#     g.sub <- igraph::delete.edges(g.sub, eids)
+#   }
+#   
+#   if (remove.isolates) {
+#     g.sub <- igraph::induced.subgraph(g.sub, vids = which(igraph::degree(g.sub)==0))
+#   }
+#   
+#   return(g.sub)
+# }
 
 ##
 # Gets adjacency matrix -- for either Bipartite or unipartite graphs 
@@ -394,8 +505,10 @@ getMaxProjNames <- function(gx)
 {
   if (! 'name' %in% igraph::list.vertex.attributes(gx))
     stop('gx must have vertex name attribute')
-  g2 <- getGraphProjection(gx)
-  return(V(g2)$name)
+  bps <- igraph::bipartite.projection.size(gx)
+  types <- unique(V(gx)$type)
+  idx <- ifelse(bps$vcount1 > bps$vcount2, 1, 2)
+  return(V(gx)$name[ which(V(gx)$type == types[idx]) ])
 }
 
 # mmcSum <- function(g, focal, proj.max=T) {
@@ -484,26 +597,37 @@ getMmcDf <- function(gx.m, vert.name, ego.order=NA, proj.uni=FALSE)
 {
   vid.a <- which(V(gx.m)$name==vert.name)
   if (length(vid.a)==0) 
-    stop('vert.name not in graph gx.m')
+    stop(sprintf('vert.name `%s` not in graph gx.m',vert.name))
+  
   if (proj.uni) {
     gx.m <- getGraphProjection(gx.m)
     vid.a <- which(V(gx.m)$name==vert.name)
+  } else {
+    .proj.gx.m <- getGraphProjection(gx.m)
+    .proj.vid.a <- which(V(.proj.gx.m)$name==vert.name)
   }
+  
   if (!is.na(ego.order) & ego.order >= 1) {
     ord <- ifelse(is.bipartite.safe(gx.m), 2*ego.order, 1*ego.order)  ## bipartite twice distance
     gx.m <- igraph::make_ego_graph(gx.m, ord, vid.a)[[1]]  
     vid.a <- which(V(gx.m)$name == vert.name)
+    ##
+    ord <- ifelse(is.bipartite.safe(.proj.gx.m), 2*ego.order, 1*ego.order)  ## bipartite twice distance
+    .proj.gx.m <- igraph::make_ego_graph(.proj.gx.m, ord, .proj.vid.a)[[1]]  
+    .proj.vid.a <- which(V(.proj.gx.m)$name == vert.name)
   }
+  
   is.bi <- is.bipartite.safe(gx.m)
+  
   df <- data.frame(
     name=unlist(V(gx.m)$name[vid.a]), 
     is.bi=is.bi,
     v=vcount(gx.m),
     e=ecount(gx.m),
     ##
-    sum=ifelse(is.bi, NA, getMmcEdgeSum(gx.m)),
-    degree=ifelse(is.bi, NA, getMmcEdgeCount(gx.m)),
-    max.clique=ifelse(is.bi, NA, getMaxMmcCliqueSize(gx.m, vid.a)),
+    sum=ifelse(is.bi, getMmcEdgeSum(.proj.gx.m), getMmcEdgeSum(gx.m)),
+    degree=ifelse(is.bi, getMmcEdgeCount(.proj.gx.m), getMmcEdgeCount(gx.m)),
+    max.clique=ifelse(is.bi, getMaxMmcCliqueSize(.proj.gx.m, .proj.vid.a), getMaxMmcCliqueSize(gx.m, vid.a)),
     ##
     clust=igraph::transitivity(gx.m, type = 'global'),
     closeness=unname(igraph::closeness(gx.m, vid.a)),
@@ -596,13 +720,16 @@ getMmcDf <- function(gx.m, vert.name, ego.order=NA, proj.uni=FALSE)
 ##
 ##----------------------------------
 
-## Main Cluster
-# n1 <- 4   ## markets
-# n2 <- 12  ## firms
+# ## Main Cluster
+# # n1 <- 4   ## markets
+# # n2 <- 12  ## firms
 c1 <- list(m = 4, f = 12)
 ## Cluster 2
 c2 <- list(m = 2, f = 6)
 
+# c1 <- list(m = 10, f = 1200)
+# ## Cluster 2
+# c2 <- list(m = 5, f = 600)
 
 focal.firm <- '4'
 
@@ -703,17 +830,25 @@ focal.name <- as.character(focal.firm)
 ## vert names for either uni or bipartite
 gnames <- getMaxProjNames(gx)
 
-df0.a   <- getMmcDf(gx, focal.name, ego.order=NA)
-df0.a.e <- getMmcDf(gx, focal.name, ego.order=1)
+df.a <- data.frame()
+df.a.e <- data.frame()
 
-df.a.diff <- data.frame()
-df.a.e.diff <- data.frame()
+df0.t   <- getMmcDf(gx, focal.name, ego.order=NA)
+df0.t.e <- getMmcDf(gx, focal.name, ego.order=1)
+
+df.t.diff <- data.frame()
+df.t.e.diff <- data.frame()
 
 meta.attrs <- c('name','targ','is.bi','v','e')
-mmc.attrs <- names(df0.a)[which( ! names(df0.a) %in% meta.attrs)]
+mmc.attrs <- names(df0.t)[which( ! names(df0.t) %in% meta.attrs)]
 
 for (i in gnames) {
   
+  ## Acquirer MMC Metrics
+  df.a <- rbind(df.a, getMmcDf(gx, as.character(i)) )
+  df.a.e <- rbind(df.a.e, getMmcDf(gx, as.character(i), ego.order=1) )
+  
+  ## Target Synergy MMC Metrics
   target.firm <- as.numeric(i)
   target.name <- as.character(i)
   
@@ -721,34 +856,32 @@ for (i in gnames) {
     
     ## NODE COLLAPSE BIPARTITE GRAPH
     gx2 <- biAcq(gx, focal.name, target.name, project = F)
-    # plot2(gx2)
     
-    V(gx2)$type <- unlist(V(gx2)$type)
-    V(gx2)$name <- unlist(V(gx2)$name)
-    
+    cat(sprintf('%s(%s)-->%s(%s)\n',focal.name, focal.firm, target.name, target.firm))
+
     ## MMC Subgraph
-    gx2.sub <- mmcSubgraph(gx2)
-    gx2.sub.e <- mmcSubgraph(gx2, focal = focal.name)
-    
+    gx2.sub <- mmcSubgraph(gx2, remove.isolates=T)
+    plot2(gx2.sub)
+        
     ## Get MMC metrics
-    dfi.a   <- getMmcDf(gx2.sub, focal.name)
-    dfi.a.e <- getMmcDf(gx2.sub.e, focal.name)
+    dfi.t   <- getMmcDf(gx2.sub, focal.name)
+    dfi.t.e <- getMmcDf(gx2.sub, focal.name, ego.order=1)
     
     ## make diff df
-    dfi.a.diff   <- dfi.a
-    dfi.a.e.diff <- dfi.a.e
+    dfi.t.diff   <- dfi.t
+    dfi.t.e.diff <- dfi.t.e
     
     ## set diff values
-    dfi.a.diff[,mmc.attrs]   <- dfi.a[,mmc.attrs] - df0.a[,mmc.attrs]
-    dfi.a.e.diff[,mmc.attrs] <- dfi.a.e[,mmc.attrs] - df0.a.e[,mmc.attrs]
+    dfi.t.diff[,mmc.attrs]   <- dfi.t[,mmc.attrs] - df0.t[,mmc.attrs]
+    dfi.t.e.diff[,mmc.attrs] <- dfi.t.e[,mmc.attrs] - df0.t.e[,mmc.attrs]
     
     ## add target
-    dfi.a.diff$targ   <- target.name
-    dfi.a.e.diff$targ <- target.name
+    dfi.t.diff$targ   <- target.name
+    dfi.t.e.diff$targ <- target.name
     
     ## append
-    df.a.diff <- rbind(df.a.diff, dfi.a.diff)
-    df.a.e.diff <- rbind(df.a.e.diff, dfi.a.e.diff)
+    df.t.diff <- rbind(df.t.diff, dfi.t.diff)
+    df.t.e.diff <- rbind(df.t.e.diff, dfi.t.e.diff)
     
     ## dataframe
     # idx <- which(as.character(acq.df$name)==target.firm)
@@ -770,32 +903,59 @@ for (i in gnames) {
   
 }
 
+## SAVE DATAFRAMES
+print(df.a)
+csvfilename <- sprintf("%s\\acquisition_acquirer_mmc_compare_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
+write.csv(df.a, file = csvfilename)
+
+print(df.a.e)
+csvfilename <- sprintf("%s\\acquisition_acquirer_mmc_compare_EGO_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
+write.csv(df.a.e, file = csvfilename)
+
+print(df.t.diff)
+csvfilename <- sprintf("%s\\acquisition_mmc_synergies_structure_position_compare_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
+write.csv(df.t.diff, file = csvfilename)
+
+print(df.t.e.diff)
+csvfilename <- sprintf("%s\\acquisition_mmc_synergies_structure_position_compare_EGO_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
+write.csv(df.t.e.diff, file = csvfilename)
+
+
+
+
+## ACQUIRER
+par(mfrow=c(3,3), mar=c(1,1,2.5,1))
+for (attr in mmc.attrs) {
+  if (is.numeric(df.a[,attr]))
+    hist(df.a[,attr], col='gray', main=attr)
+}
+
+## TARGET SYNERGY
+par(mfrow=c(3,3), mar=c(1,1,2.5,1))
+for (attr in mmc.attrs) {
+  x <- df.t.diff[,attr]
+  if (is.numeric(x) & length(unique(x)) > 1)
+    hist(df.t.diff[,attr], col='gray', main=attr)
+}
+
 plot2(gx)
 
 sepattrs <- c()
 for (attr in mmc.attrs) {
-  if (length(unique(df.a.diff[,attr] < 0)) > 1)
+  if (length(unique(df.t.diff[,attr] < 0)) > 1)
     sepattrs <- c(sepattrs, attr)
 }
 cat(sprintf('all separating attrs +/-:\n  %s\n\n', paste(sepattrs, collapse = ", ")))
-View(df.a.diff[,c(meta.attrs,sepattrs)])
+View(df.t.diff[,c(meta.attrs,sepattrs)])
 
 sepattrs <- c()
 for (attr in mmc.attrs) {
-  if (length(unique(df.a.e.diff[,attr] < 0)) > 1)
+  if (length(unique(df.t.e.diff[,attr] < 0)) > 1)
     sepattrs <- c(sepattrs, attr)
 }
 cat(sprintf('EGO separating attrs +/-:\n  %s\n\n', paste(sepattrs, collapse = ", ")))
-View(df.a.e.diff[,c(meta.attrs,sepattrs)])
+View(df.t.e.diff[,c(meta.attrs,sepattrs)])
 
-
-print(df.a.diff)
-csvfilename <- sprintf("%s\\acquisition_mmc_synergies_structure_position_compare_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
-write.csv(df.a.diff, file = csvfilename)
-
-print(df.a.e.diff)
-csvfilename <- sprintf("%s\\acquisition_mmc_synergies_structure_position_compare_EGO_c1M%s_c1N%s_c2M%s_c2N%s.csv", dirname, c1$m, c1$f, c2$m, c2$f)
-write.csv(df.a.e.diff, file = csvfilename)
 
 
 
