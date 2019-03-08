@@ -116,7 +116,13 @@ for (file in files) {
   
   file_abr <- str_replace_all(file,'\\.xlsx{0,1}$','')
   firm <- mapdf$firm[which(mapdf$mergent_intellect == file_abr)]
-  if (length(firm)==0) cat(sprintf('missing firm for file:  %s\n',file_abr))
+  
+  ## check firm for file
+  if (length(firm)==0) {
+    stop(sprintf('missing firm for file:  %s',file_abr))
+  } else if (length(firm) > 1) {
+    stop(sprintf('multiple firms `%s` for file:  %s',paste(firm,collapse = "|"),file_abr))
+  }
   
   ## get sheets (excluding unedited sheets with default name "Sheet__")
   sheets <- excel_sheets(file.path(.data_dir, file))
