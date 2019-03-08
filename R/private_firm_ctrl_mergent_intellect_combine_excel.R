@@ -57,7 +57,7 @@ for (i in idx) {
 ##--------------------------------------------
 
 ## Simple dataframe init function
-initDf <- function(firm=NA, years=2006:2019) {
+initDf <- function(firm=NA, years=2006:2018) {
   return(
     data.frame(year=years, firm=firm, employee_all=NA, employee_site=NA, sales=NA)
   )
@@ -82,9 +82,6 @@ files <- dir(.data_dir, pattern = "\\.xlsx{0,1}$")
 # ## lines to skip for Medtrack header atop data table
 # skip.lines <- 1
 
-## init list of combined dataframes
-l <- list()
-
 ## fields to save for all files (regardless of sheet count)
 base.attrs <- c('D-U-N-S Number','Subsidiary Status','Primary SIC Code','Primary NAICS Code',
                 'Latitude','Longitude','PhysicalAddress','Zip code',
@@ -105,6 +102,10 @@ fixeff.map <- function(x) {
   )
 }
 
+
+## init list of combined dataframes
+l <- list()
+
 ##============================================
 ## Load and combine data files
 ##--------------------------------------------
@@ -122,18 +123,13 @@ for (file in files) {
   sheets <- sheets[!grepl("^Sheet",sheets)]
   num_sheets <- length(sheets)
   
-  # ## extract category from filename 
-  # ## following last underscore "_"; preceding file extension ".xls|x"
-  # parts <- str_split(file,"[-]")[[1]]
-  # category <- str_split(parts,"[.]")[[1]][1]
-  
   ## absolute path of data file
   file_path <- file.path(.data_dir, file)
   
   ## loop sheets in file
   for (i in 1:length(sheets)) 
   {
-    
+    cat(sprintf('  sheet %s %s\n',i,sheets[i]))
     if (i == 1) 
     {
       ## col_names = FALSE
@@ -159,6 +155,10 @@ for (file in files) {
       ## col_names = TRUE
       df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = T)
       
+      ## check any fix effect table exists on sheet
+      if (!any(sapply(fixeff.attrs, function(pattern) greplDf(df,pattern) )))
+        next
+      
       ## number of years of data (number of rows of data within df wrongly containing multiple tables)
       num_years <- 0
       num_tables <- 0
@@ -168,73 +168,39 @@ for (file in files) {
         num_tables <- max(plyr::count(df$Year[idx.yr])$freq)
       }
       
-      ## separate tables
-      for (j in 1:num_tables) 
-      {
-        ## j'th table (subset of rows) on current sheet
-        dfj <- read_excel(file_path, sheet = sheets[i], na=c("-",""), 
-                          skip=(j-1)*(num_years+1), n_max = j*num_years, col_names = T)
-        
-        ## fill in firm dataframe fixed effects for the columns in current table
-        for (eff in fixeff.attrs) {
-          if (eff %in% names(dfj)) {
-            col.eff <- fixeff.map(eff)
-            row.yrs <- which( l[[firm]]$df$year %in% dfj$Year )
-            l[[firm]]$df[row.yrs,col.eff] <- dfj[[eff]]
+      ## separate tables (if num_tables >= 1)
+      if (num_tables > 0) {
+        for (j in 1:num_tables) 
+        {
+          
+          ## j'th table (subset of rows) on current sheet of df
+          dfj <- read_excel(file_path, sheet = sheets[i], na=c("-",""), 
+                            skip=(j-1)*(num_years+1), n_max = j*num_years, col_names = T)
+          
+          ## fill in firm dataframe fixed effects for the columns in current table
+          for (eff in fixeff.attrs) {
+            if (eff %in% names(dfj)) {
+              col.eff <- fixeff.map(eff)
+              row.yrs <- which( l[[firm]]$df$year %in% dfj$Year )
+              l[[firm]]$df[row.yrs,col.eff] <- dfj[[eff]]
+            }
           }
+          
         }
-        
       }
+
       
       df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), n_max = num_years, col_names = T)
       
-      for (eff in fixeff.attrs) {
-        
-      }
-      
-      ##----SALES----------------
-      if (greplDf(l[[firm]]$df, 'Sales')) {
-        
-      }
-      ##----EMPLOYEES ALL---------
-      if (greplDf(l[[firm]]$df, 'Employees (All Sites)')) {
-        
-      }
-      ##----EMPLOYEES THIS SITE---
-      if (greplDf(l[[firm]]$df, 'Employees (This Site)')) {
-        
-      }
-      
     }
     
-  }
-
+  } ##/end sheets loop in file
   
-  ## loops sheets in workbook
-  for (sheet in sheets) {
-    cat(sprintf("  sheet %s\n", sheet))
-    
-    ## absolute path of data file
-    file_full_path <- file.path(medtrack_product_dir, file)
-    
-    ## already deleted header from Product Synopsis sheet 
-    ##  but not from other sheets in workbook;
-    ##  skip 11 lines of header material in other sheets
-    skip.lines <- ifelse(sheet == "Product Synopsis", 0, 11)
-    
-    ## load data
-    df <- read_excel(file_full_path, sheet = sheet, na="--", skip = skip.lines)
-    
-    ## clean column names
-    names(df) <- str_to_lower(str_replace_all(names(df),"[\\s\\/]+","_"))
-    
-    ## add category
-    df$therapeutic_class <- category
-    
-    ## append rows to combined dataframe
-    l[[sheet]] <- rbind(l[[sheet]], df)
-  }
-  
-}
+} ##/end files loop
 
 print(summary(l))
+
+
+
+
+
