@@ -92,7 +92,18 @@ base.attrs <- c('D-U-N-S Number','Subsidiary Status','Primary SIC Code','Primary
                 'Employees (All Sites)','Employees (This Site)','Employees Total (Year 1)',
                 'Sales')
 ## Fixed effects data attrs as exported table column titles (excluding sheet 1)
-fe.attrs <- c('Sales volume','Employees This Site','Employees All Sites')
+fixeff.attrs <- c('Sales volume','Employees This Site','Employees All Sites')
+
+fixeff.map <- function(x) {
+  switch(x,
+   `Employees This Site`='employee_site',
+   `Employees (This Site)`='employee_site',
+   `Employees All Sites`='employee_all',
+   `Employees (All Sites)`='employee_all',
+   `Sales volume`='sales',
+   `Sales`='sales'
+  )
+}
 
 ##============================================
 ## Load and combine data files
@@ -147,6 +158,7 @@ for (file in files) {
       ## after sheet 1, identify if contains data, else skip
       ## col_names = TRUE
       df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = T)
+      
       ## number of years of data (number of rows of data within df wrongly containing multiple tables)
       num_years <- 0
       num_tables <- 0
@@ -156,8 +168,29 @@ for (file in files) {
         num_tables <- max(plyr::count(df$Year[idx.yr])$freq)
       }
       
+      ## separate tables
+      for (j in 1:num_tables) 
+      {
+        ## j'th table (subset of rows) on current sheet
+        dfj <- read_excel(file_path, sheet = sheets[i], na=c("-",""), 
+                          skip=(j-1)*(num_years+1), n_max = j*num_years, col_names = T)
+        
+        ## fill in firm dataframe fixed effects for the columns in current table
+        for (eff in fixeff.attrs) {
+          if (eff %in% names(dfj)) {
+            col.eff <- fixeff.map(eff)
+            row.yrs <- which( l[[firm]]$df$year %in% dfj$Year )
+            l[[firm]]$df[row.yrs,col.eff] <- dfj[[eff]]
+          }
+        }
+        
+      }
+      
       df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), n_max = num_years, col_names = T)
       
+      for (eff in fixeff.attrs) {
+        
+      }
       
       ##----SALES----------------
       if (greplDf(l[[firm]]$df, 'Sales')) {
