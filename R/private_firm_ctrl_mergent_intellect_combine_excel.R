@@ -18,18 +18,23 @@ proj_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/co
 mi_dir <- file.path(proj_dir,"private_firm_controls","mergentintellect")
 pub_dir <- file.path(mi_dir,'public_excel')
 pri_dir <- file.path(mi_dir,'private_excel')
+data_dirs <- c(pub_dir, pri_dir)
 
 ## set working dir
 setwd(proj_dir)
 
-## firm name to data file mapping
+
+##============================================
+## Load firm-filename mapping df 
+##  - *reload after any changes to mapdf file
+##--------------------------------------------
 mapdf.file <- file.path(proj_dir,"private_firm_controls","private_firm_financials_six_focal_firm_networks_v2.xlsx")
 mapdf <- read_excel(mapdf.file, sheet = 1, na=c("-",""), skip = 0)
 
 
 ##============================================
 ##
-## PUBLIC FIRMS DATA
+## PRIVATE FIRMS DATA
 ##
 ##--------------------------------------------
 
@@ -69,15 +74,17 @@ greplDf <- function(df, pattern='Sales') {
   return(grepl(pattern, x, ignore.case = T, perl = T))
 }
 
+## Convert USD string to numeric by removing commas and dollar signs
+##   example:  "$99,123,123.00" --> 99123123.00
+usd2num <- function(usd) {
+  x <- str_replace_all(usd,'[^\\w\\.]','')
+  if (!is.na(x) & x != '') return(as.numeric(x))
+  return(usd)
+}
+
 ##============================================
 ## Initialize data list
 ##--------------------------------------------
-
-## set tmp data_dir for this loop
-.data_dir <- pri_dir
-
-## Excel files
-files <- dir(.data_dir, pattern = "\\.xlsx{0,1}$")
 
 # ## lines to skip for Medtrack header atop data table
 # skip.lines <- 1
@@ -88,6 +95,7 @@ base.attrs <- c('D-U-N-S Number','Subsidiary Status','Primary SIC Code','Primary
                 'Year of Founding','Company Type','Manufacturer',
                 'Employees (All Sites)','Employees (This Site)','Employees Total (Year 1)',
                 'Sales')
+
 ## Fixed effects data attrs as exported table column titles (excluding sheet 1)
 fixeff.attrs <- c('Sales volume','Employees This Site','Employees All Sites')
 
@@ -103,108 +111,169 @@ fixeff.map <- function(x) {
 }
 
 
-## init list of combined dataframes
-l <- list()
+##============================================
+## Precheck for All files
+##--------------------------------------------
+
+for (.data_dir in data_dirs)
+{
+  ## Excel files
+  files <- dir(.data_dir, pattern = "\\.xlsx{0,1}$")
+  ## load files loop
+  cat(sprintf("checking files in dir: %s\n", .data_dir))
+  for (file in files) {
+    file_abr <- str_replace_all(file,'\\.xlsx{0,1}$','')
+    firm <- mapdf$firm[which(mapdf$mergent_intellect == file_abr)]
+    ## check for firm file
+    if (length(firm)==0) {
+      cat(sprintf(' - missing firm file:  %s\n',file_abr))
+    } else if (length(firm) > 1) {
+      cat(sprintf(' - - multiple firms `%s` for file:  %s\n',paste(firm,collapse = "|"),file_abr))
+    }
+  }
+}; cat('done.\n')
+
 
 ##============================================
 ## Load and combine data files
 ##--------------------------------------------
 
-## load files loop
-for (file in files) {
-  cat(sprintf("loading file: %s\n", file))
-  
-  file_abr <- str_replace_all(file,'\\.xlsx{0,1}$','')
-  firm <- mapdf$firm[which(mapdf$mergent_intellect == file_abr)]
-  
-  ## check firm for file
-  if (length(firm)==0) {
-    stop(sprintf('missing firm for file:  %s',file_abr))
-  } else if (length(firm) > 1) {
-    stop(sprintf('multiple firms `%s` for file:  %s',paste(firm,collapse = "|"),file_abr))
-  }
-  
-  ## get sheets (excluding unedited sheets with default name "Sheet__")
-  sheets <- excel_sheets(file.path(.data_dir, file))
-  sheets <- sheets[!grepl("^Sheet",sheets)]
-  num_sheets <- length(sheets)
-  
-  ## absolute path of data file
-  file_path <- file.path(.data_dir, file)
-  
-  ## loop sheets in file
-  for (i in 1:length(sheets)) 
-  {
-    cat(sprintf('  sheet %s %s\n',i,sheets[i]))
-    if (i == 1) 
-    {
-      ## col_names = FALSE
-      df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = F)
-      
-      ## FIRST SHEET:  init df; set firm base attrs
-      l[[firm]] <- list(df = initDf(firm))
-      for (attr in base.attrs) {
-        val <- unname(unlist(df[which(df[,1] == attr),2]))
-        l[[firm]][[attr]] <- ifelse(length(val)>0, val, NA)
-      }
-      
-      ## set last year(s) df values from 1st sheet base attrs
-      n <- nrow(l[[firm]]$df)
-      l[[firm]]$df$employee_all[n] <- l[[firm]]$`Employees (All Sites)`
-      l[[firm]]$df$employee_site[n] <- l[[firm]]$`Employees (This Site)`
-      l[[firm]]$df$employee_all[n-1] <- l[[firm]]$`Employees Total (Year 1)`
-      l[[firm]]$df$sales[n] <- l[[firm]]$Sales
-      
-    } else {
-      
-      ## after sheet 1, identify if contains data, else skip
-      ## col_names = TRUE
-      df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = T)
-      
-      ## check any fix effect table exists on sheet
-      if (!any(sapply(fixeff.attrs, function(pattern) greplDf(df,pattern) )))
-        next
-      
-      ## number of years of data (number of rows of data within df wrongly containing multiple tables)
-      num_years <- 0
-      num_tables <- 0
-      if ('Year' %in% names(df)) {
-        idx.yr <- which(df$Year %in% as.character(l[[firm]]$df$year))
-        num_years <- length(unique(df$Year[idx.yr]))
-        num_tables <- max(plyr::count(df$Year[idx.yr])$freq)
-      }
-      
-      ## separate tables (if num_tables >= 1)
-      if (num_tables > 0) {
-        for (j in 1:num_tables) 
-        {
-          
-          ## j'th table (subset of rows) on current sheet of df
-          dfj <- read_excel(file_path, sheet = sheets[i], na=c("-",""), 
-                            skip=(j-1)*(num_years+1), n_max = j*num_years, col_names = T)
-          
-          ## fill in firm dataframe fixed effects for the columns in current table
-          for (eff in fixeff.attrs) {
-            if (eff %in% names(dfj)) {
-              col.eff <- fixeff.map(eff)
-              row.yrs <- which( l[[firm]]$df$year %in% dfj$Year )
-              l[[firm]]$df[row.yrs,col.eff] <- dfj[[eff]]
-            }
-          }
-          
-        }
-      }
+## init list of combined dataframes
+l <- list()
 
-      
-      df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), n_max = num_years, col_names = T)
-      
+## loop directories in project
+for (.data_dir in data_dirs)
+{
+  
+  ## Excel files
+  files <- dir(.data_dir, pattern = "\\.xlsx{0,1}$")
+  
+  ## load files loop
+  for (file in files) 
+  {
+    cat(sprintf("loading file: %s\n", file))
+    
+    file_abr <- str_replace_all(file,'\\.xlsx{0,1}$','')
+    firm <- mapdf$firm[which(mapdf$mergent_intellect == file_abr)]
+    
+    ## check firm for file
+    stars <- '\n\n**************************************************************\n\n'
+    if (length(firm)==0) {
+      cat(sprintf('%s - missing firm for file:  %s%s',stars,file_abr,stars))
+      next
+    } else if (length(firm) > 1) {
+      cat(sprintf('%s - - multiple firms `%s` for file:  %s%s',stars,paste(firm,collapse = "|"),file_abr,stars))
+      next
     }
     
-  } ##/end sheets loop in file
-  
-} ##/end files loop
+    ## get sheets (excluding unedited sheets with default name "Sheet__")
+    sheets <- excel_sheets(file.path(.data_dir, file))
+    sheets <- sheets[!grepl("^Sheet",sheets)]
+    num_sheets <- length(sheets)
+    
+    ## absolute path of data file
+    file_path <- file.path(.data_dir, file)
+    
+    ## loop sheets in file
+    for (i in 1:length(sheets)) 
+    {
+      cat(sprintf('  sheet %s %s\n',i,sheets[i]))
+      if (i == 1) 
+      {
+        ## col_names = FALSE
+        df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = F)
+        
+        ## FIRST SHEET:  init df; set firm base attrs
+        l[[firm]] <- list(df = initDf(firm))
+        for (attr in base.attrs) {
+          val <- unname(unlist(df[which(df[,1] == attr),2]))
+          l[[firm]][[attr]] <- ifelse(length(val)>0, val, NA)
+        }
+        
+        ## set crunchbase is_pub attribute separately from mergent intellect's attribute
+        is_pub <-  mapdf$is_pub[which(mapdf$mergent_intellect == file_abr)]
+        l[[firm]]$is_pub <- ifelse(is_pub==1 | is_pub=='1', 1, 0)
+        
+        ## set last year(s) df values from 1st sheet base attrs
+        n <- nrow(l[[firm]]$df)
+        l[[firm]]$df$employee_all[n] <- l[[firm]]$`Employees (All Sites)`
+        l[[firm]]$df$employee_site[n] <- l[[firm]]$`Employees (This Site)`
+        l[[firm]]$df$employee_all[n-1] <- l[[firm]]$`Employees Total (Year 1)`
+        l[[firm]]$df$sales[n] <- l[[firm]]$Sales 
+        
+      } else {
+        
+        ## after sheet 1, identify if contains data, else skip
+        ## col_names = TRUE
+        df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = T)
+        
+        ## check any fix effect table exists on sheet
+        if (!any(sapply(fixeff.attrs, function(pattern) greplDf(df,pattern) )))
+          next
+        
+        ## number of years of data (number of rows of data within df wrongly containing multiple tables)
+        num_years <- 0
+        num_tables <- 0
+        if ('Year' %in% names(df)) {
+          idx.yr <- which(df$Year %in% as.character(l[[firm]]$df$year))
+          num_years <- length(unique(df$Year[idx.yr]))
+          num_tables <- max(plyr::count(df$Year[idx.yr])$freq)
+        }
+        
+        ## separate tables (if num_tables >= 1)
+        if (num_tables > 0) {
+          for (j in 1:num_tables) 
+          {
+            
+            ## j'th table (subset of rows) on current sheet of df
+            dfj <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = T, 
+                              skip=(j-1)*(num_years+1), n_max = j*num_years)
+            
+            ## fill in firm dataframe fixed effects for the columns in current table
+            for (eff in fixeff.attrs) {
+              if (eff %in% names(dfj)) {
+                col.eff <- fixeff.map(eff)
+                row.yrs <- which( l[[firm]]$df$year %in% dfj$Year )
+                l[[firm]]$df[row.yrs,col.eff] <- dfj[[eff]]
+              }
+            }
+            
+          }
+        }
+        
+      } ## /end if-else sheet[i]
+      
+      
+    } ##/end sheets loop in file
+    
+  } ##/end files loop in directory
 
-print(summary(l))
+} ##/end directories loop in project
+
+warnings()
+print(head(summary(l))); print(length(l))
+
+
+## save data list as serialized file
+saveRDS(l, file = 'awareness_six_focal_firms_mergent_intellect_private_firm_controls.rds')
+
+
+##============================================
+## Combine firm dataframes and melt to longform
+##--------------------------------------------
+# ldf <- 
+
+
+
+
+##============================================
+## Convert USD strings --> numeric column format
+##--------------------------------------------
+
+
+
+## save dataframe as CSV
+write.csv(ldf, file = 'awareness_six_focal_firms_mergent_intellect_private_firm_controls_Long_df.csv', row.names = F)
 
 
 
