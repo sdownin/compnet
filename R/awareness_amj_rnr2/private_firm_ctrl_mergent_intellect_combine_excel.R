@@ -12,6 +12,7 @@ library(readxl)
 library(tibble)
 library(uuid)
 library(dplyr)
+library(reshape2)
 
 ## dir names
 proj_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
@@ -74,12 +75,14 @@ greplDf <- function(df, pattern='Sales') {
   return(grepl(pattern, x, ignore.case = T, perl = T))
 }
 
-## Convert USD string to numeric by removing commas and dollar signs
+## Convert numeric string to numeric by removing commas and dollar signs
 ##   example:  "$99,123,123.00" --> 99123123.00
-usd2num <- function(usd) {
-  x <- str_replace_all(usd,'[^\\w\\.]','')
+str2num <- function(str) {
+  if (is.null(str)) return(NA)
+  if (is.na(str) | str=='') return(NA)
+  x <- str_replace_all(str,'[^\\w\\.]','')
   if (!is.na(x) & x != '') return(as.numeric(x))
-  return(usd)
+  return(NA)
 }
 
 ##============================================
@@ -178,6 +181,7 @@ for (.data_dir in data_dirs)
     for (i in 1:length(sheets)) 
     {
       cat(sprintf('  sheet %s %s\n',i,sheets[i]))
+      
       if (i == 1) 
       {
         ## col_names = FALSE
@@ -261,16 +265,19 @@ saveRDS(l, file = 'awareness_six_focal_firms_mergent_intellect_private_firm_cont
 ##============================================
 ## Combine firm dataframes and melt to longform
 ##--------------------------------------------
-# ldf <- 
-
-
-
+ldf <- data.frame()
+for (k in 1:length(l)) {
+  ldf <- rbind(ldf, l[[k]]$df)
+}
+ldf <- as_tibble(ldf)
 
 ##============================================
 ## Convert USD strings --> numeric column format
 ##--------------------------------------------
-
-
+cols.fix <- c('employee_all','employee_site','sales')
+for (col in cols.fix) {
+  ldf[,col] <- sapply(ldf[[col]], str2num)  ## tibble column to vector : tbl[[col]] --> c(..., ...)
+}
 
 ## save dataframe as CSV
 write.csv(ldf, file = 'awareness_six_focal_firms_mergent_intellect_private_firm_controls_Long_df.csv', row.names = F)

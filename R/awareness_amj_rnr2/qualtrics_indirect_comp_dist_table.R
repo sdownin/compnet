@@ -37,6 +37,8 @@ for (file in files) {
   
 }
 
+all.focal.firms <- unique(cdf$focal)
+
 ucdf <- unique(cdf[,1:2])
 
 cnt <- plyr::count(cdf$firm)
@@ -75,11 +77,14 @@ cdf2e <- merge(cdf2r, co.df[,c('company_name_unique','employee_count','status','
 out.dir <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2"
 write.csv(cdf2e, file = file.path(out.dir, "six_focal_firm_unique_indirect_comp_net_firms_WEMPLOYEES.csv"), row.names = F)
 
+ORIG_6_NET_FIRMS <- cdf2e
+
 # library(curl)
 library(jsonlite)
 library(rvest)
 library(stringr)
 library(urltools)
+library(curl)
 
 ##
 #  fetch current/active url for old domain
@@ -99,7 +104,7 @@ fetchUrlSafe <- function(url, domain.only=T) {
 ## fetch updated urls
 cdf2ed <- cdf2e
 cdf2ed$new_domain <- NA
-for (i in 1:nrow()) {
+for (i in 1:nrow(cdf2ed)) {
   if (i %% 2 == 0) 
     cat(sprintf("i = %s (%5.1f%s)  %s\n",i,100*i/nrow(cdf2ed),'%',cdf2ed$domain[i]))
   cdf2ed$new_domain[i] <- fetchUrlSafe(cdf2ed$domain[i])
@@ -108,6 +113,73 @@ for (i in 1:nrow()) {
 out.dir <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2"
 write.csv(cdf2ed, file = file.path(out.dir, "six_focal_firm_unique_indirect_comp_net_firms_WEMPLOYEES_NEWDOMAIN.csv"), row.names = F)
 
+
+
+##------- OTHER FOCAL FIRMS AFTER FIRST 6  -----------------------------------
+
+# focal.firms <- c(
+#   'qualtrics',
+#   'clarabridge','confirmit','medallia','snap-surveys-ltd','getfeedback' ## empathica renamed InMoment 
+# )
+
+focal.firms <- c(
+  ## D1
+  'checkmarket','cloudcherry','cx-index','feedback-lite','first-mile-geo',
+  'leaderamp','myfeelback','promoter-io','super-simple-survey',
+  'survata','surveyrock','typeform','userate',
+  ## D2
+  'customergauge','inqwise','verint','voice-polls',
+  ## D3
+  'empathica','satmetrix'
+)
+
+cdf2 <- cdf[which(cdf$focal %in% focal.firms),]
+
+cnt2 <- plyr::count(cdf2$firm)
+cnt2 <- cnt2[order(cnt2$freq, decreasing = T),]
+
+cdf2r <- ddply(cdf2, .(firm),  summarize,
+               domain=unique(domain),
+               nnets=length(focal),
+               focal=paste(focal, collapse="|"))
+cdf2r <- cdf2r[order(cdf2r$nnets, decreasing = T), ]
+
+out.dir <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2"
+write.csv(cdf2r, file = file.path(out.dir, "19_focal_firm_unique_indirect_comp_net_firms.csv"), row.names = F)
+
+## add employee count
+# g.full.file <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2\\g_full.graphml"
+# g.full <- read.graph(g.full.file, format='graphml')
+# vdf <- igraph::as_data_frame(g.full, what='vertices')
+codf.file <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\crunchbase\\crunchbase_export_20161024\\organizations.csv"
+co.df <- read.csv(codf.file, header = T, stringsAsFactors = F)
+co.df$geo <- apply(co.df[ ,c('country_code','state_code','city')],1,function(x)paste(x,collapse=", "))
+cdf2e <- merge(cdf2r, co.df[,c('company_name_unique','employee_count','status','geo')], by.x='firm',by.y='company_name_unique',all.x=T,all.y=F)
+
+out.dir <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2"
+write.csv(cdf2e, file = file.path(out.dir, "19_focal_firm_unique_indirect_comp_net_firms_WEMPLOYEES.csv"), row.names = F)
+
+## limit to firms not in original 6 focal firm networks
+cdf2eno <- cdf2e[ ! cdf2e$firm %in% ORIG_6_NET_FIRMS$firm, ]
+
+## fetch updated urls
+cdf2ed <- cdf2eno
+cdf2ed$new_domain <- NA
+for (i in 1:nrow(cdf2ed)) {
+  if (i %% 10 == 0) 
+    cat(sprintf("i = %s (%5.1f%s)  %s\n",i,100*i/nrow(cdf2ed),'%',cdf2ed$domain[i]))
+  cdf2ed$new_domain[i] <- fetchUrlSafe(cdf2ed$domain[i])
+}
+
+out.dir <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2"
+write.csv(cdf2ed, file = file.path(out.dir, "19_focal_firm_unique_indirect_comp_net_firms_WEMPLOYEES_NEWDOMAIN.csv"), row.names = F)
+
+
+
+
+
+### GET STOCK SYMBOLS OF PUBLIC FIRMS FROM FOCAL FIRMS NETS
+co.df$status
 
 
 
