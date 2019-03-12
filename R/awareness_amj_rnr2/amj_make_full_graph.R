@@ -8,6 +8,9 @@ library(igraph)
 library(readxl)
 
 
+##
+#
+##
 .make.full.graph <- function(x=NA)
 {
   
@@ -22,12 +25,6 @@ library(readxl)
   
   ## set woring dir
   setwd(work_dir)
-  
-  source(file.path(version_dir,'amj_awareness_functions.R'))
-  source(file.path(version_dir,'amj_cb_data_prep.R'))           ## cb : CrunchBase
-  source(file.path(version_dir,'amj_sdc_coop.R'))               ## sdc: Thompson SDC
-  source(file.path(version_dir,'amj_firm_size_controls.R'))     ## mi : mergent intellect
-  source(file.path(version_dir,'amj_institutional_holdings.R')) ## ih : institutional holdings
 
   # graph filename
   g.full.file <- file.path(net_dir,'g_full.graphml')
@@ -71,44 +68,6 @@ library(readxl)
     dfck <- dfck[which(dfck$MI_note=='DELETE'), ]
     g.full <- igraph::induced.subgraph(g.full, which( ! V(g.full)$name %in% dfck$firm))
     
-    ##------------------------------------------------------
-    ##-------preprocess parent-subsidiary relationships-----
-    ##----------node collapse like acquisitions-------------
-    ##------------------------------------------------------
-    ## load in manually checked parent-subsidiary relations
-    dfpar <- read_excel(file.path(sup_data_dir, 'private_firm_financials_all_firm_networks_delete_nodes.xlsx'),
-                        sheet = 1,  na = c('','-',"'-"))
-    dfpar <- dfpar[!is.na(dfpar$parent), ]
-    dfpar$parent <- str_to_lower(dfpar$parent)
-    ## merge in parent uuid
-    .parent.uuid <- cb$co[,c('company_name_unique','company_uuid')]
-    names(.parent.uuid) <- c('parent_name_unique', 'parent_uuid') 
-    dfpar <- merge(dfpar[,c('parent','firm')], .parent.uuid, by.x='parent', by.y='parent_name_unique', all.x=T, all.y=F)
-    ## merge in firm uuid
-    .firm.uuid <- cb$co[,c('company_name_unique','company_uuid')]
-    dfpar <- merge(dfpar, .firm.uuid, by.x='firm', by.y='company_name_unique', all.x=T, all.y=F)
-    ## CrunchBase parent relationships to collapse
-    cb.par <- cb$co_parent[,c('company_name_unique','parent_name_unique','parent_org_uuid','org_uuid')]
-    names(cb.par) <- c('firm','parent','parent_uuid','company_uuid')
-    ## combine CrunchBase and manual parent-child mappings
-    par.chi <- rbind(dfpar, cb.par)
-    ## filter both parent, child in full graph
-    gfuuid <- V(g.full)$company_uuid
-    par.chi <- par.chi[which(!is.na(par.chi$parent_uuid) & par.chi$parent_uuid %in% gfuuid 
-                             & !is.na(par.chi$company_uuid) & par.chi$company_uuid %in% gfuuid), ]
-    ## merge in founded_on date of parent
-    par.chi <- merge(par.chi, cb$co[,c('company_name_unique','founded_on')], by.x='parent', by.y='company_name_unique', all.x=T, all.y=F)
-    ## quasi-node collapse subsidiaries to parent nodes
-    par.chi.nc <- data.frame(
-      acquirer_uuid=par.chi$parent_uuid,
-      acquiree_uuid=par.chi$company_uuid,
-      acquired_on=par.chi$founded_on,   ## for parent-subsidiary mapping, just use parent company founded_on date
-      stringsAsFactors = F
-    )
-    g.full <- aaf$nodeCollapseGraph(g.full, par.chi.nc, remove.isolates=T, verbose = T)
-    
-    cat('done.\n')
-    
     ##============================================
     ## ADD MANUAL UPDATES (EDGES | NODES)
     ##--------------------------------------------
@@ -128,18 +87,22 @@ library(readxl)
   
     cat('done.\n')
     
+    ## save graph file
+    g.full.file <- file.path(net_dir,'g_full.graphml')
+    igraph::write.graph(graph = g.full, file=g.full.file, format = 'graphml')
+    
     return(g.full)  
   
   }
   
 }
 
+##
+# Export
+##
+.make.full.graph()
 
-g.full <- .make.full.graph()
 
-## save graph file
-g.full.file <- file.path(net_dir,'g_full.graphml')
-igraph::write.graph(graph = g.full, file=g.full.file, format = 'graphml')
 
 
 

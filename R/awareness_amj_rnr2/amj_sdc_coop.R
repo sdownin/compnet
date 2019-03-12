@@ -25,9 +25,9 @@ library(lubridate)
   ## SET WORING DIR
   setwd(work_dir)
   
-  ## LOAD AND PREP CRUNCHBASE DATA IF NOT IN MEMORY
-  if(!('cb' %in% ls())) 
-    source(file.path(version_dir,'amj_cb_data_prep.R'))
+  # ## LOAD AND PREP CRUNCHBASE DATA IF NOT IN MEMORY
+  # if(!('cb' %in% ls())) 
+  #   source(file.path(version_dir,'amj_cb_data_prep.R'))
   
   # ## CACHE ENVIRONMENT to keep when clearing tmp objects added here
   # ## excluding directory variables ending in `_dir`
@@ -142,9 +142,9 @@ library(lubridate)
 
 
 ##===============================
-## EXPOR
+## EXPORT
 ##-------------------------------
-coop <- .main.sdc()
+.main.sdc()
 
 
 

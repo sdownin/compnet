@@ -19,13 +19,13 @@
   ## set woring dir
   setwd(work_dir)
   
-  ## LOAD AND PREP CRUNCHBASE DATA IF NOT IN MEMORY
-  if(!('cb' %in% ls())) 
-    source(file.path(version_dir,'amj_cb_data_prep.R'))
-  
-  ## CACHE ENVIRONMENT to keep when clearing tmp objects added here
-  ## excluding directory variables ending in `_dir`
-  .ls <- ls()[grep('(?<!_dir)$',ls(),perl = T)]
+  # ## LOAD AND PREP CRUNCHBASE DATA IF NOT IN MEMORY
+  # if(!('cb' %in% ls())) 
+  #   source(file.path(version_dir,'amj_cb_data_prep.R'))
+  # 
+  # ## CACHE ENVIRONMENT to keep when clearing tmp objects added here
+  # ## excluding directory variables ending in `_dir`
+  # .ls <- ls()[grep('(?<!_dir)$',ls(),perl = T)]
   
   
   cat('loading institutional holdings data...')
@@ -76,4 +76,4 @@
 ## EXPORT `mi` object with firm size controls 
 ##  from mergent intellect and compustat combined
 ##-------------------------------------
-ih <- .main.institutional.holdings()
+.main.institutional.holdings()

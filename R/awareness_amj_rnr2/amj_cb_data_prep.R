@@ -457,7 +457,7 @@ library(stringr, quietly = T)
 # CRUNCHBASE DATA LIST OBJECT
 # @export [list] cb
 ##
-cb <- .main.cbdp()
+.main.cbdp()
 
 
 

@@ -19,8 +19,12 @@ sup_data_dir <- file.path(work_dir,'amj_rnr2_sup_data')  ## supplmental data dir
 ## set woring dir
 setwd(work_dir)
 
-source(file.path(version_dir,'amj_make_full_graph.R')) 
-
+aaf <- source(file.path(version_dir,'amj_awareness_functions.R'))$value
+cb  <- source(file.path(version_dir,'amj_cb_data_prep.R'))$value           ## cb : CrunchBase
+sdc <- source(file.path(version_dir,'amj_sdc_coop.R'))$value               ## sdc: Thompson SDC
+si  <- source(file.path(version_dir,'amj_firm_size_controls.R'))$value     ## si : size controls from mergent intellect
+ih  <- source(file.path(version_dir,'amj_institutional_holdings.R'))$value ## ih : institutional holdings
+g.full <- source(file.path(version_dir,'amj_make_full_graph.R'))$value     ## g.full
 
 # ## set firms to create networks (focal firm or replication study focal firms)
 # firms.todo <- c('qualtrics','cloudcherry',
@@ -72,6 +76,45 @@ for (i in 1:1) {
   net <- net.d.sub
   net %n% 'ego' <- name_i
   
+  ##------------------------------------------------------
+  ##-------preprocess parent-subsidiary relationships-----
+  ##----------node collapse like acquisitions-------------
+  ##------------------------------------------------------
+  cat(' collapsing parent-subsidiary relations...')
+  ## load in manually checked parent-subsidiary relations
+  dfpar <- read_excel(file.path(sup_data_dir, 'private_firm_financials_all_firm_networks_delete_nodes.xlsx'),
+                      sheet = 1,  na = c('','-',"'-"))
+  dfpar <- dfpar[!is.na(dfpar$parent), ]
+  dfpar$parent <- str_to_lower(dfpar$parent)
+  ## merge in parent uuid
+  .parent.uuid <- cb$co[,c('company_name_unique','company_uuid')]
+  names(.parent.uuid) <- c('parent_name_unique', 'parent_uuid') 
+  dfpar <- merge(dfpar[,c('parent','firm')], .parent.uuid, by.x='parent', by.y='parent_name_unique', all.x=T, all.y=F)
+  ## merge in firm uuid
+  .firm.uuid <- cb$co[,c('company_name_unique','company_uuid')]
+  dfpar <- merge(dfpar, .firm.uuid, by.x='firm', by.y='company_name_unique', all.x=T, all.y=F)
+  ## CrunchBase parent relationships to collapse
+  cb.par <- cb$co_parent[,c('company_name_unique','parent_name_unique','parent_org_uuid','org_uuid')]
+  names(cb.par) <- c('firm','parent','parent_uuid','company_uuid')
+  ## combine CrunchBase and manual parent-child mappings
+  par.chi <- rbind(dfpar, cb.par)
+  ## filter both parent, child in full graph
+  gfuuid <- V(g.d.sub)$company_uuid
+  par.chi <- par.chi[which(!is.na(par.chi$parent_uuid) & par.chi$parent_uuid %in% gfuuid 
+                           & !is.na(par.chi$company_uuid) & par.chi$company_uuid %in% gfuuid), ]
+  ## merge in founded_on date of parent
+  par.chi <- merge(par.chi, cb$co[,c('company_name_unique','founded_on')], by.x='parent', by.y='company_name_unique', all.x=T, all.y=F)
+  ## quasi-node collapse subsidiaries to parent nodes
+  par.chi.nc <- data.frame(
+    acquirer_uuid=par.chi$parent_uuid,
+    acquiree_uuid=par.chi$company_uuid,
+    acquired_on=par.chi$founded_on,   ## for parent-subsidiary mapping, just use parent company founded_on date
+    stringsAsFactors = F
+  )
+  g.d.sub <- aaf$nodeCollapseGraph(g.d.sub, par.chi.nc, remove.isolates=T, verbose = T)
+  
+  cat('done.\n')
+  
   ##_-----------------------------------------------------
   ##-------process pre-start-year acquisitions------------
   ##------------------------------------------------------
@@ -96,11 +139,13 @@ for (i in 1:1) {
     t2 <- sprintf('%d-12-31',periods[t-1]) ## inclusive end date 'YYYY-MM-DD'
     
     ## check if period network file exists (skip if not force overwrite)
-    file.rds <- sprintf('firm_nets_rnr/%s_d%d_y%s.rds',name_i,d,periods[t-1])
+    file.rds <- file.path(net_dir,sprintf('%s_d%d_y%s.rds',name_i,d,periods[t-1]))
     if (!force.overwrite & file.exists(file.rds)) {
       cat(sprintf('file exists: %s\nskipping.\n', file.rds))
       next
     }
+    
+    ## period years indicate [start, end) -- start inclusive; end exclusive 
     
     ## 1. Node Collapse acquisitions within period
     acqs.pd <- cb$co_acq[cb$co_acq$acquired_on >= t1 & cb$co_acq$acquired_on <= t2, ]
@@ -112,14 +157,14 @@ for (i in 1:1) {
     ## 3. Set Covariates for updated Period Network
     nl[[t]] <- aaf$setCovariates(nl[[t]], periods[t-1], periods[t],
                                  acq=cb$co_acq,br=cb$co_br,rou=cb$co_rou,ipo=cb$co_ipo,
-                                 coop=coop)
+                                 coop=coop, ih=ih, size=size)
     
     ## save each period if large network (would exceed memory as full list of time periods)
     if (vcount(g.d.sub) >= lg.cutoff) {
       saveRDS(nl[[t]], file = file.rds)
       nv <- length(nl[[t]]$val)
       names(nv)[1] <- as.character(periods[t-1])
-      write.csv(nv, file = sprintf('firm_nets_rnr/%s_d%s.csv',name_i,d),append = TRUE)
+      write.csv(nv, file = file.path(net_dir, sprintf('%s_d%s.csv',name_i,d)),append = TRUE)
       nl[[t]] <- NULL ## remove from memory
     }
     
@@ -152,13 +197,13 @@ for (i in 1:1) {
     }
     nets <- nets.all[ which(sapply(nets.all, aaf$getNetEcount) > 0) ]
     ## record network sizes
-    write.csv(sapply(nets,function(x)length(x$val)), file = sprintf('firm_nets_rnr/%s_d%s.csv',name_i,d))
+    write.csv(sapply(nets,function(x)length(x$val)), file = file.path(net_dir, sprintf('%s_d%s.csv',name_i,d)))
     
     #-------------------------------------------------
     
     ## CAREFUL TO OVERWRITE 
-    file.rds <- sprintf('firm_nets_rnr/%s_d%d.rds',name_i,d)
-    saveRDS(nets, file = file.rds)
+    saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
+    
   }
   
 }
