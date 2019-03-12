@@ -573,7 +573,7 @@ aaf$.cov.sharedInvestor <- function(net)
 ##
 #
 ##
-aaf$.cov.crunchbaseCategoryCosineSimilarity <- function(net)
+aaf$.cov.categoryCosineSimilarity <- function(net)
 {
   
 }
@@ -700,10 +700,10 @@ aaf$setCovariates <- function(net, start, end,
       net %n% 'shared_investor' <- aaf$.cov.sharedInvestor(net)
       if (verbose) cat('done\n')
     }
-    if ('cb_cat_cos_sim' %in% covlist)  ## CrunchBase Category Cosine Similarity
+    if ('cat_cos_sim' %in% covlist)  ## CrunchBase Category Cosine Similarity
     {
       if (verbose) cat('computing CrunchBase Category Cosine Similarity ...')
-      net %n% 'cb_cat_cos_sim' <- aaf$.cov.crunchbaseCategoryCosineSimilarity(net)
+      net %n% 'cat_cos_sim' <- aaf$.cov.categoryCosineSimilarity(net)
       if (verbose) cat('done\n')
     }
     if ('shared_competitor' %in% covlist)  ## CrunchBase Category Cosine Similarity

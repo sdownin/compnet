@@ -254,8 +254,8 @@ library(stringr, quietly = T)
   
   ## ADD STOCK SYMBOL FROM IPO TABLE
   ipo_dedup <- ddply(co_ipo, .(company_name_unique), summarize,
-                     stock_symbol=first(stock_symbol),
-                     stock_exchange_symbol=first(stock_exchange_symbol),
+                     stock_symbol=min(stock_symbol),
+                     stock_exchange_symbol=min(stock_exchange_symbol),
                      went_public_on=min(went_public_on))
   co <- merge(co, ipo_dedup, by.x='company_name_unique',by.y='company_name_unique',all.x=T,all.y=F)
   

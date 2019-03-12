@@ -22,6 +22,12 @@ library(readxl)
   
   ## set woring dir
   setwd(work_dir)
+  
+  source(file.path(version_dir,'amj_awareness_functions.R'))
+  source(file.path(version_dir,'amj_cb_data_prep.R'))           ## cb : CrunchBase
+  source(file.path(version_dir,'amj_sdc_coop.R'))               ## sdc: Thompson SDC
+  source(file.path(version_dir,'amj_firm_size_controls.R'))     ## mi : mergent intellect
+  source(file.path(version_dir,'amj_institutional_holdings.R')) ## ih : institutional holdings
 
   # graph filename
   g.full.file <- file.path(net_dir,'g_full.graphml')
@@ -36,12 +42,6 @@ library(readxl)
     return(g.full)
     
   } else {
-    
-    source(file.path(version_dir,'amj_awareness_functions.R'))
-    source(file.path(version_dir,'amj_cb_data_prep.R'))           ## cb : CrunchBase
-    source(file.path(version_dir,'amj_sdc_coop.R'))               ## sdc: Thompson SDC
-    source(file.path(version_dir,'amj_firm_size_controls.R'))     ## mi : mergent intellect
-    source(file.path(version_dir,'amj_institutional_holdings.R')) ## ih : institutional holdings
     
     cat('\nmaking full graph...')
     

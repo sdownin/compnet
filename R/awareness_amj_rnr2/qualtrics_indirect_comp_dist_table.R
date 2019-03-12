@@ -176,10 +176,12 @@ write.csv(cdf2ed, file = file.path(out.dir, "19_focal_firm_unique_indirect_comp_
 
 
 
+## add closed on dates
+.closed <- co.df[,c('company_name_unique','closed_on')]
+cdf2edc <- merge(cdf2ed, co.df[,c('company_name_unique','closed_on')], by.x='firm',by.y='company_name_unique',all.x=T,all.y=F)
 
-
-### GET STOCK SYMBOLS OF PUBLIC FIRMS FROM FOCAL FIRMS NETS
-co.df$status
+out.dir <- "C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2"
+write.csv(cdf2edc, file = file.path(out.dir, "19_focal_firm_CLOSED_ON.csv"), row.names = F, na = "-")
 
 
 
