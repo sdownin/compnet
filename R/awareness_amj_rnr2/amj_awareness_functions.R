@@ -88,8 +88,8 @@ aaf$makeGraph <- function(comp,vertdf,name='company_name_unique',
   if(is.na(vertAttrs)) {
     vertAttrs <- c('company_name','founded_on','founded_year','closed_on','closed_year','category_list',
                    'category_group_list','state_code','country_code','region','city','acquired_on',
-                   'company_gvkey','company_uuid','domain','status_update',
-                   'company_cusip','company_cusip_6','company_sic','employee_count')
+                   'gvkey','company_uuid','domain','status_update',
+                   'cusip','cusip_6','sic','employee_count')
   }
   el <- data.frame(source=comp[,name], 
                    target=comp[,compName],
@@ -255,7 +255,7 @@ aaf$coopFromConcat <- function(x,y)
 ##
 # Returns current firm-firm alliance/jv count of active cooperative relations in current period
 # @see setCovariates()
-# @param [dataframe] br       
+# @param [network] net     The network object   
 # @param [character[]] firms  The vector of firm names (company_name_unique)
 # @param [integer] end        The ending year (excluded)
 # @return [matrix]
@@ -298,7 +298,7 @@ aaf$.cov.coop <- function(net, coop, company_uuids, end, ...)
 ##
 # Returns past firm-firm alliance/jv count of PAST cooperative relations (not still active)
 # @see setCovariates()
-# @param [dataframe] br       
+# @param [network] net     The network object    
 # @param [character[]] firms  The vector of firm names (company_name_unique)
 # @param [integer] end        The ending year (excluded)
 # @return [matrix]
@@ -477,6 +477,22 @@ aaf$.cov.centrality <- function(net)
   if (!inherits(pcn0.4, "error")) net %v% 'cent_pow_n0_4' <- pcn0.4
   if (!inherits(pcn0.5, "error")) net %v% 'cent_pow_n0_5' <- pcn0.5
   
+  ## Joint Centrality:  GEOMETRIC MEAN
+  net %n% 'joint_cent_pow_n0_0' <- outer(pcn0.0, pcn0.0, '*')^0.5
+  net %n% 'joint_cent_pow_n0_1' <- outer(pcn0.1, pcn0.1, '*')^0.5
+  net %n% 'joint_cent_pow_n0_2' <- outer(pcn0.2, pcn0.2, '*')^0.5
+  net %n% 'joint_cent_pow_n0_3' <- outer(pcn0.3, pcn0.3, '*')^0.5
+  net %n% 'joint_cent_pow_n0_4' <- outer(pcn0.4, pcn0.4, '*')^0.5
+  net %n% 'joint_cent_pow_n0_5' <- outer(pcn0.5, pcn0.5, '*')^0.5
+  
+  ##  CENTRALITY RATIO
+  net %n% 'cent_ratio_pow_n0_0' <- outer(pcn0.0, pcn0.0, '/')
+  net %n% 'cent_ratio_pow_n0_1' <- outer(pcn0.1, pcn0.1, '/')
+  net %n% 'cent_ratio_pow_n0_2' <- outer(pcn0.2, pcn0.2, '/')
+  net %n% 'cent_ratio_pow_n0_3' <- outer(pcn0.3, pcn0.3, '/')
+  net %n% 'cent_ratio_pow_n0_4' <- outer(pcn0.4, pcn0.4, '/')
+  net %n% 'cent_ratio_pow_n0_5' <- outer(pcn0.5, pcn0.5, '/')
+  
   return(net)
 }
 
@@ -520,6 +536,58 @@ aaf$.cov.generalistIndex <- function(net)
 
 
 
+##
+# Node Covariate -- EMPLOYEES
+#  - fill in <NA> as conditional means (or as zeros, or as linear trend)
+##
+aaf$.cov.employee <- function(net)
+{
+  
+}
+
+##
+# Node Covariate -- SALES
+#  - fill in <NA> as conditional means (or as zeros, or as linear trend)
+##
+aaf$.cov.sales <- function(net)
+{
+  
+}
+
+
+
+
+
+##
+#
+##
+aaf$.cov.sharedInvestor <- function(net)
+{
+  ## Public Firms -- Thompson Institutional Holdings
+  
+  ## Private Firms -- common investor in funding rounds
+  
+}
+
+
+##
+#
+##
+aaf$.cov.crunchbaseCategoryCosineSimilarity <- function(net)
+{
+  
+}
+
+
+##
+#
+##
+aaf$.cov.sharedCompetitor <- function(net)
+{
+  
+}
+
+
 
 ##
 # Set network covariates
@@ -534,7 +602,9 @@ aaf$.cov.generalistIndex <- function(net)
 # @return [network]
 ##
 aaf$setCovariates <- function(net, start, end,
-                              covlist=c('age','mmc','dist','ipo_status','constraint','similarity','centrality','generalist','coop'),
+                              covlist=c('age','mmc','dist','ipo_status','constraint','similarity','centrality',
+                                        'generalist','coop','employee','sales','shared_investor',
+                                        'cb_cat_cos_sim','shared_competitor'),
                               acq=NA,rou=NA,br=NA,ipo=NA,coop=NA,
                               verbose=TRUE)
 { 
@@ -609,6 +679,39 @@ aaf$setCovariates <- function(net, start, end,
       net %n% 'coop_past_bin' <- mat.coop.past.bin
       if (verbose) cat('done\n')
     }
+    #######################################
+    ##---------Node Controls---------------
+    if ('employee' %in% covlist) 
+    {
+      if (verbose) cat('computing Employees...')
+      net %v% 'employee' <- aaf$.cov.employee(net)
+      if (verbose) cat('done\n')
+    }
+    if ('sales' %in% covlist)
+    {
+      if (verbose) cat('computing Sales...')
+      net %v% 'sales' <- aaf$.cov.sales(net)
+      if (verbose) cat('done\n')
+    }
+    ##-------- Dyadic Controls---------------
+    if ('shared_investor' %in% covlist)
+    {
+      if (verbose) cat('computing Shares Investors...')
+      net %n% 'shared_investor' <- aaf$.cov.sharedInvestor(net)
+      if (verbose) cat('done\n')
+    }
+    if ('cb_cat_cos_sim' %in% covlist)  ## CrunchBase Category Cosine Similarity
+    {
+      if (verbose) cat('computing CrunchBase Category Cosine Similarity ...')
+      net %n% 'cb_cat_cos_sim' <- aaf$.cov.crunchbaseCategoryCosineSimilarity(net)
+      if (verbose) cat('done\n')
+    }
+    if ('shared_competitor' %in% covlist)  ## CrunchBase Category Cosine Similarity
+    {
+      if (verbose) cat('computing Shared Competitor  ...')
+      net %n% 'shared_competitor' <- aaf$.cov.sharedCompetitor(net)
+      if (verbose) cat('done\n')
+    }
     
   } else {
     
@@ -634,7 +737,7 @@ aaf$nodeCollapseGraph <- function(g, acquisitions, remove.isolates=FALSE, verbos
 {
   if (class(g) != 'igraph') stop("g must be an igraph object")
   if (class(acquisitions) != 'data.frame') stop("acquisitions must be a data frame")
-
+  
   ##--------------------- Acquisitions Mapping --------------------------
   ## acqs = c(1,4,3,3,1,4,...)
   ## {acquired} index --> {acquirer} acqs[index]  WHEN BOTH IN NETWORK
@@ -651,13 +754,16 @@ aaf$nodeCollapseGraph <- function(g, acquisitions, remove.isolates=FALSE, verbos
         g <- igraph::set.vertex.attribute(g, attr, V(g), NA)
       }
     }
-
+    
     ##---------------- ACQUISITIONS LOOP---------------------------------------
     for (i in 1:nrow(acqs.sub))
     {
       x = acqs.sub[i, ]
       acquirer.vid <- which(V(g)$company_uuid == x$acquirer_uuid)
       target.vid <- which(V(g)$company_uuid == x$acquiree_uuid)
+      
+      if (length(acquirer.vid)==0 | length(target.vid)==0)
+        next
       
       ## target's neighbor's vids
       target.nbr.vids <- as.integer(igraph::neighbors(g, target.vid))
@@ -674,28 +780,28 @@ aaf$nodeCollapseGraph <- function(g, acquisitions, remove.isolates=FALSE, verbos
         edges.c <- as.integer(str_split(rev(edges.str), ',')[[1]])
         ## edges (source,target) matrix
       }
-
+      
       el <- igraph::ends(g, E(g), names=F)
       
       ##-------------- 1. TRACK ACQUISITION LIST  ---------------------------------------------
       ## track acquisitions
       noAcq <- .isNA(V(g)$acquired_uuid[acquirer.vid])
       V(g)$acquired_vids[acquirer.vid] <- if(noAcq){
-          target.vid
-        }else{
-          paste(V(g)$acquired_vids[acquirer.vid], target.vid, sep = "|")
-        }
+        target.vid
+      }else{
+        paste(V(g)$acquired_vids[acquirer.vid], target.vid, sep = "|")
+      }
       V(g)$acquired_name[acquirer.vid] <- if(noAcq){
-          V(g)$name[target.vid]
-        }else{
-          paste(V(g)$acquired_name[acquirer.vid], V(g)$name[target.vid], sep = "|")
-        }
+        V(g)$name[target.vid]
+      }else{
+        paste(V(g)$acquired_name[acquirer.vid], V(g)$name[target.vid], sep = "|")
+      }
       V(g)$acquired_uuid[acquirer.vid] <- if(noAcq){
-          V(g)$company_uuid[target.vid]
-        }else{
-          paste(V(g)$acquired_uuid[acquirer.vid], V(g)$company_uuid[target.vid], sep = "|")
-        }
-    
+        V(g)$company_uuid[target.vid]
+      }else{
+        paste(V(g)$acquired_uuid[acquirer.vid], V(g)$company_uuid[target.vid], sep = "|")
+      }
+      
       ##-------------- 3. REMOVE TARGETS EDGES ----------------------------------------
       ## NOTE: firm nodes with degree(v)==0 are "removed" from the network by definition
       ##       but still in the data structure for ERGM estimation.
@@ -703,7 +809,7 @@ aaf$nodeCollapseGraph <- function(g, acquisitions, remove.isolates=FALSE, verbos
       ##        a monopoly with no indirect competitors)
       ## edge ids involving the neighbors of the target -- TO DELETE
       target.nbr.eids <- which((el[,1] %in% target.vid) | (el[,2] %in% target.vid))
-
+      
       ## cache edge weights to transfer below
       tmp.weights <- as.numeric(igraph::get.edge.attribute(g, 'weight', target.nbr.eids))
       ## remove NAs from weights 
@@ -720,7 +826,7 @@ aaf$nodeCollapseGraph <- function(g, acquisitions, remove.isolates=FALSE, verbos
                           relation_began_on=rep(x$acquired_on, target.deg), 
                           relation_ended_on=rep(NA, target.deg))
         g <- igraph::add.edges(g, edges.c, attr = edgeAttrs)      
-
+        
         ##--------------- simplify duplicate edges ------------------------
         ## contract edges
         if (verbose) cat('\nsimplifying edges...')
@@ -758,12 +864,12 @@ aaf$nodeCollapseGraph <- function(g, acquisitions, remove.isolates=FALSE, verbos
 # @return [igraph] 
 ##
 aaf$makePdNetwork <- function(net, start, end, 
-                          isolates.remove = FALSE,
-                          edgeCreatedAttr='relation_began_on',
-                          edgeDeletedAttr='relation_ended_on',
-                          vertFoundedAttr='founded_year',
-                          vertClosedAttr='closed_year',
-                          vertAcquiredAttr='acquired_year')
+                              isolates.remove = FALSE,
+                              edgeCreatedAttr='relation_began_on',
+                              edgeDeletedAttr='relation_ended_on',
+                              vertFoundedAttr='founded_year',
+                              vertClosedAttr='closed_year',
+                              vertAcquiredAttr='acquired_year')
 {
   cat('collecting edges and vertices to remove...')
   vertAttrs <- network::list.vertex.attributes(net)

@@ -12,32 +12,31 @@ library(intergraph)
 data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
 work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
 img_dir  <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
+version_dir <- file.path(work_dir,'R','awareness_amj_rnr2')
+net_dir <- file.path(work_dir,'firm_nets_rnr2')
+sup_data_dir <- file.path(work_dir,'amj_rnr2_sup_data')  ## supplmental data dir
 
 ## set woring dir
 setwd(work_dir)
 
-source(file.path(getwd(),'R','amj_make_full_graph.R')) 
-
-## CACHE ENVIRONMENT to keep when clearing tmp objects added here
-## excluding directories ending in `_dir`
-.ls <- ls()[grep('(?<!_dir)$',ls(),perl = T)]
+source(file.path(version_dir,'amj_make_full_graph.R')) 
 
 
-
-
-
-
-## set firms to create networks (focal firm or replication study focal firms)
-firms.todo <- c('qualtrics','cloudcherry',
-                'abroad101','checkmarket','clarabridge',
-                'confirmit','customergauge','cx-index','empathica',
-                'feedback-lite','first-mile-geo','getfeedback',
-                'inqwise','leaderamp', 'medallia','myfeelback',
-                'promoter-io','satmetrix',
-                'snap-surveys-ltd','super-simple-survey','survata',
-                'surveygizmo','surveymonkey',
-                'surveyrock','typeform','userate','verint','voice-polls')
+# ## set firms to create networks (focal firm or replication study focal firms)
+# firms.todo <- c('qualtrics','cloudcherry',
+#                 'abroad101','checkmarket','clarabridge',
+#                 'confirmit','customergauge','cx-index','empathica',
+#                 'feedback-lite','first-mile-geo','getfeedback',
+#                 'inqwise','leaderamp', 'medallia','myfeelback',
+#                 'promoter-io','satmetrix',
+#                 'snap-surveys-ltd','super-simple-survey','survata',
+#                 'surveygizmo','surveymonkey',
+#                 'surveyrock','typeform','userate','verint','voice-polls')
      
+## set firms to create networks (focal firm or replication study focal firms)
+firms.todo <- c('qualtrics',
+                'clarabridge','confirmit','medallia','snap-surveys-ltd','getfeedback')
+
 
 # firms.todo <- c('facebook')
 # firms.todo <- c('cnnmoney','fox-business-network','bloomberg',
@@ -73,7 +72,9 @@ for (i in 1:1) {
   net <- net.d.sub
   net %n% 'ego' <- name_i
   
-  ##-------process pre-start-year acquisitions----------
+  ##_-----------------------------------------------------
+  ##-------process pre-start-year acquisitions------------
+  ##------------------------------------------------------
   acqs.pd <- cb$co_acq[cb$co_acq$acquired_on <= sprintf('%d-12-31',startYr-1), ]
   g.d.sub <- aaf$nodeCollapseGraph(g.d.sub, acqs.pd, remove.isolates=T, verbose = T)
   net.d.sub <- asNetwork(g.d.sub)

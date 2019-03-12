@@ -20,6 +20,8 @@ mi_dir <- file.path(proj_dir,"private_firm_controls","mergentintellect")
 pub_dir <- file.path(mi_dir,'public_excel')
 pri_dir <- file.path(mi_dir,'private_excel')
 data_dirs <- c(pub_dir, pri_dir)
+version_dir <- file.path(proj_dir,'R','awareness_amj_rnr2')
+sup_data_dir <- file.path(proj_dir,'R','amj_rnr2_sup_data')  ## supplmental data dir
 
 ## set working dir
 setwd(proj_dir)
@@ -211,10 +213,13 @@ for (.data_dir in data_dirs)
         ## col_names = TRUE
         df <- read_excel(file_path, sheet = sheets[i], na=c("-",""), col_names = T)
         
-        ## check any fix effect table exists on sheet
+        ## Skip if no fixed effect table exists on sheet
         if (!any(sapply(fixeff.attrs, function(pattern) greplDf(df,pattern) )))
           next
         
+        ##==============================================
+        ##  Main data tables extraction logic
+        ##----------------------------------------------
         ## number of years of data (number of rows of data within df wrongly containing multiple tables)
         num_years <- 0
         num_tables <- 0
@@ -244,6 +249,9 @@ for (.data_dir in data_dirs)
             
           }
         }
+        ##----------------------------------------------
+        ##  /end main logic
+        ##----------------------------------------------
         
       } ## /end if-else sheet[i]
       
@@ -254,12 +262,11 @@ for (.data_dir in data_dirs)
 
 } ##/end directories loop in project
 
-warnings()
-print(head(summary(l))); print(length(l))
-
-
-## save data list as serialized file
-saveRDS(l, file = 'awareness_six_focal_firms_mergent_intellect_private_firm_controls.rds')
+# warnings()
+# print(head(summary(l))); print(length(l))
+# 
+# ## save data list as serialized file
+# saveRDS(l, file = 'awareness_six_focal_firms_mergent_intellect_private_firm_controls.rds')
 
 
 ##============================================
@@ -280,7 +287,8 @@ for (col in cols.fix) {
 }
 
 ## save dataframe as CSV
-write.csv(ldf, file = 'awareness_six_focal_firms_mergent_intellect_private_firm_controls_Long_df.csv', row.names = F)
+out.file <- file.path(sup_data_dir,'awareness_focal_firms_mi_size_controls.csv')
+write.csv(ldf, file = out.file, row.names = F)
 
 
 

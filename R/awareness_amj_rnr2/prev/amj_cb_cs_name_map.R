@@ -20,7 +20,7 @@ setwd(work_dir)
 
 ## LOAD AND PREP CRUNCHBASE DATA IF NOT IN MEMORY
 if(!('cb' %in% ls())) 
-  source(file.path(getwd(),'R','amj_cb_data_prep.R'))
+  source(file.path(getwd(),'R','awareness_amj_rnr2','amj_cb_data_prep.R'))
 
 ## CACHE ENVIRONMENT to keep when clearing tmp objects added here
 ## excluding directories ending in `_dir`
