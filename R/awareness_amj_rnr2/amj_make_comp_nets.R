@@ -39,13 +39,11 @@ g.full <- source(file.path(version_dir,'amj_make_full_graph.R'))$value        ##
 #                 'surveyrock','typeform','userate','verint','voice-polls')
      
 ## set firms to create networks (focal firm or replication study focal firms)
-firms.todo <- c('qualtrics',
-                'clarabridge','confirmit','medallia','snap-surveys-ltd','getfeedback')
+# firms.todo <- c('qualtrics',
+#                 'clarabridge','confirmit','medallia','snap-surveys-ltd','getfeedback')
+firms.todo <- c('getfeedback')
 
 
-# firms.todo <- c('facebook')
-# firms.todo <- c('cnnmoney','fox-business-network','bloomberg',
-#                 'hearstcorporation','newscorporation')
 
 ## -- settings --
 d <- 3
@@ -202,6 +200,9 @@ for (i in 1:length(firms.todo)) {
     
     #-------------------------------------------------
     
+    ## plot covariate summary figures
+    aaf$covSummaryPlot(nets, name_i, net_dir)
+    
     ## CAREFUL TO OVERWRITE 
     saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
     
@@ -214,12 +215,89 @@ for (i in 1:length(firms.todo)) {
 
 
 
+# ##--------------------------------------------
+# ## Patch category similarity
+# ##--------------------------------------------
+# patch.todo <- c('qualtrics',
+#                 'clarabridge','confirmit','medallia','snap-surveys-ltd')
+# for (name_i in patch.todo) {
+#   cat(sprintf(' patching %s\n', name_i))
+#   nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
+#   for (t in 1:length(nets)) {
+#     nets[[t]] %n% 'cat_cos_sim' <- aaf$.cov.categoryCosineSimilarity(nets[[t]])
+#   }
+#   saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d_patched.rds',name_i,d)))
+# }
+
+##--------------------------------------------
+## Patch Centrality
+##--------------------------------------------
+patch.todo <- c('qualtrics',
+                'clarabridge','confirmit','medallia','snap-surveys-ltd')
+for (name_i in patch.todo) {
+  cat(sprintf(' patching %s\n', name_i))
+  nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
+  for (t in 1:length(nets)) {
+    nets[[t]] <- aaf$.cov.centrality(nets[[t]])
+  }
+  saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d_patched.rds',name_i,d)))
+}
+
+##-----------------------------------------------
+## TEST BTERGM
+##-----------------------------------------------
+# name_i <- 'qualtrics'
+# nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
+# aaf$covSummaryPlot(nets, name_i, net_dir)
+library(btergm)
+name_i <- 'qualtrics'
+d <- 3
+nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
+
+mmc <- lapply(nets, function(net) as.matrix(net %n% 'mmc'))
+cpc <- lapply(nets, function(net) as.matrix(net %n% 'coop'))
+cpp <- lapply(nets, function(net) as.matrix(net %n% 'coop_past'))
+cpa <- lapply(nets, function(net) as.matrix(net %n% 'coop') + as.matrix(net %n% 'coop_past') )
+cossim <- lapply(nets, function(net) as.matrix(net %n% 'cat_cos_sim'))
+centjoin <- lapply(nets, function(net) as.matrix(net %n% 'joint_cent_pow_n0_4'))
+centratio <- lapply(nets, function(net) as.matrix(net %n% 'cent_ratio_pow_n0_4'))
+shcomp <- lapply(nets, function(net) as.matrix(net %n% 'shared_competitor'))
+shinv <- lapply(nets, function(net) as.matrix(net %n% 'shared_investor_nd'))
+
+####################### DEFINE MODELS ###################################
+
+m4 <-   nets ~ edges + gwesp(0, fixed = T) + gwdegree(0, fixed=T) +
+  nodematch("ipo_status", diff = F) +
+  nodematch("state_code", diff = F) +
+  nodecov("age") + absdiff("age") +
+  nodecov("employee_na_age") + nodecov("sales_na_0") +
+  edgecov(cossim) + edgecov(centjoin) + edgecov(centratio) + edgecov(shcomp) + edgecov(shinv) +
+  edgecov(mmc) +
+  ##edgecov(cpa) +
+  ##edgecov(cpc) +
+  ##edgecov(cpp) +
+  memory(type = "stability", lag = 1) +
+  timecov(transform = function(t) t) +
+  nodecov("genidx_multilevel") +
+  nodecov("cent_pow_n0_4") + absdiff("cent_pow_n0_4") +
+  cycle(3) + cycle(4) + cycle(5)
 
 
 
 
-
-
+# ##--------------------------------------------
+# ## Patch category similarity 
+# ##--------------------------------------------
+# patch.todo <- c('qualtrics',
+#                 'clarabridge','confirmit','medallia','snap-surveys-ltd')
+# for (name_i in patch.todo) {
+#   cat(sprintf(' patching %s\n', name_i))
+#   nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
+#   for (t in 1:length(nets)) {
+#     nets[[t]] %n% 'cat_cos_sim' <- aaf$.cov.categoryCosineSimilarity(nets[[t]])
+#   }
+#   saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d_patched.rds',name_i,d)))
+# }
 
 
 # ### Network size by scope of awareness

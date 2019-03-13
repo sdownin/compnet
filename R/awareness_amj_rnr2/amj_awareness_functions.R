@@ -484,12 +484,26 @@ library(stringdist)
     if (!inherits(pcn0.5, "error")) net %v% 'cent_pow_n0_5' <- pcn0.5
     
     ## Joint Centrality:  GEOMETRIC MEAN
-    net %n% 'joint_cent_pow_n0_0' <- sqrt(outer(pcn0.0, pcn0.0, '*'))
-    net %n% 'joint_cent_pow_n0_1' <- sqrt(outer(pcn0.1, pcn0.1, '*'))
-    net %n% 'joint_cent_pow_n0_2' <- sqrt(outer(pcn0.2, pcn0.2, '*'))
-    net %n% 'joint_cent_pow_n0_3' <- sqrt(outer(pcn0.3, pcn0.3, '*'))
-    net %n% 'joint_cent_pow_n0_4' <- sqrt(outer(pcn0.4, pcn0.4, '*'))
-    net %n% 'joint_cent_pow_n0_5' <- sqrt(outer(pcn0.5, pcn0.5, '*'))
+    jpcn0.0 <- sqrt(outer(pcn0.0, pcn0.0, '*'))
+    jpcn0.1 <- sqrt(outer(pcn0.1, pcn0.1, '*'))
+    jpcn0.2 <- sqrt(outer(pcn0.2, pcn0.2, '*'))
+    jpcn0.3 <- sqrt(outer(pcn0.3, pcn0.3, '*'))
+    jpcn0.4 <- sqrt(outer(pcn0.4, pcn0.4, '*'))
+    jpcn0.5 <- sqrt(outer(pcn0.5, pcn0.5, '*'))
+    #
+    jpcn0.0[is.na(jpcn0.0) | is.na(jpcn0.0)] <- 0
+    jpcn0.1[is.na(jpcn0.1) | is.na(jpcn0.1)] <- 0
+    jpcn0.2[is.na(jpcn0.2) | is.na(jpcn0.2)] <- 0
+    jpcn0.3[is.na(jpcn0.3) | is.na(jpcn0.3)] <- 0
+    jpcn0.4[is.na(jpcn0.4) | is.na(jpcn0.4)] <- 0
+    jpcn0.5[is.na(jpcn0.5) | is.na(jpcn0.5)] <- 0
+    #
+    net %n% 'joint_cent_pow_n0_0' <- jpcn0.0
+    net %n% 'joint_cent_pow_n0_1' <- jpcn0.1
+    net %n% 'joint_cent_pow_n0_2' <- jpcn0.2
+    net %n% 'joint_cent_pow_n0_3' <- jpcn0.3
+    net %n% 'joint_cent_pow_n0_4' <- jpcn0.4
+    net %n% 'joint_cent_pow_n0_5' <- jpcn0.5
     
     ##  CENTRALITY RATIO
     .maxMinRatio <- function(a,b) max(a,b)/min(a,b)  ## maintain symmetric matrix for undirect network
@@ -826,7 +840,7 @@ library(stringdist)
         inter <- intersect(as,bs)
         if (length(inter)==0) 
           return(0)
-        return(length(inter) / length(c(as,bs)))
+        return(length(inter) / length(unique(c(as,bs))))
     }
     ## compute outer 'shared' product from vectors of investors strings
     df.pri <- outer(df$inv_uuid[i.pri], df$inv_uuid[i.pri], Vectorize(.pubShared))
@@ -933,7 +947,6 @@ library(stringdist)
   }
   
   
-  
   ##
   # Set network covariates
   # @param [network] net          The network object
@@ -947,9 +960,10 @@ library(stringdist)
   # @return [network]
   ##
   aaf$setCovariates <- function(net, start, end,
-                                covlist=c('age','mmc','dist','ipo_status','constraint','similarity','centrality',
+                                covlist=c('age','mmc','dist','ipo_status',
+                                          'constraint','similarity','centrality',
                                           'generalist','coop','employee','sales',
-                                          'cb_cat_cos_sim','shared_competitor','shared_investor'),
+                                          'cat_cos_sim','shared_competitor','shared_investor'),
                                 acq=NA, br=NA, ipo=NA,
                                 rou=NA, inv_rou=NA, inv=NA, ## investors & funding rounds
                                 coop=NA, ih=NA, size=NA, ## firm size controls data (employees, sales)
@@ -1429,6 +1443,69 @@ library(stringdist)
                 , vertex.label.family = 'sans'
                 , vertex.shape = V(gs)$shape)
   }
+  
+  
+  
+  
+  
+  ##
+  # Covariate SUmmary Plots
+  ##
+  aaf$covSummaryPlot <- function(nets, name_i, net_dir)
+  {
+    node.attrs <- c('age','cent_deg','cent_eig',
+                    'cent_pow_n0_0','cent_pow_n0_1','cent_pow_n0_2',
+                    'cent_pow_n0_3','cent_pow_n0_4','cent_pow_n0_5',
+                    'com_edgebetween','com_fastgreedy','com_infomap',
+                    'com_labelprop','com_multilevel','com_walktrap',
+                    'constraint','employee_na_0','employee_na_age',
+                    'employee_na_cat','employee_na_catage',
+                    'genidx_edgebetween','genidx_fastgreedy','genidx_infomap',
+                    'genidx_labelprop','genidx_multilevel','genidx_walktrap',
+                    'ipo_status',
+                    'njobs_edgebetween','njobs_fastgreedy','njobs_infomap',
+                    'njobs_labelprop','njobs_multilevel','njobs_walktrap',
+                    'region',
+                    'sales_na_0','sales_na_age','sales_na_cat','sales_na_catage')
+    dyad.attrs <- c('cat_cos_sim','cent_ratio_pow_n0_0','cent_ratio_pow_n0_1',
+                    'cent_ratio_pow_n0_2','cent_ratio_pow_n0_3','cent_ratio_pow_n0_4',
+                    'cent_ratio_pow_n0_5',
+                    'coop','coop_bin','coop_past','coop_past_bin',
+                    'joint_cent_pow_n0_0','joint_cent_pow_n0_1','joint_cent_pow_n0_2',
+                    'joint_cent_pow_n0_3','joint_cent_pow_n0_4','joint_cent_pow_n0_5',
+                    'mmc','shared_competitor','shared_investor_nd','similarity')
+    all.attrs <- c(node.attrs, dyad.attrs)
+    len <- length(all.attrs) 
+    N <- ceiling(sqrt(len))
+    M <- ceiling(len / n)
+    all.yrs <- names(nets)
+    yrs <- c(all.yrs[1], all.yrs[length(all.yrs)])
+    
+    for (yr in yrs) 
+    {
+      net <- nets[[yr]]
+      .attrs <- c(network::list.vertex.attributes(net), network::list.network.attributes(net))
+      net.img.file <- file.path(net_dir, sprintf('_cov_summary_%s_d%d_y%s.png',name_i,d,yr))
+      png(net.img.file, width = 15, height = 15, units = 'in', res=200)
+      par(mfrow=c(N,M),mar=c(3,3,3,1))
+      for (attr in node.attrs) {
+        if (attr %in% .attrs) {
+          x <- net %v% attr
+          if (is.numeric(x)) hist(x, col='gray', main=attr, breaks = 13)
+        }
+      }
+      for (attr in dyad.attrs) {
+        if (attr %in% .attrs) {
+          m <- net %n% attr
+          x <- m[lower.tri(m, diag = F)]
+          if (is.numeric(x)) hist(x, col='gray', main=attr, breaks = 13)
+        }
+      }
+      dev.off()
+    }
+  }
+  
+  
   
   ## RETURN object
   return(aaf)
