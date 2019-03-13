@@ -30,9 +30,26 @@ library(stringr, quietly = T)
   data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
   work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
   cs_dir <- file.path(work_dir, 'compustat')   ### just using same compustat directly for all wrds data
+  version_dir <- file.path(work_dir,'R','awareness_amj_rnr2')
+  sup_data_dir <- file.path(work_dir,'amj_rnr2_sup_data')  ## supplmental data dir
   
-  ## SET WORING DIR
+  ## set woring dir
   setwd(work_dir)
+  
+  # cb list filename
+  cb.list.file <- file.path(sup_data_dir,'cb_list.rds')
+  
+  ## load full graph, else make full graph if not exists in working directory
+  if (file.exists(cb.list.file)) 
+  {
+    cat('\nloading CrunchBase `cb` list object...')
+    cb <- readRDS(cb.list.file)
+    cat('done.')
+    return(cb)
+    
+  } 
+  
+  
   
   ## Data list object
   cb <- list()
@@ -448,6 +465,13 @@ library(stringr, quietly = T)
   # cb$job       <- job
   # cb$ppl       <- ppl
   # cb$ppl_desc  <- ppl_desc
+  
+  
+
+  ## SAVE
+  ## load full graph, else make full graph if not exists in working directory
+  saveRDS(cb, file = cb.list.file)
+  
   
   ## RETURN
   return(cb)

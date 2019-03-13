@@ -483,20 +483,21 @@ library(stringr)
     if (!inherits(pcn0.5, "error")) net %v% 'cent_pow_n0_5' <- pcn0.5
     
     ## Joint Centrality:  GEOMETRIC MEAN
-    net %n% 'joint_cent_pow_n0_0' <- outer(pcn0.0, pcn0.0, '*')^0.5
-    net %n% 'joint_cent_pow_n0_1' <- outer(pcn0.1, pcn0.1, '*')^0.5
-    net %n% 'joint_cent_pow_n0_2' <- outer(pcn0.2, pcn0.2, '*')^0.5
-    net %n% 'joint_cent_pow_n0_3' <- outer(pcn0.3, pcn0.3, '*')^0.5
-    net %n% 'joint_cent_pow_n0_4' <- outer(pcn0.4, pcn0.4, '*')^0.5
-    net %n% 'joint_cent_pow_n0_5' <- outer(pcn0.5, pcn0.5, '*')^0.5
+    net %n% 'joint_cent_pow_n0_0' <- sqrt(outer(pcn0.0, pcn0.0, '*'))
+    net %n% 'joint_cent_pow_n0_1' <- sqrt(outer(pcn0.1, pcn0.1, '*'))
+    net %n% 'joint_cent_pow_n0_2' <- sqrt(outer(pcn0.2, pcn0.2, '*'))
+    net %n% 'joint_cent_pow_n0_3' <- sqrt(outer(pcn0.3, pcn0.3, '*'))
+    net %n% 'joint_cent_pow_n0_4' <- sqrt(outer(pcn0.4, pcn0.4, '*'))
+    net %n% 'joint_cent_pow_n0_5' <- sqrt(outer(pcn0.5, pcn0.5, '*'))
     
     ##  CENTRALITY RATIO
-    net %n% 'cent_ratio_pow_n0_0' <- outer(pcn0.0, pcn0.0, '/')
-    net %n% 'cent_ratio_pow_n0_1' <- outer(pcn0.1, pcn0.1, '/')
-    net %n% 'cent_ratio_pow_n0_2' <- outer(pcn0.2, pcn0.2, '/')
-    net %n% 'cent_ratio_pow_n0_3' <- outer(pcn0.3, pcn0.3, '/')
-    net %n% 'cent_ratio_pow_n0_4' <- outer(pcn0.4, pcn0.4, '/')
-    net %n% 'cent_ratio_pow_n0_5' <- outer(pcn0.5, pcn0.5, '/')
+    .maxMinRatio <- function(a,b) max(a,b)/min(a,b)  ## maintain symmetric matrix for undirect network
+    net %n% 'cent_ratio_pow_n0_0' <- outer(pcn0.0, pcn0.0, Vectorize(.maxMinRatio))
+    net %n% 'cent_ratio_pow_n0_1' <- outer(pcn0.1, pcn0.1, Vectorize(.maxMinRatio))
+    net %n% 'cent_ratio_pow_n0_2' <- outer(pcn0.2, pcn0.2, Vectorize(.maxMinRatio))
+    net %n% 'cent_ratio_pow_n0_3' <- outer(pcn0.3, pcn0.3, Vectorize(.maxMinRatio))
+    net %n% 'cent_ratio_pow_n0_4' <- outer(pcn0.4, pcn0.4, Vectorize(.maxMinRatio))
+    net %n% 'cent_ratio_pow_n0_5' <- outer(pcn0.5, pcn0.5, Vectorize(.maxMinRatio))
     
     return(net)
   }
@@ -718,14 +719,144 @@ library(stringr)
   ##
   #
   ##
-  aaf$.cov.sharedInvestor <- function(net, ih, rou)
+  aaf$.cov.sharedInvestor <- function(net, ih, rou, inv_rou, year)
   {
-    firms <- net %v% 'vertex.names'
+    attrs <- network::list.vertex.attributes(net)
+    if (!'age' %in% attrs | !'ipo_status' %in% attrs) {
+      cat(' \n***First set network age and ipo_status status for conditional means.\n\n')
+      return(net)
+    }
+    
+    n <- nrow(net[,])
+
+    df <- data.frame(
+      firms = net %v% 'vertex.names',
+      ipo = net %v% 'ipo_status',
+      tic = net %v% 'tic',
+      stringsAsFactors = F
+    )
+    
+    i.pub <- which( df$ipo == 1 )
+    i.pri <- which( df$ipo != 1 )
+    
+    ##------------------------------------------------
     ## Public Firms -- Thompson Institutional Holdings
-    
-    
+    ##------------------------------------------------
+    cat(' computing public firms shared ownership...')
+    n.pub <- length(i.pub)
+    ih2 <- ih[which(ih$ticker %in% df$tic & ih$year==year), ]
+    ih2tic <- unique(ih2$ticker)
+    ## fill shared ownership values; first set upper triangle elements
+    df.pub <- matrix(0,nrow=n.pub,ncol=n.pub)
+    for (i in 1:n.pub) {
+      for (j in 1:n.pub) {
+        if (i < j) {
+          
+          ## separate firms i,j instituational holdings data
+          .ih.i <- ih2[ih2$ticker==ih2tic[i], ]
+          .ih.j <- ih2[ih2$ticker==ih2tic[j], ]
+          
+          ## intersection
+          inter <- intersect(.ih.i$mgrname, .ih.j$mgrname)
+          ## disjuction (need to run setdiff both ways since output length depends on first argument)
+          disj <- unique(c(setdiff(.ih.i$mgrname, .ih.j$mgrname), 
+                           setdiff(.ih.j$mgrname, .ih.i$mgrname)))
+          
+          if (length(inter)==0) {
+            ## skip if no shared investors 
+            shared <- 0
+            
+          } else {
+            ## add percentages by firm before combining (ie, ticker symbol; not intstitutional fund manager)
+            .ih.i$pct <- .ih.i$shares / sum(as.numeric(.ih.i$shares))
+            .ih.j$pct <- .ih.j$shares / sum(as.numeric(.ih.j$shares))
+            
+            ## combined data (intersection + disjunction) for denominator 
+            .ih <- rbind(.ih.i, .ih.j)
+            
+            ## intersection data for numerator sum of shared investor percentages
+            .ih.int <- .ih[which(.ih$mgrname %in% inter), ]
+            
+            ## COMPUTE SHARED OWNERSHIP PROPORTION
+            shared <- sum(as.numeric(.ih.int$pct)) / sum(as.numeric(.ih$pct))
+          }
+          
+          df.pub[i,j] <- ifelse(is.na(shared) | abs(shared)==Inf, 0, shared)
+        }
+      }
+    }
+    ## Then, set lower triangle values as transpose of upper triangle values
+    tdf.pub <- t(df.pub)
+    df.pub[lower.tri(df.pub, diag = F)] <- tdf.pub[lower.tri(tdf.pub, diag = F)]
+    cat(' done.\n')
+
+    ##------------------------------------------------
     ## Private Firms -- common investor in funding rounds
+    ##------------------------------------------------
+    cat(' computing public firms shared ownership...')
+    ## merge firm investment rounds into investments round investors long-form df
+    invrr <- merge(inv_rou_yr, rou, by.x='funding_round_uuid', by.y='funding_round_uuid', all.x=T, all.y=F)
+    ## subset investments rounds <= year
+    invrr <- invrr[which(invrr$funded_year <= year), ]
+    ## Merge in investor names
+    invrr <- merge(invrr, inv[,c('uuid','investor_name','investor_name_unique')], by.x='investor_uuid', by.y='uuid', all.x=T, all.y=F)
+    ## concatenate the investor UUIDs by the firm (who was invested in)
+    invply <- ddply(invrr[which(invrr$company_name_unique %in% df$firms[i.pri]), ],
+                    .(company_name_unique), summarize,
+                    inv_uuid=paste(unique(investor_uuid),collapse = '|'),
+                    inv=paste(unique(investor_name_unique),collapse = '|'))
+    ## sort back into order of nodes in network
+    df <- merge(df, invply, by.x='firms', by.y='company_name_unique', all.x=T, all.y=F)
     
+    ## function to vectorize in outer 'shared' product of vectors of investor stings
+    .pubShared <- function(a,b){
+        as <- unlist(strsplit(a,'[|]'))
+        bs <- unlist(strsplit(b,'[|]'))
+        inter <- intersect(as,bs)
+        if (length(inter)==0) 
+          return(0)
+        return(length(inter) / length(c(as,bs)))
+    }
+    ## compute outer 'shared' product from vectors of investors strings
+    df.pri <- outer(df$inv_uuid[i.pri], df$inv_uuid[i.pri], Vectorize(.pubShared))
+    
+    
+    ##------------------------------------------------
+    ## COMBINE Private-Private & Public-Public Blog diagonals
+    ##------------------------------------------------
+    m.all <- matrix(0, nrow=n, ncol=n)
+    m.all[i.pub, i.pub] <- df.pub
+    m.all[i.pri, i.pri] <- df.pri
+    
+    df <- merge(df, )
+    
+    ## assign to off-diagonal blocks (example with whole & partial matrices xz,tz)
+    # > xz[.pub, .pri] = tz    ## assign to 1st block
+    # > xz[.pri, .pub] = t(tz) ## flip indices and transpose to assign to other block
+    m.off <- matrix(0, ncol=length(i.pri), nrow=length(i.pub))
+    
+    for (i in i.pub) {
+      for (j in i.pri) {
+        if (i < j) { ## start with upper off-diagonal block
+          idf <- df[i, ]
+          jdf <- df[j, ]
+          
+          
+          if () {
+            shared <- 0
+          } else {
+            shared <- 
+          }
+          
+          m.all[i,j] <- shared
+        }
+      }
+    }
+    
+    ##
+    m.all[i.pri, i.pub] <- t(m.all[i.pub, i.pri])
+    
+    cat(' done.\n')
     
     ## Public-Private dyad
     
@@ -749,7 +880,8 @@ library(stringr)
                                 covlist=c('age','mmc','dist','ipo_status','constraint','similarity','centrality',
                                           'generalist','coop','employee','sales',
                                           'cb_cat_cos_sim','shared_competitor','shared_investor'),
-                                acq=NA,rou=NA,br=NA,ipo=NA,coop=NA, ## SDC cooperative relations
+                                acq=NA,rou=NA,br=NA,ipo=NA,inv=NA, ## investors
+                                coop=NA, ## SDC cooperative relations
                                 ih=NA, ## instituational holdings data
                                 size=NA, ## firm size controls data (employees, sales)
                                 verbose=TRUE)

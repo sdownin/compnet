@@ -19,12 +19,13 @@ sup_data_dir <- file.path(work_dir,'amj_rnr2_sup_data')  ## supplmental data dir
 ## set woring dir
 setwd(work_dir)
 
-aaf <- source(file.path(version_dir,'amj_awareness_functions.R'))$value
-cb  <- source(file.path(version_dir,'amj_cb_data_prep.R'))$value           ## cb : CrunchBase
-sdc <- source(file.path(version_dir,'amj_sdc_coop.R'))$value               ## sdc: Thompson SDC
-si  <- source(file.path(version_dir,'amj_firm_size_controls.R'))$value     ## si : size controls from mergent intellect
-ih  <- source(file.path(version_dir,'amj_institutional_holdings.R'))$value ## ih : institutional holdings
-g.full <- source(file.path(version_dir,'amj_make_full_graph.R'))$value     ## g.full
+## LOAD DATA AND DEPENDENCIES
+aaf    <- source(file.path(version_dir,'amj_awareness_functions.R'))$value    ## aaf: awareness functions
+cb     <- source(file.path(version_dir,'amj_cb_data_prep.R'))$value           ## cb : CrunchBase
+sdc    <- source(file.path(version_dir,'amj_sdc_coop.R'))$value               ## sdc: Thompson SDC
+si     <- source(file.path(version_dir,'amj_firm_size_controls.R'))$value     ## si : size controls from mergent intellect
+ih     <- source(file.path(version_dir,'amj_institutional_holdings.R'))$value ## ih : institutional holdings
+g.full <- source(file.path(version_dir,'amj_make_full_graph.R'))$value        ## g.full : full competition graph
 
 # ## set firms to create networks (focal firm or replication study focal firms)
 # firms.todo <- c('qualtrics','cloudcherry',
@@ -156,8 +157,8 @@ for (i in 1:1) {
     
     ## 3. Set Covariates for updated Period Network
     nl[[t]] <- aaf$setCovariates(nl[[t]], periods[t-1], periods[t],
-                                 acq=cb$co_acq,br=cb$co_br,rou=cb$co_rou,ipo=cb$co_ipo,
-                                 coop=sdc, ih=ih, size=size)
+                                 acq=cb$co_acq,br=cb$co_br,rou=cb$co_rou,ipo=cb$co_ipo, inv=cb$inv,
+                                 coop=sdc, ih=ih, size=si)
     
     ## save each period if large network (would exceed memory as full list of time periods)
     if (vcount(g.d.sub) >= lg.cutoff) {
