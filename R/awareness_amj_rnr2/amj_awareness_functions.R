@@ -208,7 +208,7 @@ library(stringdist)
     nx <- sum(mx %in% my)
     ny <- sum(my %in% mx)
     mmc <- (nx / length(mx)) * (ny / length(my))
-    diag(mmc) <- 0
+    mmc[diag(mmc)] <- 0
     return(mmc)
   }
   
