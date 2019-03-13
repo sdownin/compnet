@@ -157,7 +157,7 @@ for (i in 1:1) {
     ## 3. Set Covariates for updated Period Network
     nl[[t]] <- aaf$setCovariates(nl[[t]], periods[t-1], periods[t],
                                  acq=cb$co_acq,br=cb$co_br,rou=cb$co_rou,ipo=cb$co_ipo,
-                                 coop=coop, ih=ih, size=size)
+                                 coop=sdc, ih=ih, size=size)
     
     ## save each period if large network (would exceed memory as full list of time periods)
     if (vcount(g.d.sub) >= lg.cutoff) {

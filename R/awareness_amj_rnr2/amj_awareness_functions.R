@@ -94,7 +94,7 @@ library(stringr)
       vertAttrs <- c('company_name','founded_on','founded_year','closed_on','closed_year','category_list',
                      'category_group_list','state_code','country_code','region','city','acquired_on',
                      'gvkey','company_uuid','domain','status_update',
-                     'cusip','cusip_6','sic','employee_count')
+                     'cusip','cusip_6','sic','tic','employee_count')
     }
     el <- data.frame(source=comp[,name], 
                      target=comp[,compName],
@@ -718,11 +718,16 @@ library(stringr)
   ##
   #
   ##
-  aaf$.cov.sharedInvestor <- function(net, ih)
+  aaf$.cov.sharedInvestor <- function(net, ih, rou)
   {
+    firms <- net %v% 'vertex.names'
     ## Public Firms -- Thompson Institutional Holdings
     
+    
     ## Private Firms -- common investor in funding rounds
+    
+    
+    ## Public-Private dyad
     
   }
   

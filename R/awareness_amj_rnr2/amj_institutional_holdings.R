@@ -36,7 +36,7 @@
   
   if (file.exists(ih.combined.file)) {
     
-    ih <- read.csv(ih.combined.file, stringsAsFactors = T)
+    ih <- read.csv(ih.combined.file, stringsAsFactors = F)
     
   } else {
     
