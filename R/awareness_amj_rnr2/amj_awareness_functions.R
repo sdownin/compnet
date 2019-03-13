@@ -11,6 +11,7 @@ library(network)
 library(intergraph)
 library(xergm)
 library(stringr)
+library(stringdist)
 
 
 .main.aaf <- function()
@@ -795,7 +796,7 @@ library(stringr)
     ##------------------------------------------------
     cat(' computing public firms shared ownership...')
     ## merge firm investment rounds into investments round investors long-form df
-    invrr <- merge(inv_rou_yr, rou, by.x='funding_round_uuid', by.y='funding_round_uuid', all.x=T, all.y=F)
+    invrr <- merge(inv_rou, rou, by.x='funding_round_uuid', by.y='funding_round_uuid', all.x=T, all.y=F)
     ## subset investments rounds <= year
     invrr <- invrr[which(invrr$funded_year <= year), ]
     ## Merge in investor names
@@ -819,6 +820,7 @@ library(stringr)
     }
     ## compute outer 'shared' product from vectors of investors strings
     df.pri <- outer(df$inv_uuid[i.pri], df$inv_uuid[i.pri], Vectorize(.pubShared))
+    cat(' done.\n')
     
     
     ##------------------------------------------------
@@ -827,33 +829,77 @@ library(stringr)
     m.all <- matrix(0, nrow=n, ncol=n)
     m.all[i.pub, i.pub] <- df.pub
     m.all[i.pri, i.pri] <- df.pri
+  
     
-    df <- merge(df, )
+    ##------------------------------------------------
+    ## Check Fuzzy match for Public-Private off-diagonal blocks
+    ##------------------------------------------------
+    cat(' computing private-public firms fuzzy-matched shared investors...')
+    .strDist <- function(a,b) {
+      return(stringdist(a, b, method='cosine'))
+    }
+    .cleanStrings <- function(x) {
+      x <- str_to_lower(x)
+      x <- str_replace_all(x,'(l\\.l\\.c\\.)|(llc)$','')
+      x <- str_replace_all(x,'(inc\\.{0,1})$','')
+      x <- str_replace_all(x,'(llp|lp|l\\.p\\.)$','')
+      x <- str_replace_all(x,'(mgmt|management|corp|corporation|co)\\s+$','')
+      x <- str_replace_all(x,'(co)$','')
+      x <- str_replace_all(x,'(,)\\s+$','')
+      x <- str_replace_all(x,'\\s+$','')
+      x <- str_replace_all(x,'(mgmt|management)$','')
+      x <- str_replace_all(x,'\\s+$','')
+      return(x)
+    }
+  
+    ## pre-remove the dashes from CB firm name unique format
+    df$inv[!is.na(df$inv)] <-.cleanStrings(str_replace_all(df$inv[!is.na(df$inv)], '-', ' '))
+    
+    ## LOOP PUBLIC FIRMS
+    for (i in i.pub) 
+    {
+      cat(sprintf(' %.0f%s',100*which(i.pub==i)/length(i.pub),'%')) 
+      inv.i <- .cleanStrings( ih2$mgrname[which(ih2$ticker==df$tic[i])] )
+      
+      ## skip whole row if missing investors
+      if (all(is.na(inv.i)) | length(inv.i)==0) {
+        m.all[i,] <- 0
+        next
+      }
+      
+      ## LOOP PRIVATE FIRMS
+      for (j in i.pri) 
+      {
+        inv.j <- unlist(strsplit(df$inv[which(df$firms==df$firms[j])], '[|]'))
+        
+        if (all(is.na(inv.j)) | length(inv.j)==0) {
+          m.all[i,j] <- 0
+          next
+        }
+        ## check fuzzy matched (string distance)
+        ## for each combination of CB private investors and Thomson public invesotrs
+        # dij <- sapply(inv.i, function(vi){
+        #           sapply(inv.j, function(vj){
+        #             stringdist(vi, vj, method = 'cosine')
+        #           })
+        #         })
+        dij <- outer(inv.i, inv.j, Vectorize(.strDist))
+        ## cosine similarity threshold for judged same investor name
+        threshold <- 0.07 
+        ## fuzzy intersection of investors between private  public firms
+        ij.match <- dij[dij < threshold]
+        ## shared investor proportion [0,1]
+        shared <- length(ij.match) / (length(inv.i) + length(inv.j))
+        ## safe sett
+        m.all[i,j] <- ifelse(is.na(shared) | abs(shared)==Inf, 0, shared)
+                
+      }
+      
+    }
     
     ## assign to off-diagonal blocks (example with whole & partial matrices xz,tz)
     # > xz[.pub, .pri] = tz    ## assign to 1st block
     # > xz[.pri, .pub] = t(tz) ## flip indices and transpose to assign to other block
-    m.off <- matrix(0, ncol=length(i.pri), nrow=length(i.pub))
-    
-    for (i in i.pub) {
-      for (j in i.pri) {
-        if (i < j) { ## start with upper off-diagonal block
-          idf <- df[i, ]
-          jdf <- df[j, ]
-          
-          
-          if () {
-            shared <- 0
-          } else {
-            shared <- 
-          }
-          
-          m.all[i,j] <- shared
-        }
-      }
-    }
-    
-    ##
     m.all[i.pri, i.pub] <- t(m.all[i.pub, i.pri])
     
     cat(' done.\n')
