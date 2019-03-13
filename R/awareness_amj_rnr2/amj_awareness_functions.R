@@ -753,7 +753,7 @@ library(stringdist)
     ##------------------------------------------------
     ## Public Firms -- Thompson Institutional Holdings
     ##------------------------------------------------
-    cat(' computing public firms common investors...')
+    cat('\n computing public firms common investors...')
     n.pub <- length(i.pub)
     ih2 <- ih[which(ih$ticker %in% df$tic & ih$year==year), ]
     ih2tic <- unique(ih2$ticker)
@@ -907,9 +907,7 @@ library(stringdist)
           
         }
         
-      } else {
-        cat(' skipping mixed dyad public-private off-diagonal blocks..done.')
-      }
+      } 
       
       ## assign to off-diagonal blocks (example with whole & partial matrices xz,tz)
       # > xz[.pub, .pri] = tz    ## assign to 1st block
@@ -917,6 +915,10 @@ library(stringdist)
       m.all[i.pri, i.pub] <- t(m.all[i.pub, i.pri])
       
       cat(' done.\n')
+      
+    } else {
+      
+      cat(' skipping mixed dyad public-private off-diagonal blocks.')
       
     }
     
@@ -948,10 +950,9 @@ library(stringdist)
                                 covlist=c('age','mmc','dist','ipo_status','constraint','similarity','centrality',
                                           'generalist','coop','employee','sales',
                                           'cb_cat_cos_sim','shared_competitor','shared_investor'),
-                                acq=NA,rou=NA,br=NA,ipo=NA,inv=NA, ## investors
-                                coop=NA, ## SDC cooperative relations
-                                ih=NA, ## instituational holdings data
-                                size=NA, ## firm size controls data (employees, sales)
+                                acq=NA, br=NA, ipo=NA,
+                                rou=NA, inv_rou=NA, inv=NA, ## investors & funding rounds
+                                coop=NA, ih=NA, size=NA, ## firm size controls data (employees, sales)
                                 verbose=TRUE)
   { 
     if( network::network.edgecount(net) > 0 ) {
@@ -1060,9 +1061,9 @@ library(stringdist)
       }
       if ('shared_investor' %in% covlist)
       {
-        if (verbose) cat('computing Shares Investors...')
-        net %n% 'shared_investor_nd' <- aaf$.cov.sharedInvestor(net, ih, rou, inv_rou, inv, year, off.diagonal.blocks=F)
-        # net %n% 'shared_investor' <- aaf$.cov.sharedInvestor(net, ih, rou, inv_rou, inv, year, off.diagonal.blocks=T)
+        if (verbose) cat('computing Shared Investors...')
+        net %n% 'shared_investor_nd' <- aaf$.cov.sharedInvestor(net, ih, rou, inv_rou, inv, start, off.diagonal.blocks=F)
+        # net %n% 'shared_investor' <- aaf$.cov.sharedInvestor(net, ih, rou, inv_rou, inv, start, off.diagonal.blocks=TRUE)
         if (verbose) cat('done\n')
       }
       

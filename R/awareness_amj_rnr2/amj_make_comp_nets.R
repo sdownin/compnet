@@ -60,8 +60,7 @@ force.overwrite <- FALSE ## if network files in directory should be overwritten
 ##
 ## run main network period creation loop
 ##
-# for (i in 1:length(firms.todo)) {
-for (i in 1:1) {
+for (i in 1:length(firms.todo)) {
 
   name_i <- firms.todo[i]
   cat(sprintf('\n\n------------ %s -------------\n\n',name_i))
@@ -135,7 +134,7 @@ for (i in 1:1) {
   for (t in 2:length(periods)) 
   {
     ## period dates
-    cat(sprintf('\nmaking period %s-%s:\n', periods[t-1],periods[t]))
+    cat(sprintf('\n\nmaking period %s-%s:\n', periods[t-1],periods[t]))
     t1 <- sprintf('%d-01-01',periods[t-1]) ## inclusive start date 'YYYY-MM-DD'
     t2 <- sprintf('%d-12-31',periods[t-1]) ## inclusive end date 'YYYY-MM-DD'
     
@@ -157,7 +156,8 @@ for (i in 1:1) {
     
     ## 3. Set Covariates for updated Period Network
     nl[[t]] <- aaf$setCovariates(nl[[t]], periods[t-1], periods[t],
-                                 acq=cb$co_acq,br=cb$co_br,rou=cb$co_rou,ipo=cb$co_ipo, inv=cb$inv,
+                                 acq=cb$co_acq, br=cb$co_br, ipo=cb$co_ipo, 
+                                 rou=cb$co_rou, inv_rou=cb$inv_rou, inv=cb$inv,
                                  coop=sdc, ih=ih, size=si)
     
     ## save each period if large network (would exceed memory as full list of time periods)
@@ -208,6 +208,10 @@ for (i in 1:1) {
   }
   
 }
+
+
+
+
 
 
 
