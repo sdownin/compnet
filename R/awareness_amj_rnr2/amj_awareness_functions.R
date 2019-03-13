@@ -904,7 +904,12 @@ library(stringdist)
     
     cat(' done.\n')
     
-    ## Public-Private dyad
+    ##----------------------------------
+    ## reset diag to zero
+    diag(m.all) <- 0
+    
+    ## RETURN
+    return(m.all)
     
   }
   
