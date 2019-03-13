@@ -718,9 +718,19 @@ library(stringdist)
 
   
   ##
+  # Shared investors dyadic data
+  #  - values range [0,1]
   #
+  # @param [network] net                    The network object
+  # @param [dataframe] ih                   Institutional holdings data (Thomson; public firms)
+  # @param [dataframe] rou                  Venture funding rounds data (CrunchBase)
+  # @param [dataframe] inv_rou              Venture investors-funding round many-to-many table (CrunchBase)
+  # @param [dataframe] inv                  Venture investors table (CrunchBase)
+  # @param [integer] year                   The current year of data to filter (==, <=)
+  # @param [boolean] off.diagonal.blocks    Flag to compute fuzzy similarities for public-private mixed dyads on off-diagonal blocks -- **NOTE** very slow
+  # @return [network] net
   ##
-  aaf$.cov.sharedInvestor <- function(net, ih, rou, inv_rou, year)
+  aaf$.cov.sharedInvestor <- function(net, ih, rou, inv_rou, inv, year, off.diagonal.blocks=F)
   {
     attrs <- network::list.vertex.attributes(net)
     if (!'age' %in% attrs | !'ipo_status' %in% attrs) {
@@ -743,7 +753,7 @@ library(stringdist)
     ##------------------------------------------------
     ## Public Firms -- Thompson Institutional Holdings
     ##------------------------------------------------
-    cat(' computing public firms shared ownership...')
+    cat(' computing public firms common investors...')
     n.pub <- length(i.pub)
     ih2 <- ih[which(ih$ticker %in% df$tic & ih$year==year), ]
     ih2tic <- unique(ih2$ticker)
@@ -794,7 +804,7 @@ library(stringdist)
     ##------------------------------------------------
     ## Private Firms -- common investor in funding rounds
     ##------------------------------------------------
-    cat(' computing public firms shared ownership...')
+    cat(' computing private firms common investors...')
     ## merge firm investment rounds into investments round investors long-form df
     invrr <- merge(inv_rou, rou, by.x='funding_round_uuid', by.y='funding_round_uuid', all.x=T, all.y=F)
     ## subset investments rounds <= year
@@ -834,78 +844,85 @@ library(stringdist)
     ##------------------------------------------------
     ## Check Fuzzy match for Public-Private off-diagonal blocks
     ##------------------------------------------------
-    cat(' computing private-public firms fuzzy-matched shared investors...')
-    .strDist <- function(a,b) {
-      return(stringdist(a, b, method='cosine'))
-    }
-    .cleanStrings <- function(x) {
-      x <- str_to_lower(x)
-      x <- str_replace_all(x,'(l\\.l\\.c\\.)|(llc)$','')
-      x <- str_replace_all(x,'(inc\\.{0,1})$','')
-      x <- str_replace_all(x,'(llp|lp|l\\.p\\.)$','')
-      x <- str_replace_all(x,'(mgmt|management|corp|corporation|co)\\s+$','')
-      x <- str_replace_all(x,'(co)$','')
-      x <- str_replace_all(x,'(,)\\s+$','')
-      x <- str_replace_all(x,'\\s+$','')
-      x <- str_replace_all(x,'(mgmt|management)$','')
-      x <- str_replace_all(x,'\\s+$','')
-      return(x)
-    }
-  
-    ## pre-remove the dashes from CB firm name unique format
-    df$inv[!is.na(df$inv)] <-.cleanStrings(str_replace_all(df$inv[!is.na(df$inv)], '-', ' '))
-    
-    ## LOOP PUBLIC FIRMS
-    for (i in i.pub) 
+    if (off.diagonal.blocks)
     {
-      cat(sprintf(' %.0f%s',100*which(i.pub==i)/length(i.pub),'%')) 
-      inv.i <- .cleanStrings( ih2$mgrname[which(ih2$ticker==df$tic[i])] )
-      
-      ## skip whole row if missing investors
-      if (all(is.na(inv.i)) | length(inv.i)==0) {
-        m.all[i,] <- 0
-        next
+      cat(' computing private-public firms fuzzy-matched shared investors...')
+      .strDist <- function(a,b) {
+        return(stringdist(a, b, method='cosine'))
+      }
+      .cleanStrings <- function(x) {
+        x <- str_to_lower(x)
+        x <- str_replace_all(x,'(l\\.l\\.c\\.)|(llc)$','')
+        x <- str_replace_all(x,'(inc\\.{0,1})$','')
+        x <- str_replace_all(x,'(llp|lp|l\\.p\\.)$','')
+        x <- str_replace_all(x,'(mgmt|management|corp|corporation|co)\\s+$','')
+        x <- str_replace_all(x,'(co)$','')
+        x <- str_replace_all(x,'(,)\\s+$','')
+        x <- str_replace_all(x,'\\s+$','')
+        x <- str_replace_all(x,'(mgmt|management)$','')
+        x <- str_replace_all(x,'\\s+$','')
+        return(x)
       }
       
-      ## LOOP PRIVATE FIRMS
-      for (j in i.pri) 
+      ## pre-remove the dashes from CB firm name unique format
+      df$inv[!is.na(df$inv)] <-.cleanStrings(str_replace_all(df$inv[!is.na(df$inv)], '-', ' '))
+      
+      ## LOOP PUBLIC FIRMS
+      for (i in i.pub) 
       {
-        inv.j <- unlist(strsplit(df$inv[which(df$firms==df$firms[j])], '[|]'))
+        cat(sprintf(' %.0f%s',100*which(i.pub==i)/length(i.pub),'%')) 
+        inv.i <- .cleanStrings( ih2$mgrname[which(ih2$ticker==df$tic[i])] )
         
-        if (all(is.na(inv.j)) | length(inv.j)==0) {
-          m.all[i,j] <- 0
+        ## skip whole row if missing investors
+        if (all(is.na(inv.i)) | length(inv.i)==0) {
+          m.all[i,] <- 0
           next
         }
-        ## check fuzzy matched (string distance)
-        ## for each combination of CB private investors and Thomson public invesotrs
-        # dij <- sapply(inv.i, function(vi){
-        #           sapply(inv.j, function(vj){
-        #             stringdist(vi, vj, method = 'cosine')
-        #           })
-        #         })
-        dij <- outer(inv.i, inv.j, Vectorize(.strDist))
-        ## cosine similarity threshold for judged same investor name
-        threshold <- 0.07 
-        ## fuzzy intersection of investors between private  public firms
-        ij.match <- dij[dij < threshold]
-        ## shared investor proportion [0,1]
-        shared <- length(ij.match) / (length(inv.i) + length(inv.j))
-        ## safe sett
-        m.all[i,j] <- ifelse(is.na(shared) | abs(shared)==Inf, 0, shared)
-                
+        
+        ## LOOP PRIVATE FIRMS
+        for (j in i.pri) 
+        {
+          inv.j <- unlist(strsplit(df$inv[which(df$firms==df$firms[j])], '[|]'))
+          
+          if (all(is.na(inv.j)) | length(inv.j)==0) {
+            m.all[i,j] <- 0
+            next
+          }
+          ## check fuzzy matched (string distance)
+          ## for each combination of CB private investors and Thomson public invesotrs
+          # dij <- sapply(inv.i, function(vi){
+          #           sapply(inv.j, function(vj){
+          #             stringdist(vi, vj, method = 'cosine')
+          #           })
+          #         })
+          dij <- outer(inv.i, inv.j, Vectorize(.strDist))
+          ## cosine similarity threshold for judged same investor name
+          threshold <- 0.07 
+          ## fuzzy intersection of investors between private  public firms
+          ij.match <- dij[dij < threshold]
+          ## shared investor proportion [0,1]
+          shared <- length(ij.match) / (length(inv.i) + length(inv.j))
+          ## safe sett
+          m.all[i,j] <- ifelse(is.na(shared) | abs(shared)==Inf, 0, shared)
+          
+        }
+        
+      } else {
+        cat(' skipping mixed dyad public-private off-diagonal blocks..done.')
       }
+      
+      ## assign to off-diagonal blocks (example with whole & partial matrices xz,tz)
+      # > xz[.pub, .pri] = tz    ## assign to 1st block
+      # > xz[.pri, .pub] = t(tz) ## flip indices and transpose to assign to other block
+      m.all[i.pri, i.pub] <- t(m.all[i.pub, i.pri])
+      
+      cat(' done.\n')
       
     }
     
-    ## assign to off-diagonal blocks (example with whole & partial matrices xz,tz)
-    # > xz[.pub, .pri] = tz    ## assign to 1st block
-    # > xz[.pri, .pub] = t(tz) ## flip indices and transpose to assign to other block
-    m.all[i.pri, i.pub] <- t(m.all[i.pub, i.pri])
-    
-    cat(' done.\n')
-    
     ##----------------------------------
-    ## reset diag to zero
+    ## reset diag to zero & return
+    ##----------------------------------
     diag(m.all) <- 0
     
     ## RETURN
@@ -1044,7 +1061,8 @@ library(stringdist)
       if ('shared_investor' %in% covlist)
       {
         if (verbose) cat('computing Shares Investors...')
-        net %n% 'shared_investor' <- aaf$.cov.sharedInvestor(net, ih, rou)
+        net %n% 'shared_investor_nd' <- aaf$.cov.sharedInvestor(net, ih, rou, inv_rou, inv, year, off.diagonal.blocks=F)
+        # net %n% 'shared_investor' <- aaf$.cov.sharedInvestor(net, ih, rou, inv_rou, inv, year, off.diagonal.blocks=T)
         if (verbose) cat('done\n')
       }
       
