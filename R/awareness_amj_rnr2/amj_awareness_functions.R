@@ -491,12 +491,12 @@ library(stringdist)
     jpcn0.4 <- sqrt(outer(pcn0.4, pcn0.4, '*'))
     jpcn0.5 <- sqrt(outer(pcn0.5, pcn0.5, '*'))
     #
-    jpcn0.0[is.na(jpcn0.0) | is.na(jpcn0.0)] <- 0
-    jpcn0.1[is.na(jpcn0.1) | is.na(jpcn0.1)] <- 0
-    jpcn0.2[is.na(jpcn0.2) | is.na(jpcn0.2)] <- 0
-    jpcn0.3[is.na(jpcn0.3) | is.na(jpcn0.3)] <- 0
-    jpcn0.4[is.na(jpcn0.4) | is.na(jpcn0.4)] <- 0
-    jpcn0.5[is.na(jpcn0.5) | is.na(jpcn0.5)] <- 0
+    jpcn0.0[is.na(jpcn0.0) | is.nan(jpcn0.0)] <- 0
+    jpcn0.1[is.na(jpcn0.1) | is.nan(jpcn0.1)] <- 0
+    jpcn0.2[is.na(jpcn0.2) | is.nan(jpcn0.2)] <- 0
+    jpcn0.3[is.na(jpcn0.3) | is.nan(jpcn0.3)] <- 0
+    jpcn0.4[is.na(jpcn0.4) | is.nan(jpcn0.4)] <- 0
+    jpcn0.5[is.na(jpcn0.5) | is.nan(jpcn0.5)] <- 0
     #
     net %n% 'joint_cent_pow_n0_0' <- jpcn0.0
     net %n% 'joint_cent_pow_n0_1' <- jpcn0.1

@@ -233,15 +233,62 @@ for (i in 1:length(firms.todo)) {
 ## Patch Centrality
 ##--------------------------------------------
 patch.todo <- c('qualtrics',
-                'clarabridge','confirmit','medallia','snap-surveys-ltd')
+                'clarabridge','confirmit','medallia','snap-surveys-ltd','getfeedback')
 for (name_i in patch.todo) {
-  cat(sprintf(' patching %s\n', name_i))
+  cat(sprintf('\n\n patching %s\n', name_i))
   nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
   for (t in 1:length(nets)) {
     nets[[t]] <- aaf$.cov.centrality(nets[[t]])
+    year <- as.numeric(names(nets)[t])
+    nets[[t]] %n% 'shared_investor_nd' <- aaf$.cov.sharedInvestor(nets[[t]], ih, cb$co_rou, cb$inv_rou, cb$inv, year, off.diagonal.blocks=F)
   }
   saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d_patched.rds',name_i,d)))
 }
+
+
+##-----------------------------------------
+## Check encounters distribution per year
+##-----------------------------------------
+patch.todo <- c('qualtrics',
+                'clarabridge','confirmit','medallia','snap-surveys-ltd','getfeedback')
+ckl <- list()
+for (name_i in patch.todo) {
+  nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
+  ckl[[name_i]] <- sapply(nets, function(net){
+      g <- asIgraph(net)
+      g.sub <- igraph::induced.subgraph(g,which(igraph::degree(g)>0))
+      deg <- igraph::degree(g.sub)
+      return(c(e=ecount(g.sub),v=vcount(g.sub),
+               deg_avg=round(mean(deg),1), deg_med=median(deg),
+               deg_min=min(deg), deg_max=max(deg)))
+    })
+  # ec <- sapply(nets, function(net) {
+  #     m <- net[,]
+  #     return(sum(m[lower.tri(m)])) 
+  #   })
+  # vc <- sapply(nets, function(net) nrow(net[,]))
+  # ckdf <- rbind(ckdf, data.frame(
+  #     name=name_i,
+  #     yrs=length(nets),
+  #     v_sum=sum(vc), 
+  #     v_avg=mean(vc),
+  #     v_min=min(vc),
+  #     v_max=max(vc),
+  #     e_sum=sum(ec),
+  #     e_avg=mean(ec),
+  #     e_min=min(ec),
+  #     e_max=max(ec)
+  #   ))
+}
+
+ckrm <- lapply(ckl, rowMeans)
+ckrs <- lapply(ckl, rowSums)
+ckrmdf <- t(round(as.data.frame(ckrm),1))
+ckrsdf <- t(round(as.data.frame(ckrs),1))
+
+colSums(ckrmdf)
+
+colSums(ckrsdf)
 
 ##-----------------------------------------------
 ## TEST BTERGM
