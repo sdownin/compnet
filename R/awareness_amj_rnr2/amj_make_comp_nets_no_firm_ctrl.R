@@ -13,7 +13,7 @@ data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_e
 work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
 img_dir  <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
 version_dir <- file.path(work_dir,'R','awareness_amj_rnr2')
-net_dir <- file.path(work_dir,'firm_nets_rnr2','firmctrl')
+net_dir <- file.path(work_dir,'firm_nets_rnr2')
 sup_data_dir <- file.path(work_dir,'amj_rnr2_sup_data')  ## supplmental data dir
 
 ## set woring dir
@@ -28,49 +28,32 @@ ih     <- source(file.path(version_dir,'amj_institutional_holdings.R'))$value ##
 g.full <- source(file.path(version_dir,'amj_make_full_graph.R'))$value        ## g.full : full competition graph
 
 # ## set firms to create networks (focal firm or replication study focal firms)
+# firms.todo <- c('qualtrics','cloudcherry',
+#                 'abroad101','checkmarket','clarabridge',
+#                 'confirmit','customergauge','cx-index','empathica',
+#                 'feedback-lite','first-mile-geo','getfeedback',
+#                 'inqwise','leaderamp', 'medallia','myfeelback',
+#                 'promoter-io','satmetrix',
+#                 'snap-surveys-ltd','super-simple-survey','survata',
+#                 'surveygizmo','surveymonkey',
+#                 'surveyrock','typeform','userate','verint','voice-polls')
 
 ## set firms to create networks (focal firm or replication study focal firms)
 # firms.todo <- c('qualtrics',
 #                 'clarabridge','confirmit','medallia','snap-surveys-ltd','getfeedback')
-# firms.todo <- c('cloudcherry',
-#                 'checkmarket',
-#                 'customergauge','cx-index','empathica',
-#                 'feedback-lite','first-mile-geo',
-#                 'inqwise','leaderamp','myfeelback',
-#                 'promoter-io','satmetrix',
-#                 'super-simple-survey','survata',
-#                 'surveygizmo',  ## 'surveymonkey'
-#                 'surveyrock','typeform','userate','verint','voice-polls')
-firms.todo <- c(
-  'qualtrics',
-  'checkmarket',
-  'clarabridge',
-  'cloudcherry',
-  'confirmit',
-  'customergauge',
-  'cx-index',
-  'empathica',
-  'feedback-lite',
-  'first-mile-geo',
-  'getfeedback',
-  'inqwise',
-  'leaderamp',
-  'medallia',
-  'myfeelback',
-  'promoter-io',
-  'satmetrix',
-  'snap-surveys-ltd',
-  'super-simple-survey',
-  'survata',
-  'surveyrock',
-  'typeform',
-  'userate',
-  'verint',
-  'voice-polls'
-)
+# firms.todo <- c('cloudcherry', 'checkmarket', 'customergauge','cx-index','empathica',
+#                 'feedback-lite','first-mile-geo', 'inqwise','leaderamp','myfeelback',
+#                 'promoter-io','satmetrix', 'super-simple-survey','survata',
+#                 'surveygizmo','surveymonkey', 'surveyrock','typeform','userate',
+#                 'verint','voice-polls')
+firms.todo <- c('feedback-lite','first-mile-geo', 'inqwise','leaderamp','myfeelback',
+                'promoter-io','satmetrix', 'super-simple-survey','survata',
+                'surveygizmo', 'surveyrock','typeform','userate',
+                'verint','voice-polls')  #surveymonkey
+
 
 ## -- settings --
-d <- 2
+d <- 3
 yrpd <- 1
 startYr <- 2005
 endYr <- 2017            ## dropping first for memory term; actual dates 2007-2016
@@ -83,7 +66,7 @@ force.overwrite <- FALSE ## if network files in directory should be overwritten
 ## run main network period creation loop
 ##
 for (i in 1:length(firms.todo)) {
-
+  
   name_i <- firms.todo[i]
   cat(sprintf('\n\n------------ %s -------------\n\n',name_i))
   periods <- seq(startYr,endYr,yrpd)
@@ -104,10 +87,8 @@ for (i in 1:length(firms.todo)) {
   ##------------------------------------------------------
   cat(' collapsing parent-subsidiary relations...')
   ## load in manually checked parent-subsidiary relations
-  # dfpar.xl <- file.path(sup_data_dir, 'private_firm_financials_all_firm_networks_delete_nodes.xlsx')
-  # dfpar <- read_excel(dfpar.xl,  na = c('','-',"'-"))
-  dfpar.csv <- file.path(sup_data_dir, 'private_firm_financials_all_firm_networks_delete_nodes.csv')
-  dfpar <- read.csv(dfpar.csv, na.strings = c('','-',"'-","--"), stringsAsFactors = F)
+  dfpar <- read_excel(file.path(sup_data_dir, 'private_firm_financials_all_firm_networks_delete_nodes.xlsx'),
+                      sheet = 1,  na = c('','-',"'-"))
   dfpar <- dfpar[!is.na(dfpar$parent), ]
   dfpar$parent <- str_to_lower(dfpar$parent)
   ## merge in parent uuid
@@ -179,7 +160,10 @@ for (i in 1:length(firms.todo)) {
     nl[[t]] <- aaf$makePdNetwork(asNetwork(g.d.sub), periods[t-1], periods[t], isolates.remove = F) 
     
     ## 3. Set Covariates for updated Period Network
-    nl[[t]] <- aaf$setCovariates(nl[[t]], periods[t-1], periods[t],
+    covlist <- c('age','mmc','dist','ipo_status', 'constraint','similarity','centrality',
+                 'generalist','coop', 'cat_cos_sim','shared_competitor','shared_investor') ## no 'employee','sales'
+    nl[[t]] <- aaf$setCovariates(nl[[t]], periods[t-1], periods[t], 
+                                 covlist=covlist,
                                  acq=cb$co_acq, br=cb$co_br, ipo=cb$co_ipo, 
                                  rou=cb$co_rou, inv_rou=cb$inv_rou, inv=cb$inv,
                                  coop=sdc, ih=ih, size=si)
@@ -250,6 +234,10 @@ for (i in 1:length(firms.todo)) {
 
 
 
+
+
+
+
 # ##--------------------------------------------
 # ## Patch category similarity
 # ##--------------------------------------------
@@ -276,7 +264,7 @@ for (name_i in patch.todo) {
   start <- end-1
   for (t in 1:length(nets)) {
     nets[[t]] <- aaf$setCovariates(nets[[t]], start, end,
-                                  covlist=c('employee','sales'), size=si)
+                                   covlist=c('employee','sales'), size=si)
   }
   saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d_patched.rds',name_i,d)))
 }
@@ -345,13 +333,13 @@ ckl <- list()
 for (name_i in patch.todo) {
   nets <- readRDS(file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
   ckl[[name_i]] <- sapply(nets, function(net){
-      g <- asIgraph(net)
-      g.sub <- igraph::induced.subgraph(g,which(igraph::degree(g)>0))
-      deg <- igraph::degree(g.sub)
-      return(c(e=ecount(g.sub),v=vcount(g.sub),
-               deg_avg=round(mean(deg),1), deg_med=median(deg),
-               deg_min=min(deg), deg_max=max(deg)))
-    })
+    g <- asIgraph(net)
+    g.sub <- igraph::induced.subgraph(g,which(igraph::degree(g)>0))
+    deg <- igraph::degree(g.sub)
+    return(c(e=ecount(g.sub),v=vcount(g.sub),
+             deg_avg=round(mean(deg),1), deg_med=median(deg),
+             deg_min=min(deg), deg_max=max(deg)))
+  })
   # ec <- sapply(nets, function(net) {
   #     m <- net[,]
   #     return(sum(m[lower.tri(m)])) 
@@ -470,7 +458,7 @@ co.idx <- which(
 )
 co.names <- c(V(g.full)$name[co.idx],'amazon','aws')
 ds = sapply(gs[2:10],function(g)igraph::distances(g, v = which(V(g)$vertex.names=='facebook'),
-                                            to = V(g)[V(g)$vertex.names %in% co.names]))
+                                                  to = V(g)[V(g)$vertex.names %in% co.names]))
 # ds2 = t(igraph::distances(gs[[11]], 
 #                         v = which(V(gs[[11]])$vertex.names=='facebook'),
 #                         to = which(V(gs[[11]])$vertex.names %in% co.names)))

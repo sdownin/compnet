@@ -476,44 +476,52 @@ library(stringdist)
     pcn0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(g,exp=-0.4), error = function(e)e)
     pcn0.5 <- tryCatch(tmpn0.5<- igraph::power_centrality(g,exp=-0.5), error = function(e)e)
     
-    if (!inherits(pcn0.0, "error")) net %v% 'cent_pow_n0_0' <- pcn0.0
-    if (!inherits(pcn0.1, "error")) net %v% 'cent_pow_n0_1' <- pcn0.1
-    if (!inherits(pcn0.2, "error")) net %v% 'cent_pow_n0_2' <- pcn0.2
-    if (!inherits(pcn0.3, "error")) net %v% 'cent_pow_n0_3' <- pcn0.3
-    if (!inherits(pcn0.4, "error")) net %v% 'cent_pow_n0_4' <- pcn0.4
-    if (!inherits(pcn0.5, "error")) net %v% 'cent_pow_n0_5' <- pcn0.5
-    
-    ## Joint Centrality:  GEOMETRIC MEAN
-    jpcn0.0 <- sqrt(outer(pcn0.0, pcn0.0, '*'))
-    jpcn0.1 <- sqrt(outer(pcn0.1, pcn0.1, '*'))
-    jpcn0.2 <- sqrt(outer(pcn0.2, pcn0.2, '*'))
-    jpcn0.3 <- sqrt(outer(pcn0.3, pcn0.3, '*'))
-    jpcn0.4 <- sqrt(outer(pcn0.4, pcn0.4, '*'))
-    jpcn0.5 <- sqrt(outer(pcn0.5, pcn0.5, '*'))
-    #
-    jpcn0.0[is.na(jpcn0.0) | is.nan(jpcn0.0)] <- 0
-    jpcn0.1[is.na(jpcn0.1) | is.nan(jpcn0.1)] <- 0
-    jpcn0.2[is.na(jpcn0.2) | is.nan(jpcn0.2)] <- 0
-    jpcn0.3[is.na(jpcn0.3) | is.nan(jpcn0.3)] <- 0
-    jpcn0.4[is.na(jpcn0.4) | is.nan(jpcn0.4)] <- 0
-    jpcn0.5[is.na(jpcn0.5) | is.nan(jpcn0.5)] <- 0
-    #
-    net %n% 'joint_cent_pow_n0_0' <- jpcn0.0
-    net %n% 'joint_cent_pow_n0_1' <- jpcn0.1
-    net %n% 'joint_cent_pow_n0_2' <- jpcn0.2
-    net %n% 'joint_cent_pow_n0_3' <- jpcn0.3
-    net %n% 'joint_cent_pow_n0_4' <- jpcn0.4
-    net %n% 'joint_cent_pow_n0_5' <- jpcn0.5
-    
-    ##  CENTRALITY RATIO
     .maxMinRatio <- function(a,b) max(a,b)/min(a,b)  ## maintain symmetric matrix for undirect network
-    net %n% 'cent_ratio_pow_n0_0' <- outer(pcn0.0, pcn0.0, Vectorize(.maxMinRatio))
-    net %n% 'cent_ratio_pow_n0_1' <- outer(pcn0.1, pcn0.1, Vectorize(.maxMinRatio))
-    net %n% 'cent_ratio_pow_n0_2' <- outer(pcn0.2, pcn0.2, Vectorize(.maxMinRatio))
-    net %n% 'cent_ratio_pow_n0_3' <- outer(pcn0.3, pcn0.3, Vectorize(.maxMinRatio))
-    net %n% 'cent_ratio_pow_n0_4' <- outer(pcn0.4, pcn0.4, Vectorize(.maxMinRatio))
-    net %n% 'cent_ratio_pow_n0_5' <- outer(pcn0.5, pcn0.5, Vectorize(.maxMinRatio))
     
+    ## Power Centrality; Joint Centrality; Centrality Ratio
+    if (!inherits(pcn0.0, "error")) {
+      net %v% 'cent_pow_n0_0' <- pcn0.0
+      jpcn0.0 <- sqrt(outer(pcn0.0, pcn0.0, '*'))
+      jpcn0.0[is.na(jpcn0.0) | is.nan(jpcn0.0)] <- 0
+      net %n% 'joint_cent_pow_n0_0' <- jpcn0.0
+      net %n% 'cent_ratio_pow_n0_0' <- outer(pcn0.0, pcn0.0, Vectorize(.maxMinRatio))
+    }
+    if (!inherits(pcn0.1, "error")) {
+      net %v% 'cent_pow_n0_1' <- pcn0.1
+      jpcn0.1 <- sqrt(outer(pcn0.1, pcn0.1, '*'))
+      jpcn0.1[is.na(jpcn0.1) | is.nan(jpcn0.1)] <- 0
+      net %n% 'joint_cent_pow_n0_1' <- jpcn0.1
+      net %n% 'cent_ratio_pow_n0_1' <- outer(pcn0.1, pcn0.1, Vectorize(.maxMinRatio))
+    }
+    if (!inherits(pcn0.2, "error")) {
+      net %v% 'cent_pow_n0_2' <- pcn0.2
+      jpcn0.2 <- sqrt(outer(pcn0.2, pcn0.2, '*'))
+      jpcn0.2[is.na(jpcn0.2) | is.nan(jpcn0.2)] <- 0
+      net %n% 'joint_cent_pow_n0_2' <- jpcn0.2
+      net %n% 'cent_ratio_pow_n0_2' <- outer(pcn0.2, pcn0.2, Vectorize(.maxMinRatio))
+    }
+    if (!inherits(pcn0.3, "error")) {
+      net %v% 'cent_pow_n0_3' <- pcn0.3
+      jpcn0.3 <- sqrt(outer(pcn0.3, pcn0.3, '*'))
+      jpcn0.3[is.na(jpcn0.3) | is.nan(jpcn0.3)] <- 0
+      net %n% 'joint_cent_pow_n0_3' <- jpcn0.3
+      net %n% 'cent_ratio_pow_n0_3' <- outer(pcn0.3, pcn0.3, Vectorize(.maxMinRatio))
+    }
+    if (!inherits(pcn0.4, "error")) {
+      net %v% 'cent_pow_n0_4' <- pcn0.4
+      jpcn0.4 <- sqrt(outer(pcn0.4, pcn0.4, '*'))
+      jpcn0.4[is.na(jpcn0.4) | is.nan(jpcn0.4)] <- 0
+      net %n% 'joint_cent_pow_n0_4' <- jpcn0.4
+      net %n% 'cent_ratio_pow_n0_4' <- outer(pcn0.4, pcn0.4, Vectorize(.maxMinRatio))
+    }
+    if (!inherits(pcn0.5, "error")) {
+      net %v% 'cent_pow_n0_5' <- pcn0.5
+      jpcn0.5 <- sqrt(outer(pcn0.5, pcn0.5, '*'))
+      jpcn0.5[is.na(jpcn0.5) | is.nan(jpcn0.5)] <- 0
+      net %n% 'joint_cent_pow_n0_5' <- jpcn0.5
+      net %n% 'cent_ratio_pow_n0_5' <- outer(pcn0.5, pcn0.5, Vectorize(.maxMinRatio))
+    }
+  
     return(net)
   }
   
@@ -571,7 +579,7 @@ library(stringdist)
   # @return [numeric] 
   ##
   aaf$.cov.firmSize <- function(net, size, size.var, year,
-                                category.mean=F, age.mean=F)
+                                category.group.fill=F, age.group.fill=F)
   {
     attrs <- network::list.vertex.attributes(net)
     if (!'age' %in% attrs | !'ipo_status' %in% attrs) {
@@ -595,35 +603,35 @@ library(stringdist)
     df <- merge(df, size[idx, c('firm',size.var) ], by.x='firm', by.y='firm', all.x=T, all.y=F)
     
     ##-------------------------------------------
-    ##  1. CrunchBase Category Groups CONDITIONAL Mean
+    ##  1. CrunchBase Technology Category Groups CONDITIONAL Mean
     ##-------------------------------------------
-    if (category.mean)
+    if (category.group.fill)
     {
       ## init categories for conditional means
       mn <- data.frame(
         cat=unique(unlist(strsplit(df$cat_grp,"[|]"))),
-        avg=NA,
-        n=NA,
+        med=NA,  ## median 
+        n=NA,    ## number of non-NA size observations per group
         stringsAsFactors = F
       )
   
-      ## get means for  category (avg of firms not NA)
+      ## get medians for  category (median of firms not NA)
       for (i in 1:nrow(mn)) {
         ii <- which(grepl(mn$cat[i], df$cat_grp) &  !is.na(df[,size.var]))
         if (length(ii)>0) {
-          mn$avg[i] <- mean(df[ii,size.var])
-          mn$n[i] <- length(ii)
+          mn$med[i] <- median(df[ii,size.var], na.rm = T)
+          mn$n[i] <- length(ii) ## number of firms in group
         }
       }
   
-      ## indices to replace NAs with condtional means
+      ## indices to replace NAs with condtional medians
       jna <- which(is.na(df[,size.var]))
-      ## fill in conditional category group mean into firm node dataframe (in order of network nodes)
+      ## fill in conditional category group median into firm node dataframe (in order of network nodes)
       for (j in jna) {
         jx <- unique(unlist(strsplit(df$cat_grp[j],'[|]')))
-        condmean <- mean(mn$avg[which(mn$cat %in% jx)], na.rm=T)
-        if(!is.na(condmean)) {
-          df[j,size.var] <- condmean
+        condmed <- median(mn$med[which(mn$cat %in% jx)], na.rm=T)
+        if(!is.na(condmed)) {
+          df[j,size.var] <- condmed
         }
       }
     }
@@ -632,7 +640,7 @@ library(stringdist)
     ##-------------------------------------------
     ##  2. AGE (& IPO STATUS) CONDITIONAL MEAN
     ##-------------------------------------------
-    if (age.mean)
+    if (age.group.fill)
     {
       ## age and IPO group
       qt <- quantile(net %v% 'age', probs = c(1/3, 2/3, 1))
@@ -643,13 +651,14 @@ library(stringdist)
       df$group[which(df$ipo==0 & df$age > qt[2] & df$age <= qt[3])] <- 3
   
       ## init categories for conditional means
-      mn2 <- data.frame(cat=unique(df$group), avg=NA, n=NA, stringsAsFactors = F)
+      mn2 <- data.frame(cat=unique(df$group), 
+                        med=NA, n=NA, stringsAsFactors = F)
   
       ## get means for  category (avg of firms not NA)
       for (i in 1:nrow(mn2)) {
         iii <- which(df$group==mn2$cat[i] &  !is.na(df[,size.var]))
         if (length(iii)>0) {
-          mn2$avg[i] <- mean(df[iii,size.var])
+          mn2$med[i] <- median(df[iii,size.var], na.rm = T)
           mn2$n[i] <- length(iii)
         }
       }
@@ -658,7 +667,7 @@ library(stringdist)
       kna <- which(is.na(df[,size.var]))
       ##
       for (k in kna) {
-        df[k,size.var] <- mn2$avg[mn2$cat==df$group[k]]
+        df[k,size.var] <- mn2$med[mn2$cat==df$group[k]]
       }
     }
       
@@ -1045,19 +1054,38 @@ library(stringdist)
       if ('employee' %in% covlist) 
       {
         if (verbose) cat('computing Employees...')
-        net %v% 'employee_na_0' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.mean=F, age.mean=F)
-        net %v% 'employee_na_cat' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.mean=T, age.mean=F)
-        net %v% 'employee_na_age' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.mean=F, age.mean=T)
-        net %v% 'employee_na_catage' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.mean=T, age.mean=T)
+        net %v% 'employee_na_0' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.group.fill=F, age.group.fill=F)
+        net %v% 'employee_na_cat' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.group.fill=T, age.group.fill=F)
+        net %v% 'employee_na_age' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.group.fill=F, age.group.fill=T)
+        net %v% 'employee_na_catage' <- aaf$.cov.firmSize(net, size, 'employee_all', start, category.group.fill=T, age.group.fill=T)
+        net %v% 'employee_na_0_log' <- log(1 + (net %v% 'employee_na_0'))
+        net %v% 'employee_na_cat_log' <- log(1 + (net %v% 'employee_na_cat'))
+        net %v% 'employee_na_age_log' <- log(1 + (net %v% 'employee_na_age'))
+        net %v% 'employee_na_catage_log' <- log(1 + (net %v% 'employee_na_catage'))
+        net %v% 'employee_na_0_std' <- c(scale(net %v% 'employee_na_0'))
+        net %v% 'employee_na_cat_std' <- c(scale(net %v% 'employee_na_cat'))
+        net %v% 'employee_na_age_std' <-  c(scale(net %v% 'employee_na_age'))
+        net %v% 'employee_na_catage_std' <-  c(scale(net %v% 'employee_na_catage'))
         if (verbose) cat('done\n')
       }
       if ('sales' %in% covlist)
       {
-        if (verbose) cat('computing Sales...')
-        net %v% 'sales_na_0' <- aaf$.cov.firmSize(net, size, 'sales', start, category.mean=F, age.mean=F)
-        net %v% 'sales_na_cat' <- aaf$.cov.firmSize(net, size, 'sales', start, category.mean=T, age.mean=F)
-        net %v% 'sales_na_age' <- aaf$.cov.firmSize(net, size, 'sales', start, category.mean=F, age.mean=T)
-        net %v% 'sales_na_catage' <- aaf$.cov.firmSize(net, size, 'sales', start, category.mean=T, age.mean=T)
+        if (verbose) cat('computing Sales...')  
+        net %v% 'sales_na_0' <- aaf$.cov.firmSize(net, size, 'sales', start, category.group.fill=F, age.group.fill=F)
+        net %v% 'sales_na_cat' <- aaf$.cov.firmSize(net, size, 'sales', start, category.group.fill=T, age.group.fill=F)
+        net %v% 'sales_na_age' <- aaf$.cov.firmSize(net, size, 'sales', start, category.group.fill=F, age.group.fill=T)
+        net %v% 'sales_na_catage' <- aaf$.cov.firmSize(net, size, 'sales', start, category.group.fill=T, age.group.fill=T)
+        net %v% 'sales_na_0_log' <- log(1 + (net %v% 'sales_na_0'))
+        net %v% 'sales_na_cat_log' <- log(1 + (net %v% 'sales_na_cat'))
+        net %v% 'sales_na_age_log' <- log(1 + (net %v% 'sales_na_age'))
+        net %v% 'sales_na_catage_log' <- log(1 + (net %v% 'sales_na_catage'))
+        net %v% 'sales_na_0_std' <- c(scale(net %v% 'sales_na_0'))
+        net %v% 'sales_na_cat_std' <- c(scale(net %v% 'sales_na_cat'))
+        net %v% 'sales_na_age_std' <-  c(scale(net %v% 'sales_na_age'))
+        net %v% 'sales_na_catage_std' <-  c(scale(net %v% 'sales_na_catage'))
+        ## scale sales to reduce numerical range
+        net %v% 'sales_na_0_mn' <- (net %v% 'sales_na_0') / 1e6
+        net %v% 'sales_na_0_bn' <- (net %v% 'sales_na_0') / 1e9
         if (verbose) cat('done\n')
       }
       ##-------- Dyadic Controls---------------
@@ -1477,7 +1505,7 @@ library(stringdist)
     all.attrs <- c(node.attrs, dyad.attrs)
     len <- length(all.attrs) 
     N <- ceiling(sqrt(len))
-    M <- ceiling(len / n)
+    M <- ceiling(len / N)
     all.yrs <- names(nets)
     yrs <- c(all.yrs[1], all.yrs[length(all.yrs)])
     
