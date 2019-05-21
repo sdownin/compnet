@@ -104,6 +104,10 @@ gof.batch <- function(l, st,  na.rm=TRUE,
     
     #lower and upper outlier cutoffs (whiskerys of box plot)
     dfp2 <- df2
+    ## replace values with relative frequences
+    cols <- which( ! names(dfp2) %in% '.')
+    dfp2[,cols] <- dfp2[,cols] / apply(dfp2[,cols],2,max)
+    #
     dfp2$s.ol <- apply(dfp2[,c('s.q1','s.q3')], 1, function(x) {
       return(x[1] - (1.5 * (x[2] - x[2])))
     })
@@ -116,12 +120,12 @@ gof.batch <- function(l, st,  na.rm=TRUE,
     
     ## save plot
     png(filename = plotname, height = 5, width = 6, units = 'in', res=200)
-    par(mar=c(4.5,3,.8,.8))
-    boxplot(dfp2t, xlab=stnames[st])
-    lines(dfp2$s.mean, lty=2)
-    lines(dfp2$s.ou, lty=3)
-    lines(dfp2$s.ol, lty=3)
-    lines(dfp2$o.mean, lty=1, lwd=2)
+      par(mar=c(4.5,3,.8,.8))
+      boxplot(dfp2t, ylab='Frequency', xlab=stnames[st], main=stnames[st])
+      lines(dfp2$s.mean, lty=2)
+      lines(dfp2$s.ou, lty=3)
+      lines(dfp2$s.ol, lty=3)
+      lines(dfp2$o.mean, lty=1, lwd=2)
     dev.off()
   }
   

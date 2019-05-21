@@ -29,9 +29,11 @@ library(reshape2)
 
 data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/"
 
+script_dir <- 'C:\\Users\\T430\\Google Drive\\PhD\\Dissertation\\competition networks\\compnet2\\R\\awareness_amj_rnr2'
+
 ## LOAD Scripts and Data
-acf <- source(file.path(getwd(),'R','acqlogit','acqlogit_compnet_functions.R'))$value ## FUNCTIONS 
-cb  <- source(file.path(getwd(),'R','acqlogit','acqlogit_cb_data_prep.R'))$value      ## DATA 
+acf <- source(file.path(script_dir,'amj_awareness_functions.R'))$value ## FUNCTIONS 
+cb  <- source(file.path(script_dir,'amj_cb_data_prep.R'))$value      ## DATA 
 
 is.missing <- function(x)
 {
@@ -138,7 +140,7 @@ co_acq <- co_acq[order(co_acq$acquired_on, decreasing = F), ]
 ##--------------------------------------------------------------
 
 ## SETTINGS
-name_i <- 'ibm'
+name_i <- 'google'
 d <- 3
 years <- 2006:2017
 
@@ -155,6 +157,97 @@ g.ego <- igraph::make_ego_graph(graph = g.full,
 ## NETWORKS IN TIMEFRAME TO PROCESS NODE COLLAPSE AND POCESS COVARIATES
 g.pd      <- acf$makePdGraph(g.ego, start, end, isolates.remove=TRUE)   ## ego network
 g.full.pd <- acf$makePdGraph(g.full, start, end, isolates.remove=TRUE)  ## full network
+
+V(g.full.pd)$com <- igraph::multilevel.community(g.full.pd)$membership
+cm <- plyr::count(V(g.full.pd)$com)
+cm <- cm[order(cm$freq, decreasing = T), ]
+cm
+
+V(g.pd)$com <- igraph::multilevel.community(g.pd)$membership
+# V(g.pd)$com <- igraph::multilevel.community(g.pd)$membership
+cme <- plyr::count(V(g.pd)$com)
+cme <- cme[order(cme$freq, decreasing = T), ]
+cme
+
+fml <- lapply(1:vcount(g.pd), function(v){
+  nvids <- neighbors(g.pd, v)
+  return(V(g.pd)$com[nvids])
+})
+
+fm.i <- c()
+fm.j <- c()
+for (i in 1:length(fml)) {
+  fm.i <- c(fm.i, rep(i, length(fml[[i]])))
+  fm.j <- c(fm.j, fml[[i]])
+}
+fmspmat <- sparseMatrix(i=fm.i, j=fm.j, x = 1,
+                        dims = c(length(unique(fm.i)),length(unique(fm.j))))
+fmmat <- as.matrix(fmspmat)
+fmmat[fmmat > 1] <- 1 ## ??????
+
+mc <- lapply(sort(unique(V(g.pd)$com)), function(x){
+  vids <- which(V(g.pd)$com == x)
+  return(unlist(strsplit(V(g.pd)$category_list[vids], '[|]')))
+})
+
+mcdf <- data.frame()
+for (i in 1:length(mc)) {
+  x <- mc[[i]]
+  .df <- plyr::count(mc[[i]])
+  .df <- .df[order(.df$freq, decreasing = T), ]
+  .df$i <- i
+  .df$name <- paste(.df$x[1:5], collapse = "|")
+  mcdf <- rbind(mcdf, .df)
+}
+print(unique(mcdf$name))
+
+# [1]  378        484         2554        3174        4909
+# [1] "amazon"    "apple"     "facebook"  "google"    "microsoft"
+firms <- c('amazon', 'apple', 'facebook', 'google', 'microsoft')
+acq <- cb$co_acq[which(cb$co_acq$acquirer_name_unique %in% firms & cb$co_acq$acquired_year==2011), ]
+.acqcats <- cb$co[,c('company_name_unique','category_list','category_group_list')]
+names(.acqcats) <- c('company_name_unique','acquiree_category_list','acquiree_category_group_list')
+acq <- merge(acq, .acqcats, by.x='acquiree_name_unique',by.y='company_name_unique',all.x=T,all.y = F)
+acq$acquiree_commnity <- sapply(acq$acquiree_name_unique, function(x){
+    if (x %in% V(g.pd)$name)  return(V(g.pd)$com[which(V(g.pd)$name %in% x)])
+    return(NA)
+  })
+View(acq)
+write.csv(acq, 'acq_5warships_2011_acquisitions.csv', row.names = F)
+
+firmidx <- which(V(g.pd)$name %in% firms)
+
+fmsub <- fmmat[firmidx, ]
+
+gb <- graph_from_incidence_matrix(fmsub)
+
+plot(gb, 
+     vertex.label=firms,
+     vertex.shape=sapply(V(gb)$type, function(x)ifelse(x, 'square','circle')),
+     vertex.color=sapply(V(gb)$type, function(x)ifelse(x, 'gray','steelblue')),
+     vertex.size=sapply(V(gb)$type, function(x)ifelse(x, 9, 15))
+     )
+
+g1 <- bipartite.projection(gb)$proj1
+plot(g1, layout=layout.circle,
+     edge.width=.2*E(g1)$weight,
+     edge.label=E(g1)$weight,
+     vertex.label=firms)
+
+
+
+####
+
+
+
+
+
+
+
+
+
+
+
 
 ## CHECK NETWORK PERIOD SIZES
 sapply(2:length(times), function(i){gi=acf$makePdGraph(g.ego, times[i-1], times[i], TRUE); return(c(e=ecount(gi),v=vcount(gi)))})
