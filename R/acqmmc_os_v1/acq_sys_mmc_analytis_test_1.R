@@ -6,6 +6,7 @@
 # .libPaths('C:/Users/T430/Documents/R/win-library/3.2')
 library(igraph)
 library(intergraph)
+library(pglm)
 
 ## DIRECTORIES
 data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
@@ -13,6 +14,7 @@ work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/co
 img_dir  <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
 version_dir <- file.path(work_dir,'R','acqmmc_os_v1')
 net_dir <- file.path(work_dir,'acqmmc_os_v1','data')
+result_dir <- file.path(work_dir,'acqmmc_os_v1','data')
 sup_data_dir <- file.path(work_dir,'acqmmc_os_v1','sup_data')  ## supplmental data dir
 
 ## set woring dir
@@ -55,7 +57,7 @@ g.full <- source(file.path(version_dir,'acq_make_full_graph.R'))$value        ##
 firms.todo <- c('ibm')
 d <- 3
 yrpd <- 1
-startYr <- 2007
+startYr <- 2005
 endYr <- 2017            ## dropping first for memory term; actual dates 2007-2016
 lg.cutoff <- 1100        ## large network size cutoff to save periods seprately 
 force.overwrite <- FALSE ## if network files in directory should be overwritten
@@ -140,7 +142,7 @@ for (i in 1:length(firms.todo)) {
   nl <- list()
   dfl <- data.frame()
   
-  for (t in 5:length(periods)) 
+  for (t in 2:length(periods)) 
   {
     ## period dates
     cat(sprintf('\n\nmaking period %s-%s:\n', periods[t-1],periods[t]))
@@ -166,7 +168,7 @@ for (i in 1:length(firms.todo)) {
     
     ## 3. Set Covariates for updated Period Network
     nl[[t]] <- acf$setCovariates(nl[[t]], periods[t-1], periods[t],
-                                 covlist = c('age','ipo_status'),
+                                 covlist = c('age','ipo_status','employee','sales'),
                                  acq=cb$co_acq, br=cb$co_br, ipo=cb$co_ipo, 
                                  rou=cb$co_rou, inv_rou=cb$inv_rou, inv=cb$inv,
                                  coop=sdc, ih=ih, size=si)
@@ -174,8 +176,6 @@ for (i in 1:length(firms.todo)) {
     ##=================================================================
     ## MMC & Acquisitions
     ##-----------------------------------------------------------------
-    tdf <- data.frame(name=NA, year=periods[t-1], smmc2=NA, smmc4=NA, y.new=NA, y.cur=NA)
-    ##---
     gt <- asIgraph(nl[[t]])
     V(gt)$com_multilevel <- igraph::multilevel.community(gt)$membership
 
@@ -200,8 +200,55 @@ for (i in 1:length(firms.todo)) {
     gb <- igraph::graph_from_incidence_matrix(m.ms, directed = F)
     ## MMC weighted unipartite projections
     gmmc <- igraph::bipartite.projection(gb, multiplicity = T)$proj1
+    
+    ##--------------------
+    ##  SET COVARIATES
+    ##--------------------
+    cat(sprintf('computing controls\n'))
     V(gmmc)$vertex.names <- V(gt)$vertex.names
     V(gmmc)$ipo_status <- V(gt)$ipo_status
+    V(gmmc)$employee_na_age <- V(gt)$ipo_status
+    V(gmmc)$sales_na_0_mn <- V(gt)$ipo_status
+    V(gmmc)$cent_deg_all <- igraph::degree(gt)
+    #
+    a10<- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-10) & cb$co_acq$acquired_year < periods[t-1]), ]
+    a5 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-5) & cb$co_acq$acquired_year < periods[t-1]), ]
+    a2 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-2) & cb$co_acq$acquired_year < periods[t-1]), ]
+    a1 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-1) & cb$co_acq$acquired_year < periods[t-1]), ]
+    #
+    V(gmmc)$acq_cnt_10 <- 0
+    V(gmmc)$acq_cnt_5 <- 0
+    V(gmmc)$acq_cnt_1 <- 0
+    V(gmmc)$acq_sum_1 <- 0
+    V(gmmc)$acq_mean_1 <- 0
+    V(gmmc)$acq_median_1 <- 0
+    V(gmmc)$acq_sum_2 <- 0
+    V(gmmc)$acq_mean_2 <- 0
+    V(gmmc)$acq_median_2 <- 0
+    for (v in 1:vcount(gmmc)) {
+      firm_v <- V(gmmc)$vertex.names[v]
+      ## ACQUISITION EXPERIENCE (count of acquisitions in last 5 years)
+      V(gmmc)$acq_cnt_10[v] <- length(which(a10$acquirer_name_unique==firm_v))
+      V(gmmc)$acq_cnt_5[v] <- length(which(a5$acquirer_name_unique==firm_v))
+      V(gmmc)$acq_cnt_1[v] <- length(which(a1$acquirer_name_unique==firm_v))
+      ## LACK OF SLACK RESOURCES (Value of Acquisitions in previous year)
+      vals1 <- a1$price_usd[which(a1$acquirer_name_unique==firm_v)]
+      vals2 <- a2$price_usd[which(a2$acquirer_name_unique==firm_v)]
+      V(gmmc)$acq_sum_1[v] <- sum(vals1, na.rm = T)
+      V(gmmc)$acq_mean_1[v] <-  mean(vals1, na.rm = T)
+      V(gmmc)$acq_median_1[v] <-  median(vals1, na.rm = T)
+      V(gmmc)$acq_sum_2[v] <-  sum(vals2, na.rm = T)
+      V(gmmc)$acq_mean_2[v] <-  mean(vals2, na.rm = T)
+      V(gmmc)$acq_median_2[v] <-  median(vals2, na.rm = T)
+    }
+    
+    ##-----------------
+    ## COMPUTE Competitive Pressure
+    ##-----------------
+    pres1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp=-0.1), error = function(e)e)
+    pres2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp=-0.2), error = function(e)e)
+    pres3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp=-0.3), error = function(e)e)
+    pres4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp=-0.4), error = function(e)e)
 
     ##-----------------
     ## COMPUTE SYSTEM MMC VECTORS
@@ -213,20 +260,62 @@ for (i in 1:length(firms.todo)) {
     gmmcsub <- igraph::induced.subgraph(gmmc.e, which(igraph::degree(gmmc.e) > 0))
     mmcnames <- V(gmmcsub)$vertex.names
     ## Centrality -- SYSTEMS MMC for only firms with MMC eges
+    pcn0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp=-0.1), error = function(e)e)
     pcn0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp=-0.2), error = function(e)e)
+    pcn0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp=-0.3), error = function(e)e)
     pcn0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp=-0.4), error = function(e)e)
     ## init vector of system MMC for ALL singlemarket and multimarket firms
+    smmc1 <- rep(0, vcount(gmmc))
     smmc2 <- rep(0, vcount(gmmc))
+    smmc3 <- rep(0, vcount(gmmc))
     smmc4 <- rep(0, vcount(gmmc))
     ## indices of mmc firm subset within full graph
     idx.sub.in.mmc <- unname(sapply(mmcnames, function(x) which(V(gmmc)$vertex.names == x)))
     ## assign subset MMC firms' system MMC into vector for all firms
+    smmc1[idx.sub.in.mmc] <- pcn0.1
     smmc2[idx.sub.in.mmc] <- pcn0.2
+    smmc3[idx.sub.in.mmc] <- pcn0.3
     smmc4[idx.sub.in.mmc] <- pcn0.4
+    ##-----------------
+    ## Number of competitors
+    ##-----------------
+    cent_deg_mmc        <- rep(0, vcount(gmmc))
+    cent_deg_mmc_weight <- rep(0, vcount(gmmc))
+    # 
+    cent_deg_mmc[idx.sub.in.mmc]        <- igraph::degree(gmmcsub)        ## number of MMC rivals
+    cent_deg_all <- V(gmmc)$cent_deg_all
+    cent_deg_single <- cent_deg_all - cent_deg_mmc
+    #
+    cent_deg_mmc_weight[idx.sub.in.mmc] <- sapply(1:vcount(gmmcsub), function(v){
+        eids <- unname(unlist(igraph::incident_edges(gmmcsub, v)))
+        return(sum(E(gmmcsub)$weight[eids]))
+      })
+      
+    ##-----------------
     ## init period dataframe
+    ##------------------
     tdf <- data.frame(name=V(gmmc)$vertex.names, i=as.integer(V(gmmc)), 
                       year=periods[t-1], type=as.integer(V(gmmc)) %in% idx.sub.in.mmc,
-                      smmc2=smmc2, smmc4=smmc4, 
+                      ipo = V(gmmc)$ipo_status,
+                      employee_na_age=V(gmmc)$employee_na_age,
+                      sales_na_0_mn=V(gmmc)$sales_na_0_mn,
+                      cent_deg_mmc=cent_deg_mmc,
+                      cent_deg_mmc_weight=cent_deg_mmc_weight,
+                      cent_deg_single=cent_deg_single,
+                      cent_deg_all= cent_deg_all,
+                      cent_deg_mmc_diff= cent_deg_mmc - cent_deg_single,
+                      cent_deg_mmc_weight_diff= cent_deg_mmc_weight - cent_deg_single,
+                      acq_cnt_10=V(gmmc)$acq_cnt_10,
+                      acq_cnt_5=V(gmmc)$acq_cnt_5,
+                      acq_cnt_1=V(gmmc)$acq_cnt_1,
+                      acq_sum_1=V(gmmc)$acq_sum_1,
+                      acq_mean_1=V(gmmc)$acq_mean_1,
+                      acq_median_1=V(gmmc)$acq_median_1,
+                      acq_mean_2=V(gmmc)$acq_mean_2,
+                      acq_mean_2=V(gmmc)$acq_mean_2,
+                      acq_median_2=V(gmmc)$acq_median_2,
+                      pres1=pres1, pres2=pres2, pres3=pres3, pres4=pres4,
+                      smmc1=smmc1, smmc2=smmc2, smmc3=smmc3, smmc4=smmc4,
                       y.new=NA, y.cur=NA)
     ##-----------------
     ## COMPUTE DV acquisition counts
@@ -272,48 +361,238 @@ for (i in 1:length(firms.todo)) {
 
   }
   
-  
-  # ##---------Small Networks: clean period list and save whole -----------
-  # if (vcount(g.d.sub) < lg.cutoff) 
-  # {
-  #   ## ----drop null and skipped periods----
-  #   nl.bak <- nl
-  #   nl <- nl[which(sapply(nl, length)>0)]
-  #   
-  #   if (length(nl) > 1) {
-  #     names(nl) <- periods[2:length(periods)]
-  #   }
-  #   
-  #   # ## ---------- add LAGS ----------------
-  #   # if (length(nl) > 1) {
-  #   #   for (t in 2:length(nl)) { 
-  #   #     nl[[t]] %n% 'DV_lag' <- nl[[t-1]][,]
-  #   #   }
-  #   # }  
-  #   
-  #   ##--------------- GET TERGM NETS LIST -----------
-  #   ## only nets with edges > 0
-  #   if (length(nl) > 1) {
-  #     nets.all <- nl[2:length(nl)]
-  #   } else {
-  #     nets.all <- nl
-  #   }
-  #   nets <- nets.all[ which(sapply(nets.all, acf$getNetEcount) > 0) ]
-  #   ## record network sizes
-  #   write.csv(sapply(nets,function(x)length(x$val)), file = file.path(net_dir, sprintf('%s_d%s.csv',name_i,d)))
-  #   
-  #   #-------------------------------------------------
-  #   
-  #   ## CAREFUL TO OVERWRITE 
-  #   saveRDS(nets, file = file.path(net_dir, sprintf('%s_d%d.rds',name_i,d)))
-  #   
-  #   ## plot covariate summary figures
-  #   acf$covSummaryPlot(nets, name_i, net_dir)
-  #   
-  # }
-  
+  ## SAVE DATA
+  firmfile <- sprintf('acq_sys_mmc_panel_regression_df_%s_%s-%s.csv', 
+                      name_i, periods[1], periods[length(periods)])
+  write.csv(dfl, file=file.path(result_dir,firmfile))
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+##=======================================
+##  TEST PANEL DATA RERESSION
+##---------------------------------------
+yrmin <- min(unique(dfl$year))
+## get public firms to subset data
+ipo.yrmin.name <- dfl$name[which(dfl$year==yearmin & dfl$ipo_status==1)]
+# ipo.yrmin.name <- V(gmmc)$vertex.names[ which(V(gmmc)$ipo_status == 1) ]
+## get firms by any(type==TRUE)
+names.type.true <- unique(dfl$name[dfl$type])
+## Regression data subset
+dfreg <- dfl[which(dfl$name %in% names.type.true & dfl$name %in% ipo.yrmin.name), ]
+
+## compute feedback measure
+dfreg$feedback2 <- NA
+dfreg$feedback4 <- NA
+for (t in unique(dfreg$year)) {
+  if (t == min(unique(dfreg$year))) {
+    dfreg$feedback2[which(dfreg$year==t)] <- NA
+  } else {
+    dfreg$feedback2[which(dfreg$year==t)] <- dfreg$smmc2[which(dfreg$year==t)] - dfreg$smmc2[which(dfreg$year==(t-1))] 
+    dfreg$feedback4[which(dfreg$year==t)] <- dfreg$smmc4[which(dfreg$year==t)] - dfreg$smmc4[which(dfreg$year==(t-1))] 
+  }
+}
+  
+##factors
+dfreg$i <- as.factor(dfreg$i)
+dfreg$year <- as.factor(dfreg$year)
+dfreg$y <- dfreg$y.cur + dfreg$y.new
+
+# pglm(formula, data, subset, na.action,
+#      effect = c("individual", "time", "twoways"),
+#      model = c("random", "pooling", "within", "between"),
+#      family, other = NULL, index = NULL, start = NULL, R = 20,  ...) 
+
+m2w <- pglm(y.new ~ smmc2 + lag(feedback2, 0:1) + smmc2:lag(feedback2, 0:1),
+           dfreg,
+           family = negbin, effect = 'twoways', model = "within", 
+           print.level = 3, method = "nr", ## 'bfgs'
+           index = c('i', 'year'), R=20)
+
+m2p <- pglm(y.new ~ smmc2 + lag(feedback2, 0:1) + smmc2:lag(feedback2, 0:1),
+            dfreg,
+            family = negbin, effect = 'twoways', model = "pooling", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m4w <- pglm(y.new ~ smmc4 + lag(feedback4, 0:1) + smmc4:lag(feedback4, 0:1),
+            dfreg,
+            family = negbin, effect = 'twoways', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+m4p <- pglm(y.new ~ smmc4 + lag(feedback4, 0:1) + smmc4:lag(feedback4, 0:1),
+            dfreg,
+            family = negbin, effect = 'twoways', model = "pooling",
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+summary(m2w); summary(m2p); summary(m4w); summary(m4p)
+
+
+
+m2w <- pglm(y.new ~ smmc2 + lag(feedback2, 1) + smmc2:lag(feedback2, 1),
+            dfreg,
+            family = negbin, effect = 'time', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m2b <- pglm(y.new ~ smmc2 + lag(feedback2, 1) + smmc2:lag(feedback2, 1),
+            dfreg,
+            family = negbin, effect = 'time', model = "between", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m4w <- pglm(y.new ~ smmc4 + lag(feedback4, 1) + smmc4:lag(feedback4, 1),
+            dfreg,
+            family = negbin, effect = 'time', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+m4b <- pglm(y.new ~ smmc4 + lag(feedback4, 1) + smmc4:lag(feedback4, 1),
+            dfreg,
+            family = negbin, effect = 'time', model = "between",
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+summary(m2w); summary(m2b); summary(m4w); summary(m4b)
+
+
+
+m2w <- pglm(y.new ~ smmc2 + lag(feedback2, 1) + smmc2:lag(feedback2, 1),
+            dfreg,
+            family = negbin, effect = 'individual', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m2b <- pglm(y.new ~ smmc2 + lag(feedback2, 1) + smmc2:lag(feedback2, 1),
+            dfreg,
+            family = negbin, effect = 'individual', model = "between", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m4w <- pglm(y.new ~ smmc4 + lag(feedback4, 1) + smmc4:lag(feedback4, 1),
+            dfreg,
+            family = negbin, effect = 'individual', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+m4b <- pglm(y.new ~ smmc4 + lag(feedback4, 1) + smmc4:lag(feedback4, 1),
+            dfreg,
+            family = negbin, effect = 'individual', model = "between",
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+summary(m2w); summary(m2b); summary(m4w); summary(m4b)
+
+
+
+
+
+
+
+
+
+
+m2x <- pglm(y.new ~ smmc2 + feedback2 + smmc2:feedback2,
+            dfreg,
+            family = negbin, effect = 'twoways', model = "random", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m2xc <- pglm(y.cur ~ smmc2 + I(smmc2^2) + feedback2 + I(smmc2^2) :feedback2,
+            dfreg,
+            family = negbin, effect = 'twoways', model = "random", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+summary(m2x); summary(m2xc)
+
+
+
+
+m2x <- pglm(y.new ~ smmc2 + feedback2 + smmc2:feedback2,
+            dfreg,
+            family = negbin, effect = 'twoways', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m2xc <- pglm(y.cur ~ smmc2 + I(smmc2^2) + feedback2 + I(smmc2^2) :feedback2,
+             dfreg,
+             family = negbin, effect = 'twoways', model = "within", 
+             print.level = 3, method = "nr", ## 'bfgs'
+             index = c('i', 'year'), R=20)
+summary(m2x); summary(m2xc)
+
+
+
+m4x <- pglm(y.new ~ smmc4 + feedback4 + smmc4:feedback4,
+            dfreg,
+            family = negbin, effect = 'twoways', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20)
+
+m4xc <- pglm(y.cur ~ smmc4 + I(smmc4^2) + feedback4 + I(smmc4^2) :feedback4,
+             dfreg,
+             family = negbin, effect = 'twoways', model = "within", 
+             print.level = 3, method = "nr", ## 'bfgs'
+             index = c('i', 'year'), R=20)
+summary(m4x); summary(m4xc)
+
+
+
+
+
+m2yl <- pglm(y ~ smmc2 + lag(feedback2, 0:1) + smmc2:lag(feedback2, 0:1),
+            dfreg,
+            family = poisson, effect = 'twoways', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20); summary(m2yl)
+
+m4yl <- pglm(y ~ smmc4 + lag(feedback4, 0:1) + smmc4:lag(feedback4, 0:1),
+            dfreg,
+            family = poisson, effect = 'twoways', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20); summary(m4yl)
+
+####################################################################
+m4y <- pglm(y ~ smmc4 + lag(feedback4, 0) + smmc4:lag(feedback4, 0),
+             dfreg,
+             family = poisson, effect = 'twoways', model = "within", 
+             print.level = 3, method = "nr", ## 'bfgs'
+             index = c('i', 'year'), R=20); summary(m4y)
+####################################################################
+
+
+m4y2 <- pglm(y ~ smmc4 + I(smmc4^2) + lag(feedback4, 0) + 
+               smmc4:lag(feedback4, 0) + I(smmc4^2):lag(feedback4, 0),
+            dfreg,
+            family = poisson, effect = 'twoways', model = "within", 
+            print.level = 3, method = "nr", ## 'bfgs'
+            index = c('i', 'year'), R=20); summary(m4y2)
+
+m4yf <- pglm(y ~ smmc4 +  lag(feedback4, 0:1) + lag(I(feedback4^2), 0:1) +
+               smmc4:lag(I(feedback4^2), 0:1),
+             dfreg,
+             family = poisson, effect = 'twoways', model = "within", 
+             print.level = 3, method = "nr", ## 'bfgs'
+             index = c('i', 'year'), R=20); summary(m4yf)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
