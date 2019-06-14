@@ -22,14 +22,36 @@ sup_data_dir <- file.path(work_dir,'acqmmc_os_v1','sup_data')  ## supplmental da
 ## set woring dir
 setwd(work_dir)
 
-## LOAD DATA AND DEPENDENCIES
-acf    <- source(file.path(version_dir,'acq_compnet_functions.R'))$value    ## acf: awareness functions
-cb     <- source(file.path(version_dir,'acq_cb_data_prep.R'))$value           ## cb : CrunchBase
-sdc    <- source(file.path(version_dir,'acq_sdc_coop.R'))$value               ## sdc: Thompson SDC
-si     <- source(file.path(version_dir,'acq_firm_size_controls.R'))$value     ## si : size controls from mergent intellect
-ih     <- source(file.path(version_dir,'acq_institutional_holdings.R'))$value ## ih : institutional holdings
-g.full <- source(file.path(version_dir,'acq_make_full_graph.R'))$value        ## g.full : full competition graph
+extract.pglm <- function (model, include.nobs = TRUE, include.loglik = TRUE, ...) {
+  s <- summary(model, ...)
+  coefficient.names <- rownames(s$estimate)
+  coefficients <- s$estimate[, 1]
+  standard.errors <- s$estimate[, 2]
+  significance <- s$estimate[, 4]
+  loglik.value <- s$loglik
+  n <- nrow(model$model)
+  gof <- numeric()
+  gof.names <- character()
+  gof.decimal <- logical()
+  if (include.loglik == TRUE) {
+    gof <- c(gof, loglik.value)
+    gof.names <- c(gof.names, "Log-Likelihood")
+    gof.decimal <- c(gof.decimal, TRUE)
+  }
+  if (include.nobs == TRUE) {
+    gof <- c(gof, n)
+    gof.names <- c(gof.names, "Num. obs.")
+    gof.decimal <- c(gof.decimal, FALSE)
+  }
+  tr <- createTexreg(coef.names = coefficient.names, coef = coefficients, 
+                     se = standard.errors, pvalues = significance, gof.names = gof.names, 
+                     gof = gof, gof.decimal = gof.decimal)
+  return(tr)
+}
 
+## In order for this code to work, you should also register the function so that it handles the pglm maxLik objects by default when extract is called:
+setMethod("extract", signature = className("maxLik", "maxLik"), 
+          definition = extract.pglm)
 # ## set firms to create networks (focal firm or replication study focal firms)
 
 # head(cnt, 20)
@@ -62,360 +84,7 @@ yrpd <- 1
 startYr <- 2006
 endYr <- 2017            ## dropping first for memory term; actual dates 2007-2016
 ## --------------  
-
-
-##
-## run main network period creation loop
-##
-for (i in 1:length(firms.todo)) {
-
-  name_i <- firms.todo[i]
-  cat(sprintf('\n\n------------ %s -------------\n\n',name_i))
-  periods <- seq(startYr,endYr,yrpd)
-  company.name <- 'company_name_unique'
-  g.base <- g.full  
-  
-  ## focal firm ego network sample
-  g.d.sub <- igraph::make_ego_graph(graph = g.base, nodes = V(g.base)[V(g.base)$name==name_i], order = d, mode = 'all')[[1]]
-  
-  ## convert to network object
-  net.d.sub <- asNetwork(g.d.sub)
-  net <- net.d.sub
-  net %n% 'ego' <- name_i
-  
-  ##------------------------------------------------------
-  ##-------preprocess parent-subsidiary relationships-----
-  ##----------node collapse like acquisitions-------------
-  ##------------------------------------------------------
-  cat(' collapsing parent-subsidiary relations...')
-  ## load in manually checked parent-subsidiary relations
-  # dfpar.xl <- file.path(sup_data_dir, 'private_firm_financials_all_firm_networks_delete_nodes.xlsx')
-  # dfpar <- read_excel(dfpar.xl,  na = c('','-',"'-"))
-  dfpar.csv <- file.path(sup_data_dir, 'private_firm_financials_all_firm_networks_delete_nodes.csv')
-  dfpar <- read.csv(dfpar.csv, na.strings = c('','-',"'-","--"), stringsAsFactors = F)
-  dfpar <- dfpar[!is.na(dfpar$parent), ]
-  dfpar$parent <- str_to_lower(dfpar$parent)
-  ## merge in parent uuid
-  .parent.uuid <- cb$co[,c('company_name_unique','company_uuid')]
-  names(.parent.uuid) <- c('parent_name_unique', 'parent_uuid') 
-  dfpar <- merge(dfpar[,c('parent','firm')], .parent.uuid, by.x='parent', by.y='parent_name_unique', all.x=T, all.y=F)
-  ## merge in firm uuid
-  .firm.uuid <- cb$co[,c('company_name_unique','company_uuid')]
-  dfpar <- merge(dfpar, .firm.uuid, by.x='firm', by.y='company_name_unique', all.x=T, all.y=F)
-  ## CrunchBase parent relationships to collapse
-  cb.par <- cb$co_parent[,c('company_name_unique','parent_name_unique','parent_org_uuid','org_uuid')]
-  names(cb.par) <- c('firm','parent','parent_uuid','company_uuid')
-  ## combine CrunchBase and manual parent-child mappings
-  par.chi <- rbind(dfpar, cb.par)
-  ## filter both parent, child in full graph
-  gfuuid <- V(g.d.sub)$company_uuid
-  par.chi <- par.chi[which(!is.na(par.chi$parent_uuid) & par.chi$parent_uuid %in% gfuuid 
-                           & !is.na(par.chi$company_uuid) & par.chi$company_uuid %in% gfuuid), ]
-  ## merge in founded_on date of parent
-  par.chi <- merge(par.chi, cb$co[,c('company_name_unique','founded_on')], by.x='parent', by.y='company_name_unique', all.x=T, all.y=F)
-  ## quasi-node collapse subsidiaries to parent nodes
-  par.chi.nc <- data.frame(
-    acquirer_uuid=par.chi$parent_uuid,
-    acquiree_uuid=par.chi$company_uuid,
-    acquired_on=par.chi$founded_on,   ## for parent-subsidiary mapping, just use parent company founded_on date
-    stringsAsFactors = F
-  )
-  g.d.sub <- acf$nodeCollapseGraph(g.d.sub, par.chi.nc, remove.isolates=T, verbose = T)
-  
-  cat('done.\n')
-  
-  ##_-----------------------------------------------------
-  ##-------process pre-start-year acquisitions------------
-  ##------------------------------------------------------
-  acqs.pd <- cb$co_acq[cb$co_acq$acquired_on <= sprintf('%d-12-31',startYr-1), ]
-  g.d.sub <- acf$nodeCollapseGraph(g.d.sub, acqs.pd, remove.isolates=T, verbose = T)
-  net.d.sub <- asNetwork(g.d.sub)
-  cat(sprintf('v = %d, e = %d\n',vcount(g.d.sub),ecount(g.d.sub)))
-  
-  # ## subset to firms with employees count > 10
-  # idx.employee <- which( !(V(g.d.sub)$employee_count %in% c('NA','-','1-10')) )
-  # g.d.sub <- igraph::induced.subgraph(g.d.sub, vids = V(g.d.sub)[idx.employee])
-  # cat(sprintf('filtered >10 employee count: v = %d, e = %d\n',vcount(g.d.sub),ecount(g.d.sub)))
-  
-  
-  ##------------Network Time Period List--------------------
-  # load('acq_sys_mmc_analysis_test_1.Rdata')
-  nl <- list()
-  dfl <- data.frame()
-  
-  for (t in 2:length(periods)) 
-  {
-    ## period dates
-    cat(sprintf('\n\nmaking period %s-%s:\n', periods[t-1],periods[t]))
-    t1 <- sprintf('%d-01-01',periods[t-1]) ## inclusive start date 'YYYY-MM-DD'
-    t2 <- sprintf('%d-12-31',periods[t-1]) ## inclusive end date 'YYYY-MM-DD'
-
-    ## period years indicate [start, end) -- start inclusive; end exclusive 
-    ## acquisitions witin period
-    acqs.pd <- cb$co_acq[cb$co_acq$acquired_on >= t1 & cb$co_acq$acquired_on <= t2, ]
-    
-    ## don't process node collapse acquisitions until after computing MMC and DVs
-    ## 1. MOVED TO END OF LOOP
-    
-    ## 2. Subset Period Network
-    nl[[t]] <- acf$makePdNetwork(asNetwork(g.d.sub), periods[t-1], periods[t], isolates.remove = F) 
-    
-    ## 3. Set Covariates for updated Period Network
-    nl[[t]] <- acf$setCovariates(nl[[t]], periods[t-1], periods[t],
-                                 covlist = c('age','ipo_status','employee','sales'),
-                                 acq=cb$co_acq, br=cb$co_br, ipo=cb$co_ipo, 
-                                 rou=cb$co_rou, inv_rou=cb$inv_rou, inv=cb$inv,
-                                 coop=sdc, ih=ih, size=si)
-    
-    ##=================================================================
-    ## MMC & Acquisitions
-    ##-----------------------------------------------------------------
-    gt <- asIgraph(nl[[t]])
-    V(gt)$com_multilevel <- igraph::multilevel.community(gt)$membership
-
-    ## Create [Firm x Market] incidence matrix
-    ## markets of each firm (which markets they are in based on NC membership of their rivals)
-    cat('computing firm-market matrix\n')
-    membership <- V(gt)$com_multilevel
-    markets <- unique(membership)
-    markets <- markets[order(markets)]
-    adj <- igraph::as_adjacency_matrix(gt, sparse = F)
-    df.ms <- ldply(1:nrow(adj), function(i){
-      i.nbr <- unname(which( adj[i, ] == 1 ))  ## rivals (neighbors in the network) ## i.nbr <- as.integer(igraph::neighbors(g, V(g)[i]))  
-      i.ms <- unique(membership[i.nbr])  ## markets of firm i (the markets of the rivals of firm i)
-      i.ms.row <- rep(0, length(markets)) ## dummy row for [Firm x Market] matrix
-      i.ms.row[ i.ms ] <- 1 ## assign [Firm x Market] matrix row value to 1
-      names(i.ms.row) <- sapply(1:length(markets),function(x)paste0('m',x))
-      return(i.ms.row)
-    })
-    ## convert df to matrix
-    m.ms <- as.matrix(df.ms)
-    ## bipartite firm-market
-    gb <- igraph::graph_from_incidence_matrix(m.ms, directed = F)
-    ## MMC weighted unipartite projections
-    gmmc <- igraph::bipartite.projection(gb, multiplicity = T)$proj1
-    E(gmmc)$invweight <- 1/E(gmmc)$weight
-    ##--------------------
-    ##  SET COVARIATES
-    ##--------------------
-    cat(sprintf('computing controls\n'))
-    V(gmmc)$vertex.names <- V(gt)$vertex.names
-    V(gmmc)$ipo_status <- V(gt)$ipo_status
-    V(gmmc)$employee_na_age <- V(gt)$employee_na_age
-    V(gmmc)$sales_na_0_mn <- V(gt)$sales_na_0_mn
-    V(gmmc)$cent_deg_all <- igraph::degree(gt)
-    #
-    a10<- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-10) & cb$co_acq$acquired_year < periods[t-1]), ]
-    a5 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-5) & cb$co_acq$acquired_year < periods[t-1]), ]
-    a2 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-2) & cb$co_acq$acquired_year < periods[t-1]), ]
-    a1 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t-1]-1) & cb$co_acq$acquired_year < periods[t-1]), ]
-    #
-    V(gmmc)$acq_cnt_10 <- 0
-    V(gmmc)$acq_cnt_5 <- 0
-    V(gmmc)$acq_cnt_1 <- 0
-    V(gmmc)$acq_sum_1 <- 0
-    V(gmmc)$acq_mean_1 <- 0
-    V(gmmc)$acq_median_1 <- 0
-    V(gmmc)$acq_sum_2 <- 0
-    V(gmmc)$acq_mean_2 <- 0
-    V(gmmc)$acq_median_2 <- 0
-    for (v in 1:vcount(gmmc)) {
-      firm_v <- V(gmmc)$vertex.names[v]
-      ## ACQUISITION EXPERIENCE (count of acquisitions in last 5 years)
-      V(gmmc)$acq_cnt_10[v] <- length(which(a10$acquirer_name_unique==firm_v))
-      V(gmmc)$acq_cnt_5[v] <- length(which(a5$acquirer_name_unique==firm_v))
-      V(gmmc)$acq_cnt_1[v] <- length(which(a1$acquirer_name_unique==firm_v))
-      ## LACK OF SLACK RESOURCES (Value of Acquisitions in previous year)
-      vals1 <- a1$price_usd[which(a1$acquirer_name_unique==firm_v)]
-      vals2 <- a2$price_usd[which(a2$acquirer_name_unique==firm_v)]
-      V(gmmc)$acq_sum_1[v] <- sum(vals1, na.rm = T)
-      V(gmmc)$acq_mean_1[v] <-  mean(vals1, na.rm = T)
-      V(gmmc)$acq_median_1[v] <-  median(vals1, na.rm = T)
-      V(gmmc)$acq_sum_2[v] <-  sum(vals2, na.rm = T)
-      V(gmmc)$acq_mean_2[v] <-  mean(vals2, na.rm = T)
-      V(gmmc)$acq_median_2[v] <-  median(vals2, na.rm = T)
-    }
-    
-    ##-----------------
-    ## COMPUTE Competitive Pressure
-    ##-----------------
-    pres1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp= 0.1), error = function(e)e)
-    pres2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp= 0.2), error = function(e)e)
-    pres3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp= 0.3), error = function(e)e)
-    pres4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp= 0.4), error = function(e)e)
-    pres1n <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp=-0.1), error = function(e)e)
-    pres2n <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp=-0.2), error = function(e)e)
-    pres3n <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp=-0.3), error = function(e)e)
-    pres4n <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp=-0.4), error = function(e)e)
-    preseig <- igraph::eigen_centrality(gmmc)$vector
-    presconstr <- igraph::constraint(gmmc)
-    presclose <- igraph::closeness(gmmc, normalized = T)
-    presbetw  <- igraph::betweenness(gmmc, normalized = T)
-    # presalphaw  <- igraph::alpha.centrality(gmmc, weights = 'weight', sparse = T)
-    # presalphainvw  <- igraph::alpha.centrality(gmmc, weights = 'invweight', sparse = T)
-    presauthw <- igraph::authority.score(gmmc)$vector
-    presdivers <- igraph::diversity(gmmc)
-    ##-----------------
-    ## COMPUTE SYSTEM MMC VECTORS
-    ##-----------------
-    cat('computing system MMC measure\n')
-    ## remove edges weight < 2
-    gmmc.e <- igraph::delete.edges(gmmc, which(E(gmmc)$weight < 2))
-    ## create subgraph removing isolates
-    gmmcsub <- igraph::induced.subgraph(gmmc.e, which(igraph::degree(gmmc.e) > 0))
-    E(gmmcsub)$invweight <- 1/E(gmmcsub)$weight
-    mmcnames <- V(gmmcsub)$vertex.names
-    ## Centrality -- SYSTEMS MMC for only firms with MMC eges
-    pc0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp= 0.1), error = function(e)e)
-    pc0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp= 0.2), error = function(e)e)
-    pc0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp= 0.3), error = function(e)e)
-    pc0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp= 0.4), error = function(e)e)
-    #
-    pcn0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp=-0.1), error = function(e)e)
-    pcn0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp=-0.2), error = function(e)e)
-    pcn0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp=-0.3), error = function(e)e)
-    pcn0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp=-0.4), error = function(e)e)
-    ## init vector of system MMC for ALL singlemarket and multimarket firms
-    smmc1n <- rep(0, vcount(gmmc))
-    smmc2n <- rep(0, vcount(gmmc))
-    smmc3n <- rep(0, vcount(gmmc))
-    smmc4n <- rep(0, vcount(gmmc))
-    smmc1 <- rep(0, vcount(gmmc))
-    smmc2 <- rep(0, vcount(gmmc))
-    smmc3 <- rep(0, vcount(gmmc))
-    smmc4 <- rep(0, vcount(gmmc))
-    smmceig <- rep(0, vcount(gmmc))
-    smmcconstr <- rep(0, vcount(gmmc))
-    smmcclose <- rep(0, vcount(gmmc))
-    smmcbetw <- rep(0, vcount(gmmc))
-    # smmcalphaw<- rep(0, vcount(gmmc))
-    # smmcalphainvw<- rep(0, vcount(gmmc))
-    smmcauthw <- rep(0, vcount(gmmc))
-    smmcdivers <- rep(0, vcount(gmmc))
-    ## indices of mmc firm subset within full graph
-    idx.sub.in.mmc <- unname(sapply(mmcnames, function(x) which(V(gmmc)$vertex.names == x)))
-    ## assign subset MMC firms' system MMC into vector for all firms
-    smmc1n[idx.sub.in.mmc] <- pcn0.1
-    smmc2n[idx.sub.in.mmc] <- pcn0.2
-    smmc3n[idx.sub.in.mmc] <- pcn0.3
-    smmc4n[idx.sub.in.mmc] <- pcn0.4
-    #
-    smmc1[idx.sub.in.mmc] <- pc0.1
-    smmc2[idx.sub.in.mmc] <- pc0.2
-    smmc3[idx.sub.in.mmc] <- pc0.3
-    smmc4[idx.sub.in.mmc] <- pc0.4
-    #
-    smmceig[idx.sub.in.mmc] <- igraph::eigen_centrality(gmmcsub)$vector
-    smmcconstr[idx.sub.in.mmc] <- igraph::constraint(gmmcsub)
-    #
-    smmcclose[idx.sub.in.mmc] <- igraph::closeness(gmmcsub, normalized = T)
-    smmcbetw[idx.sub.in.mmc]  <- igraph::betweenness(gmmcsub, normalized = T)
-    # smmcalphaw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'weight', sparse = T)
-    # smmcalphainvw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'invweight', sparse = T)
-    #
-    smmcauthw[idx.sub.in.mmc] <- igraph::authority.score(gmmcsub)$vector
-    smmcdivers[idx.sub.in.mmc] <- igraph::diversity(gmmcsub)
-    ##-----------------
-    ## Number of competitors
-    ##-----------------
-    cent_deg_mmc        <- rep(0, vcount(gmmc))
-    cent_deg_mmc_weight <- rep(0, vcount(gmmc))
-    # 
-    cent_deg_mmc[idx.sub.in.mmc]        <- igraph::degree(gmmcsub)        ## number of MMC rivals
-    cent_deg_all <- V(gmmc)$cent_deg_all
-    cent_deg_single <- cent_deg_all - cent_deg_mmc
-    #
-    cent_deg_mmc_weight[idx.sub.in.mmc] <- sapply(1:vcount(gmmcsub), function(v){
-        eids <- unname(unlist(igraph::incident_edges(gmmcsub, v)))
-        return(sum(E(gmmcsub)$weight[eids]))
-      })
-      
-    ##-----------------
-    ## init period dataframe
-    ##------------------
-    tdf <- data.frame(name=V(gmmc)$vertex.names, i=as.integer(V(gmmc)), 
-                      year=periods[t-1], type=as.integer(V(gmmc)) %in% idx.sub.in.mmc,
-                      ipo = V(gmmc)$ipo_status,
-                      employee_na_age=V(gmmc)$employee_na_age,
-                      sales_na_0_mn=V(gmmc)$sales_na_0_mn,
-                      cent_deg_mmc=cent_deg_mmc,
-                      cent_deg_mmc_weight=cent_deg_mmc_weight,
-                      cent_deg_single=cent_deg_single,
-                      cent_deg_all= cent_deg_all,
-                      cent_deg_mmc_diff= cent_deg_mmc - cent_deg_single,
-                      cent_deg_mmc_weight_diff= cent_deg_mmc_weight - cent_deg_single,
-                      acq_cnt_10=V(gmmc)$acq_cnt_10,
-                      acq_cnt_5=V(gmmc)$acq_cnt_5,
-                      acq_cnt_1=V(gmmc)$acq_cnt_1,
-                      acq_sum_1=V(gmmc)$acq_sum_1,
-                      acq_mean_1=V(gmmc)$acq_mean_1,
-                      acq_median_1=V(gmmc)$acq_median_1,
-                      acq_sum_2=V(gmmc)$acq_sum_2,
-                      acq_mean_2=V(gmmc)$acq_mean_2,
-                      acq_median_2=V(gmmc)$acq_median_2,
-                      pres1=pres1, pres2=pres2, pres3=pres3, pres4=pres4,
-                      smmc1=smmc1, smmc2=smmc2, smmc3=smmc3, smmc4=smmc4,
-                      pres1n=pres1n, pres2n=pres2n, pres3n=pres3n, pres4n=pres4n,
-                      smmc1n=smmc1n, smmc2n=smmc2n, smmc3n=smmc3n, smmc4n=smmc4n,
-                      preseig=preseig,  presconstr=presconstr,
-                      smmceig=smmceig, smmcconstr=smmcconstr,
-                      smmcclose=smmcclose, smmcbetw=smmcbetw,
-                      # smmcalphaw=smmcalphaw, smmcalphainvw=smmcalphainvw,
-                      smmcdivers=smmcdivers,
-                      presclose=presclose, presbetw=presbetw,
-                      # presalphaw=presalphaw, presalphainvw=presalphainvw,
-                      presdivers=presdivers,
-                      y.new=NA, y.cur=NA)
-    ##-----------------
-    ## COMPUTE DV acquisition counts
-    ##-----------------
-    cat('computing DV acquisition counts\n')
-    al <- lapply(V(gmmc)$vertex.names, function(.)list(cur=0, new=0))
-    names(al) <- V(gmmc)$vertex.names
-    ## acquisitions in period
-    for (i in 1:nrow(acqs.pd)) {
-      name.t <- acqs.pd$acquiree_name_unique[i]
-      name.a <- acqs.pd$acquirer_name_unique[i]
-      ## vertex index
-      idx.t <- which(V(gmmc)$vertex.names == name.t)
-      idx.a <- which(V(gmmc)$vertex.names == name.a)
-      if (length(idx.a)==0) {
-        if (i %% 100 == 0) cat(sprintf(' skipping [i=%04s] %s-->%s\n',i,name.a,name.t))
-        next  ## skip if acquirer isn't in network
-      }
-      ## indices of firms in markets of acquiring firm
-      js <- unname(which(m.ms[idx.a,] > 0))
-      ## indices of competitors of acquiring firm
-      idx.comp <- which(apply(m.ms, 1, function(x) sum(x[js]) > 0))
-      ## increment 
-      target.in.net <- length(idx.t)>0  ## target exists in network
-      is.cur.market.acq <- ifelse(target.in.net, idx.t %in% idx.comp, FALSE)  ## target in competitors
-      if (is.cur.market.acq) {
-        al[[name.a]]$cur <- al[[name.a]]$cur + 1
-      } else {
-        al[[name.a]]$new <- al[[name.a]]$new + 1
-      }
-    }
-    ## ASSIGN DVs
-    tdf$y.new <- sapply(al, function(x)x$new)
-    tdf$y.cur <- sapply(al, function(x)x$cur)
-    
-    ## append dataframe
-    dfl <- rbind(dfl, tdf)   
-    
-    ##+==============================================
-    ## 1. Node Collapse acquisitions within period
-    ##-----------------------------------------------
-    g.d.sub <- acf$nodeCollapseGraph(g.d.sub, acqs.pd, verbose = T)
-
-  }
-  
-  ## SAVE DATA
-  firmfile <- sprintf('acq_sys_mmc_panel_regression_df_col%s_%s_%s-%s.csv', 
-                      ncol(dfl), name_i, periods[1], periods[length(periods)])
-  write.csv(dfl, file=file.path(result_dir,firmfile))
-  
-}
+periods <- seq(startYr,endYr,yrpd)
 
 
 
@@ -470,35 +139,115 @@ dfreg$i <- as.factor(dfreg$i)
 dfreg$year <- as.factor(dfreg$year)
 dfreg$y <- dfreg$y.cur + dfreg$y.new
 
-
-
-##=======================================
-##  GLMER
-##---------------------------------------
+## COEF NAME MAPPING
 coef.map <- list(dum.crisis='Financial Crisis Dummy',
                  `I(acq_cnt_5 > 0)TRUE`='Acquisition Experience (5 yr binary)',
-                 `I(acq_sum_1/1e+09)`='Prior Yr Acquisition Sum ($ Mn.)',
-                 `I(employee_na_age/1e+06)`='Employees',
+                 `I(acq_sum_1/1e+09)`='Prior Yr Acquisition Sum ($ Bn.)',
+                 `I(acq_sum_1/1e+06)`='Prior Yr Acquisition Sum ($ Mn.)',
+                 `I(employee_na_age/1000)`='Employees (1000)',
                  `I(sales_na_0_mn/1e+06)`='Sales ($ Mn.)',
                  `log(1 + cent_deg_all)`='Ln Competitors',
+                 `cent_deg_all`='Competitors',
                  `smmc1n`='System MMC',
                  `I(smmc1n^2)`='System MMC Squared',
                  `pres1n`='Competitive Pressure',
+                 `feedback1`='System Feedback',
                  `lag(feedback1, 0:0)`='System Feedback',
-                 `I(smmc1n^2):pres1n`='System MMC * Pressure',
-                 `I(smmc1n^2):lag(feedback1, 0:0)`='System MMC * Feedback',
+                 `lag(feedback1, 0:0)0`='System Feedback',
+                 `lag(feedback1, 0:1)0`='System Feedback',
+                 `lag(feedback1, 0:1)1`='System Feedback (Lag 1)',
+                 `I(smmc1n^2):pres1n`='System MMC Squared * Pressure',
+                 `I(smmc1n^2):lag(feedback1, 0:0)`='System MMC Squared * Feedback',
+                 `I(smmc1n^2):feedback1`='System MMC Squared * Feedback',
                  acq_sum_1_sc = 'Prior Yr Acquisition Sum ($ Mn.)',
                  employee_na_age_sc = 'Employees',
                  sales_na_0_mn_sc = 'Sales ($ Mn.)',
                  cent_deg_all_sc = 'Competitors'
-                 )
+)
 
+## MUTATE CONTROLS
 dfreg$dum.crisis <- 0
 dfreg$dum.crisis[which(dfreg$year %in% as.character(2009:2017))] <- 1
 dfreg$acq_sum_1_sc <- scale(dfreg$acq_sum_1, center = T, scale = T)
 dfreg$employee_na_age_sc <- scale(dfreg$employee_na_age, center = T, scale = T)
 dfreg$sales_na_0_mn_sc <- scale(dfreg$sales_na_0_mn, center = T, scale = T)
 dfreg$cent_deg_all_sc <- scale(dfreg$cent_deg_all, center = T, scale = T)
+
+## remove NAs in first year due to feedback lag
+dfreg <- dfreg[!is.na(dfreg$feedback1),]
+
+##-----------------------------------
+## POISSON - PGLM
+##-----------------------------------
+lm0 <- pglm(y ~ dum.crisis + I(acq_cnt_5>0) + 
+               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+               I(sales_na_0_mn/1e6) + cent_deg_all
+             ,
+             data=dfreg, family = poisson, 
+            model = 'random', effect = 'twoways',
+            R = 100, method='nr',
+            index=c('i','year'))
+
+lm1 <- pglm(y ~ dum.crisis + I(acq_cnt_5>0) + 
+               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+               I(sales_na_0_mn/1e6) + cent_deg_all +
+               smmc1n + I(smmc1n^2),
+             data=dfreg, family = poisson, 
+             model = 'random', effect = 'twoways',
+             R = 100, method='nr',
+             index=c('i','year'))
+
+lm2 <- pglm(y ~  dum.crisis + I(acq_cnt_5>0) + 
+               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+               I(sales_na_0_mn/1e6) + cent_deg_all +
+               smmc1n + I(smmc1n^2) + 
+               pres1n +
+               I(smmc1n^2):pres1n,
+             data=dfreg, family = poisson, 
+             model = 'random', effect = 'twoways',
+             R = 100, method='nr',
+             index=c('i','year'))
+
+lm3 <- pglm(y ~  dum.crisis + I(acq_cnt_5>0) + 
+               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+               I(sales_na_0_mn/1e6) + cent_deg_all +
+               smmc1n + I(smmc1n^2) +
+               feedback1 + 
+               I(smmc1n^2):feedback1,
+             data=dfreg, family = poisson, 
+             model = 'random', effect = 'twoways',
+             R = 100, method='nr',
+             index=c('i','year'))
+
+lmAll <- pglm(y ~  dum.crisis + I(acq_cnt_5>0) + 
+                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                I(sales_na_0_mn/1e6) + cent_deg_all +
+                 smmc1n + I(smmc1n^2) + 
+                 pres1n +
+                 feedback1 + # I(presconstr^2) +
+                 I(smmc1n^2):pres1n +
+                 I(smmc1n^2):feedback1,
+               data=dfreg, family = poisson, 
+               model = 'random', effect = 'twoways',
+               R = 100, method='nr',
+               index=c('i','year'))
+
+lmn.list <- list(lm0,lm1,lm2,lm3,lmAll)
+screenreg(lmn.list, digits = 3, 
+          custom.coef.map = coef.map)
+
+saveRDS(lmn.list, file = file.path(result_dir, 'acqmmc_pglm_poisson_list.rds'))
+texreg::htmlreg(lmn.list,
+                file.path(result_dir, 'acqmmc_pglm_poisson_list.html'),
+                digits = 3, custom.coef.map = coef.map)
+
+
+
+
+
+##=======================================
+##  GLMER
+##---------------------------------------
 
 ##-----------------------------------
 ## NEGBIN
@@ -565,86 +314,6 @@ texreg::htmlreg(lmn.list,
                 file.path(result_dir, 'acqmmc_glmernb_list.html'),
                 digits = 3, custom.coef.map = coef.map)
 
-
-
-
-##-----------------------------------
-## POISSON
-##-----------------------------------
-lm0 <- glmer(y ~ (1 | i) + (1 | year) +  
-                   dum.crisis + I(acq_cnt_5>0) + 
-                   acq_sum_1_sc  + employee_na_age_sc + 
-                   sales_na_0_mn_sc + cent_deg_all_sc
-                 ,
-                 data=dfreg, family = poisson,
-                 control=glmerControl(optimizer="bobyqa",
-                                      optCtrl=list(maxfun=1e5)))
-
-lm1 <- glmer(y ~ (1 | i) + (1 | year) + 
-                  dum.crisis + I(acq_cnt_5>0) + 
-                   acq_sum_1_sc  + employee_na_age_sc + 
-                   sales_na_0_mn_sc + cent_deg_all_sc +
-                   smmc1n + I(smmc1n^2),
-                 data=dfreg, family = poisson,
-                 control=glmerControl(optimizer="bobyqa",
-                                      optCtrl=list(maxfun=2e5)))
-
-lm2 <- glmer(y ~ (1 | i) + (1 | year) +  
-                   dum.crisis + I(acq_cnt_5>0) + 
-                   acq_sum_1_sc  + employee_na_age_sc + 
-                   sales_na_0_mn_sc + log(1+cent_deg_all) +
-                   smmc1n + I(smmc1n^2) + 
-                   pres1n +
-                   I(smmc1n^2):pres1n,
-                 data=dfreg, family = poisson,
-                 control=glmerControl(optimizer="bobyqa",
-                                      boundary.tol = 1e-4,
-                                      optCtrl=list(maxfun=3e5)))
-
-lmpg2 <- pglm(y  ~  
-               dum.crisis + I(acq_cnt_5>0) + 
-               acq_sum_1_sc  + employee_na_age_sc + 
-               sales_na_0_mn_sc + log(1+cent_deg_all) +
-               smmc1n + I(smmc1n^2) + 
-               pres1n +
-               I(smmc1n^2):pres1n,
-             data=dfreg, family = poisson, 
-             model = 'random', effect = 'twoways',
-             R = 100, method='nr',
-             index=c('i','year')); summary(lmpg2)
-
-lm3 <- glmer(y ~ (1 | i) + (1 | year) +  
-                   dum.crisis + I(acq_cnt_5>0) + 
-                   acq_sum_1_sc  + employee_na_age_sc + 
-                   sales_na_0_mn_sc + cent_deg_all_sc +
-                   smmc1n + I(smmc1n^2) +
-                   lag(feedback1, 0:0) + 
-                   I(smmc1n^2):lag(feedback1, 0:0),
-                 data=dfreg, family = poisson,
-                 control=glmerControl(optimizer="bobyqa",
-                                      optCtrl=list(maxfun=3e5)))
-
-lmAll <- glmer(y ~ (1 | i) + (1 | year) + 
-                     dum.crisis + I(acq_cnt_5>0) + 
-                     acq_sum_1_sc  + employee_na_age_sc + 
-                     sales_na_0_mn_sc + cent_deg_all_sc +
-                     smmc1n + I(smmc1n^2) + 
-                     pres1n +
-                     lag(feedback1, 0:0) + # I(presconstr^2) +
-                     I(smmc1n^2):pres1n +
-                     I(smmc1n^2):lag(feedback1, 0:0),
-                   data=dfreg, family = poisson,
-                   control=glmerControl(optimizer="bobyqa",
-                                        optCtrl=list(maxfun=3e5)))
-
-lmn.list <- list(lm0,lm1,lm2,lm3,lmAll)
-screenreg(lmn.list, digits = 3, 
-          custom.coef.map = coef.map)
-
-saveRDS(lmn.list, file = file.path(result_dir, 'acqmmc_glmernb_poisson_list.rds'))
-texreg::htmlreg(lmn.list,
-                file.path(result_dir, 'acqmmc_glmernb_poisson_list.html'),
-                digits = 3, custom.coef.map = coef.map)
 
 
 

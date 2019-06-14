@@ -21,7 +21,7 @@ name_i <- 'qualtrics'
 firm_i <- name_i
 d <- 3
 R <- 2000
-nPeriods <- 11
+nPeriod <- 11
 m_x <- 'm4'
 ##----------------------------------------
 
@@ -336,4 +336,58 @@ for (seed in seeds) {
 ###--------------
 
 
+
+
+
+
+##====================================================
+##
+##     CORRELATIONS CRITICAL VALUES
+##
+##-----------------------------------------------------
+library(psych)
+
+y = fits$qualtrics$m4@response
+X = fits$qualtrics$m4@effects
+rm(fits); gc()
+cr = psych::corr.test(X, alpha = 0.05, adjust = 'none')
+
+n <- 815351
+r <- seq(-.000005,.000005,.00000005)
+tstat <- r * sqrt(n-2)/sqrt(1-r^2)
+se <- sqrt( (1-r^2) / (n-2))
+p <- pt(tstat/se, df=n-2, lower.tail = F)
+plot(x=r, y=p, type='o', ylab='probability', xlab='correlation'); abline(h=0.05)
+
+colnames(cr$p) <- 1:ncol(cr$p)
+colnames(cr$t) <- 1:ncol(cr$t)
+colnames(cr$r) <- 1:ncol(cr$r)
+
+rr <- cr$r[5,2]
+tt <- cr$t[5,2]
+pp <- cr$p[5,2]
+se <- cr$se[5,2]
+  
+r <- cr$r[5,2]
+
+## CRITICAL VALUES OF CORRELATIONS
+tstat <- r * sqrt(n-2)/sqrt(1-r^2)
+pval <- pt(tstat, df=n-2, lower.tail = F) * 2
+
+rcrit <- function(t,n)t/sqrt(n-2+t^2)
+alpha <- 0.05
+tcrit <- qt(alpha/2, df=n-2, lower.tail = F)
+print(sprintf('|r| > %.5f significant at p<0.05.',rcrit(tcrit, n)))
+
+abs(cr$r) > rcrit(tcrit, n)
+
+## test all equal comparing corelation vs pvals to their critical values
+(abs(cr$r) > rcrit(tcrit, n))  == (cr$p < alpha)
+
+
+
+cr$r[10,17]
+cr$r[ 4,14]
+cr$r[ 9,14]
+cr$r[13,14]
 

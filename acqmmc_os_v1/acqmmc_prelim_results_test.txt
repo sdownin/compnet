@@ -1,3 +1,222 @@
+All Bonacich power centralities based on decay beta = -1   
+(very sensitive in sign & significance to decay value)
+
+[N = 2057;  Firms = 187;  Years = 11;  ego.net.firm=ibm; d=3]
+
+
+--------------------------------------------
+MAIN H1 System MMC / H2. Pressure / H3. Interaction -- RANDOM EFFECTS 
+--------------------------------------------
+Maximum Likelihood estimation
+Newton-Raphson maximisation, 5 iterations
+Return code 1: gradient close to zero
+Log-Likelihood: -2536.488 
+10  free parameters
+Estimates:
+                          Estimate Std. error t value  Pr(> t)    
+(Intercept)              -1.727096   0.131421 -13.142  < 2e-16 ***
+I(acq_cnt_5 > 0)TRUE      0.964639   0.101845   9.472  < 2e-16 ***
+I(acq_sum_1/1e+09)       -0.009624   0.008873  -1.085 0.278072    
+I(employee_na_age/1e+06) -1.407595   0.452260  -3.112 0.001856 ** 
+I(sales_na_0_mn/1e+06)    2.897540   0.540352   5.362 8.22e-08 ***
+log(1 + cent_deg_all)     0.381370   0.039063   9.763  < 2e-16 ***
+smmc1n                   -0.046460   0.012378  -3.753 0.000174 ***
+pres1n                   -0.026119   0.007707  -3.389 0.000701 ***
+smmc1n:pres1n            -0.008210   0.004009  -2.048 0.040571 *  
+sigma                     1.728873   0.242174   7.139 9.40e-13 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+--------------------------------------------
+
+--------------------------------------------
+MAIN H1 System MMC / H2. Pressure / H3. Interaction -- WITHIN SUBJECTS EFFECTS
+--------------------------------------------
+Maximum Likelihood estimation
+Newton-Raphson maximisation, 4 iterations
+Return code 1: gradient close to zero
+Log-Likelihood: -1937.692 
+8  free parameters
+Estimates:
+                          Estimate Std. error t value  Pr(> t)    
+I(acq_cnt_5 > 0)TRUE      0.728835   0.101961   7.148 8.79e-13 ***
+I(acq_sum_1/1e+09)       -0.010128   0.009039  -1.120 0.262501    
+I(employee_na_age/1e+06) -1.481862   0.459399  -3.226 0.001257 ** 
+I(sales_na_0_mn/1e+06)    2.591920   0.574481   4.512 6.43e-06 ***
+log(1 + cent_deg_all)     0.241769   0.046396   5.211 1.88e-07 ***
+smmc1n                   -0.042728   0.012398  -3.446 0.000568 ***
+pres1n                   -0.024000   0.007681  -3.125 0.001780 ** 
+smmc1n:pres1n            -0.008198   0.003972  -2.064 0.039033 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+--------------------------------------------
+
+
+--------------------------------------------
+MAIN H1 System MMC / H2. Pressure / H3. Interaction 
+--------------------------------------------
+Maximum Likelihood estimation
+Newton-Raphson maximisation, 4 iterations
+Return code 2: successive function values within tolerance limit
+Log-Likelihood: -1952.085 
+7  free parameters
+Estimates:
+                          Estimate Std. error t value  Pr(> t)    
+I(acq_cnt_5 > 0)TRUE      0.882471   0.097397   9.061  < 2e-16 ***
+I(acq_sum_1/1e+09)       -0.005781   0.008885  -0.651  0.51531    
+I(employee_na_age/1e+06) -1.046034   0.454764  -2.300  0.02144 *  
+I(sales_na_0_mn/1e+06)    3.199481   0.560226   5.711 1.12e-08 ***
+smmc1n                   -0.040138   0.012513  -3.208  0.00134 ** 
+pres1n                   -0.021447   0.007658  -2.801  0.00510 ** 
+smmc1n:pres1n            -0.008186   0.003982  -2.056  0.03980 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+--------------------------------------------
+
+
+--------------------------------------------
+WITH [SYSTEM MMC - PRESSURE] as PRESSURE MEASURE -- FITS HYPOTHESES
+--------------------------------------------
+Maximum Likelihood estimation
+Newton-Raphson maximisation, 4 iterations
+Return code 1: gradient close to zero
+Log-Likelihood: -1937.692 
+8  free parameters
+Estimates:
+                          Estimate Std. error t value  Pr(> t)    
+I(acq_cnt_5 > 0)TRUE      0.728835   0.101961   7.148 8.79e-13 ***
+I(acq_sum_1/1e+09)       -0.010128   0.009039  -1.120 0.262501    
+I(employee_na_age/1e+06) -1.481862   0.459399  -3.226 0.001257 ** 
+I(sales_na_0_mn/1e+06)    2.591920   0.574481   4.512 6.43e-06 ***
+log(1 + cent_deg_all)     0.241769   0.046396   5.211 1.88e-07 ***
+smmc1n                   -0.042728   0.012398  -3.446 0.000568 ***
+I(-pres1n)                0.024000   0.007681   3.125 0.001780 ** 
+smmc1n:I(-pres1n)         0.008198   0.003972   2.064 0.039033 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+--------------------------------------------
+> dfreg$smmc1n.pres1n <- dfreg$smmc1n-dfreg$pres1n
+> cor(dfreg[,c('smmc1n','pres1n','smmc1n.pres1n')])
+                  smmc1n      pres1n smmc1n.pres1n
+smmc1n        1.00000000  0.03420829     0.4704725
+pres1n        0.03420829  1.00000000    -0.8658041
+smmc1n.pres1n 0.47047251 -0.86580414     1.0000000
+
+
+
+
+--------------------------------------------
+WITH U-SHAPED SYSTEM MMC: 
+--------------------------------------------
+Maximum Likelihood estimation
+Newton-Raphson maximisation, 4 iterations
+Return code 2: successive function values within tolerance limit
+Log-Likelihood: -1943.561 
+11  free parameters
+Estimates:
+                           Estimate Std. error t value  Pr(> t)    
+I(acq_cnt_5 > 0)TRUE      0.8695874  0.0980569   8.868  < 2e-16 ***
+I(acq_sum_1/1e+09)       -0.0016449  0.0088193  -0.187 0.852043    
+I(employee_na_age/1e+06) -1.0189413  0.4866741  -2.094 0.036288 *  
+I(sales_na_0_mn/1e+06)    3.4634953  0.6201356   5.585 2.34e-08 ***
+cent_deg_all             -0.0006680  0.0010426  -0.641 0.521728    
+smmc1n                   -0.0411086  0.0120022  -3.425 0.000615 ***
+I(smmc1n^2)               0.0132684  0.0036719   3.613 0.000302 ***
+pres1n                   -0.0164556  0.0078112  -2.107 0.035147 *  
+I(pres1n^2)               0.0024835  0.0013689   1.814 0.069649 .  
+smmc1n:pres1n            -0.0063333  0.0039031  -1.623 0.104668    
+I(smmc1n^2):I(pres1n^2)  -0.0002077  0.0002636  -0.788 0.430698    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+--------------------------------------------
+
+--------------------------------------------
+WITH FEEDBACK LAGS: 
+--------------------------------------------
+Maximum Likelihood estimation
+Newton-Raphson maximisation, 4 iterations
+Return code 1: gradient close to zero
+Log-Likelihood: -1597.147 
+11  free parameters
+Estimates:
+                             Estimate Std. error t value  Pr(> t)    
+acq_cnt_5                   -0.002290   0.002379  -0.963   0.3356    
+I(acq_sum_1/1e+09)          -0.006390   0.009716  -0.658   0.5107    
+I(employee_na_age/1e+06)    -0.657969   0.615561  -1.069   0.2851    
+I(sales_na_0_mn/1e+06)       2.883007   0.713568   4.040 5.34e-05 ***
+cent_deg_all                 0.002971   0.001484   2.002   0.0453 *  
+smmc1n                      -0.032059   0.013489  -2.377   0.0175 *  
+pres1n                      -0.012407   0.008877  -1.398   0.1622    
+lag(feedback1, 0:1)0         0.008033   0.013325   0.603   0.5466    
+lag(feedback1, 0:1)1         0.003985   0.013969   0.285   0.7755    
+smmc1n:lag(feedback1, 0:1)0  0.031913   0.005282   6.042 1.52e-09 ***
+smmc1n:lag(feedback1, 0:1)1  0.016994   0.006731   2.525   0.0116 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+--------------------------------------------
+
+
+--------------------------------------------
+WITH QUADRATIC SYSTEM MMC & FEEDBACK LAGS INTERACTION: 
+--------------------------------------------
+Maximum Likelihood estimation
+Newton-Raphson maximisation, 4 iterations
+Return code 2: successive function values within tolerance limit
+Log-Likelihood: -1586.95 
+11  free parameters
+Estimates:
+                                  Estimate Std. error t value  Pr(> t)    
+I(acq_cnt_5 > 0)TRUE              0.479246   0.111205   4.310 1.64e-05 ***
+I(acq_sum_1/1e+09)               -0.004632   0.009450  -0.490 0.623991    
+I(employee_na_age/1e+06)         -0.620084   0.606890  -1.022 0.306904    
+I(sales_na_0_mn/1e+06)            3.038831   0.717581   4.235 2.29e-05 ***
+cent_deg_all                      0.001730   0.001404   1.232 0.217837    
+smmc1n                           -0.035926   0.013905  -2.584 0.009774 ** 
+I(smmc1n^2)                       0.004537   0.003868   1.173 0.240774    
+lag(feedback1, 0:1)0              0.033516   0.015458   2.168 0.030141 *  
+lag(feedback1, 0:1)1             -0.002586   0.015267  -0.169 0.865479    
+I(smmc1n^2):lag(feedback1, 0:1)0 -0.005110   0.001426  -3.584 0.000338 ***
+I(smmc1n^2):lag(feedback1, 0:1)1  0.004402   0.001573   2.798 0.005135 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+--------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================================
 Quadratic:  
 --------------------------------------------
 Maximum Likelihood estimation
