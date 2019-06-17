@@ -9,6 +9,10 @@ library(intergraph)
 library(pglm)
 library(lme4)
 library(texreg)
+library(readxl)
+library(haven)
+library(stringr)
+library(stringdist)
 
 ## DIRECTORIES
 data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
@@ -22,6 +26,22 @@ sup_data_dir <- file.path(work_dir,'acqmmc_os_v1','sup_data')  ## supplmental da
 ## set woring dir
 setwd(work_dir)
 
+rvn_dir <- 'D:\\RavenPack'
+
+##============================
+##   ACTION CATEGORIES
+##----------------------------
+dtafile <- 'rp40_action_categories_2000_2018.dta'
+
+##convert
+rvn <- read_dta(file.path(rvn_dir, dtafile))
+
+
+
+
+###
+## PGLM FUNCTION FOR TEXREG TABLE
+###
 extract.pglm <- function (model, include.nobs = TRUE, include.loglik = TRUE, ...) {
   s <- summary(model, ...)
   coefficient.names <- rownames(s$estimate)
@@ -85,7 +105,7 @@ startYr <- 2006
 endYr <- 2017            ## dropping first for memory term; actual dates 2007-2016
 ## --------------  
 periods <- seq(startYr,endYr,yrpd)
-
+name_i <- 'ibm'
 
 
 ## READ IN DATA FILE
@@ -139,31 +159,120 @@ dfreg$i <- as.factor(dfreg$i)
 dfreg$year <- as.factor(dfreg$year)
 dfreg$y <- dfreg$y.cur + dfreg$y.new
 
+
+##----------------------------------------
+## RavenPack Actions
+##----------------------------------------
+# RAVENPACK NAMES
+rpn <- unique(rvn[,c('rp_entity_id','entity_name')])
+rpn$name.l <- str_to_lower(rpn$entity_name)
+# COHORT OF FIRMS
+cbrpmap <- data.frame(
+  name = unique(as.character(dfreg$name)),
+  name.l= str_to_lower(unique(as.character(dfreg$name))),
+  idx1 = NA, ## mode
+  idx1pct = NA, ## confidence (%)
+  rp_entity_id_1 = NA, ## top match ID
+  entity_name_1 = NA, ##  top match name
+  idx2 = NA, ## 
+  idx2pct = NA, ## 
+  rp_entity_id_2 = NA, ## 
+  entity_name_2 = NA, ## 
+  idx3 = NA, ## 
+  idx3pct = NA, ## 
+  rp_entity_id_3 = NA, ## 
+  entity_name_3 = NA, ## 
+stringsAsFactors = F)
+
+## string distance matrix for CrunchBase-to-RavenPack Name Mapping
+for (i in 1:length(firms)) {
+  firm_i <- gsub('\\W+', ' ', firms[i])
+  if (i %% 10 == 0) cat(sprintf('i=%03s (%03.2f%s) %s \n',i,100*i/length(firms),'%',firms[i]))
+  idf <- data.frame(
+    name=rpn$entity_name,
+    name.l=rpn$name.l,
+    lcs=stringdist(rpn$name.l, firm_i, method = 'lcs'),
+    cosine=stringdist(rpn$name.l, firm_i, method = 'cosine'),
+    jaccard=stringdist(rpn$name.l, firm_i, method = 'jaccard'),
+    jw=stringdist(rpn$name.l, firm_i, method = 'jw'),
+    qgram=stringdist(rpn$name.l, firm_i, method = 'qgram'),
+    osa=stringdist(rpn$name.l, firm_i, method = 'osa')#,
+    # lv=stringdist(rpn$name.l, firm_i, method = 'lv'),
+    # dl=stringdist(rpn$name.l, firm_i, method = 'dl'),
+  )
+  idx <- apply(idf[,3:ncol(idf)], 2, which.min)
+  idxcnt <- plyr::count(idx)
+  idxcnt <- idxcnt[order(idxcnt$freq, decreasing = T),]
+  if (nrow(idxcnt)==0 | length(idxcnt)==0) {
+    cat(sprintf('missing strdist for i=%03s, `%s\n`',i,firms[i]))
+    next
+  }
+  ## top match
+  idx1 <- idxcnt$x[1]
+  cbrpmap$idx1[i] <- idx1
+  cbrpmap$idx1pct[i] <- idxcnt$freq[1] / sum(idxcnt$freq)
+  cbrpmap$rp_entity_id_1[i] <- rpn$rp_entity_id[idx1]
+  cbrpmap$entity_name_1[i] <- rpn$entity_name[idx1]
+  ## secondary / tertiary matches
+  if (nrow(idxcnt) >= 2) {
+    idx2 <- idxcnt$x[2]
+    cbrpmap$idx2[i] <- idx2
+    cbrpmap$idx2pct[i] <- idxcnt$freq[2] / sum(idxcnt$freq)
+    cbrpmap$rp_entity_id_2[i] <- rpn$rp_entity_id[idx2]
+    cbrpmap$entity_name_2[i] <- rpn$entity_name[idx2]
+  }
+  if (nrow(idxcnt) >= 3) {
+    idx3 <- idxcnt$x[3]
+    cbrpmap$idx3[i] <- idx3
+    cbrpmap$idx3pct[i] <- idxcnt$freq[3] / sum(idxcnt$freq)
+    cbrpmap$rp_entity_id_3[i] <- rpn$rp_entity_id[idx3]
+    cbrpmap$entity_name_3[i] <- rpn$entity_name[idx3]
+  }
+}
+
+
+##----------------------------------------
 ## COEF NAME MAPPING
-coef.map <- list(dum.crisis='Financial Crisis Dummy',
-                 `I(acq_cnt_5 > 0)TRUE`='Acquisition Experience (5 yr binary)',
-                 `I(acq_sum_1/1e+09)`='Prior Yr Acquisition Sum ($ Bn.)',
-                 `I(acq_sum_1/1e+06)`='Prior Yr Acquisition Sum ($ Mn.)',
-                 `I(employee_na_age/1000)`='Employees (1000)',
-                 `I(sales_na_0_mn/1e+06)`='Sales ($ Mn.)',
-                 `log(1 + cent_deg_all)`='Ln Competitors',
-                 `cent_deg_all`='Competitors',
-                 `smmc1n`='System MMC',
-                 `I(smmc1n^2)`='System MMC Squared',
-                 `pres1n`='Competitive Pressure',
-                 `feedback1`='System Feedback',
-                 `lag(feedback1, 0:0)`='System Feedback',
-                 `lag(feedback1, 0:0)0`='System Feedback',
-                 `lag(feedback1, 0:1)0`='System Feedback',
-                 `lag(feedback1, 0:1)1`='System Feedback (Lag 1)',
-                 `I(smmc1n^2):pres1n`='System MMC Squared * Pressure',
-                 `I(smmc1n^2):lag(feedback1, 0:0)`='System MMC Squared * Feedback',
-                 `I(smmc1n^2):feedback1`='System MMC Squared * Feedback',
-                 acq_sum_1_sc = 'Prior Yr Acquisition Sum ($ Mn.)',
-                 employee_na_age_sc = 'Employees',
-                 sales_na_0_mn_sc = 'Sales ($ Mn.)',
-                 cent_deg_all_sc = 'Competitors'
-)
+##----------------------------------------
+coef.map <- list(
+  `(Intercept)` = '(Intercept)',
+  sigma = '(Random effect SD)',
+  acq_sum_1_sc = 'Prior Yr Acquisition Sum ($ Mn.)',
+  employee_na_age_sc = 'Employees',
+  sales_na_0_mn_sc = 'Sales ($ Mn.)',
+  cent_deg_all_sc = 'Competitors',
+  dum.crisis='Financial Crisis Dummy',
+ `I(acq_cnt_5 > 0)TRUE`='Acquisition Experience (5 yr binary)',
+ `log(1 + acq_cnt_5)`='Acquisition Experience (ln 5 yr count + 1)',
+ `I(acq_sum_1/1e+09)`='Prior Yr Acquisition Sum ($ Bn.)',
+ `I(acq_sum_1/1e+06)`='Prior Yr Acquisition Sum ($ Mn.)',
+ `I(employee_na_age/1000)`='Employees (1000)',
+ `I(sales_na_0_mn/1e+06)`='Sales ($ Mn.)',
+ `log(1 + cent_deg_all)`='Ln Competitors',
+ `cent_deg_all`='Competitors',
+ `smmc1n`='System MMC',
+ `I(smmc1n^2)`='System MMC Squared',
+ `pres1n`='Competitive Pressure',
+ `feedback1`='System Feedback',
+ `smmc1n:pres1n`='System MMC * Pressure',
+ `smmc1n:feedback1`='System MMC * Feedback',
+ `lag(feedback1, 0:0)`='System Feedback',
+ `lag(feedback1, 0:0)0`='System Feedback',
+ `lag(feedback1, 0:1)0`='System Feedback',
+ `lag(feedback1, 0:1)1`='System Feedback (Lag 1)',
+ `I(smmc1n^2):pres1n`='System MMC Squared * Pressure',
+ `pres1n:I(smmc1n^2)`='System MMC Squared * Pressure',
+ `I(smmc1n^2):lag(feedback1, 0:0)`='System MMC Squared * Feedback',
+ `lag(feedback1, 0:0):I(smmc1n^2)`='System MMC Squared * Feedback',
+ `I(smmc1n^2):feedback1`='System MMC Squared * Feedback',
+ `feedback1:I(smmc1n^2)`='System MMC Squared * Feedback',
+ `poly(smmc1n, 2)1` = 'System MMC',
+ `poly(smmc1n, 2)2` = 'System MMC Squared',
+ `poly(smmc1n, 2)1:feedback1` = 'System MMC * Feedback',
+ `poly(smmc1n, 2)2:feedback1` = 'System MMC Squared * Feedback',
+ `poly(smmc1n, 2)1:pres1n` = 'System MMC * Pressure',
+ `poly(smmc1n, 2)2:pres1n` = 'System MMC Squared * Pressure'
+ )
 
 ## MUTATE CONTROLS
 dfreg$dum.crisis <- 0
@@ -179,62 +288,72 @@ dfreg <- dfreg[!is.na(dfreg$feedback1),]
 ##-----------------------------------
 ## POISSON - PGLM
 ##-----------------------------------
-lm0 <- pglm(y ~ dum.crisis + I(acq_cnt_5>0) + 
+lm0 <- pglm(y ~ dum.crisis + I(acq_cnt_5 > 0) + 
                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-               I(sales_na_0_mn/1e6) + cent_deg_all
+               I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) 
              ,
              data=dfreg, family = poisson, 
-            model = 'random', effect = 'twoways',
+            model = 'within', effect = 'twoways',
             R = 100, method='nr',
             index=c('i','year'))
 
-lm1 <- pglm(y ~ dum.crisis + I(acq_cnt_5>0) + 
-               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-               I(sales_na_0_mn/1e6) + cent_deg_all +
-               smmc1n + I(smmc1n^2),
-             data=dfreg, family = poisson, 
-             model = 'random', effect = 'twoways',
-             R = 100, method='nr',
-             index=c('i','year'))
+lm1 <- pglm(y ~ dum.crisis + I(acq_cnt_5 > 0) + 
+              I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+              I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+              smmc1n + I(smmc1n^2),
+            data=dfreg, family = poisson, 
+            model = 'within', effect = 'twoways',
+            R = 100, method='nr',
+            index=c('i','year'))
 
-lm2 <- pglm(y ~  dum.crisis + I(acq_cnt_5>0) + 
-               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-               I(sales_na_0_mn/1e6) + cent_deg_all +
-               smmc1n + I(smmc1n^2) + 
-               pres1n +
-               I(smmc1n^2):pres1n,
-             data=dfreg, family = poisson, 
-             model = 'random', effect = 'twoways',
-             R = 100, method='nr',
-             index=c('i','year'))
+lm2 <- pglm(y ~  dum.crisis + I(acq_cnt_5 > 0) + 
+              I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+              I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+              smmc1n + 
+              pres1n +
+              smmc1n:pres1n + 
+              I(smmc1n^2) +
+              I(smmc1n^2):pres1n,
+            data=dfreg, family = poisson, 
+            model = 'within', effect = 'twoways',
+            R = 100, method='nr',
+            index=c('i','year'))
 
-lm3 <- pglm(y ~  dum.crisis + I(acq_cnt_5>0) + 
-               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-               I(sales_na_0_mn/1e6) + cent_deg_all +
-               smmc1n + I(smmc1n^2) +
-               feedback1 + 
-               I(smmc1n^2):feedback1,
-             data=dfreg, family = poisson, 
-             model = 'random', effect = 'twoways',
-             R = 100, method='nr',
-             index=c('i','year'))
+lm3 <- pglm(y ~  dum.crisis + I(acq_cnt_5 > 0) + 
+              I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+              I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+              smmc1n +
+              feedback1 + 
+              smmc1n:feedback1 + 
+              I(smmc1n^2) +
+              I(smmc1n^2):feedback1,
+            data=dfreg, family = poisson, 
+            model = 'within', effect = 'twoways',
+            R = 100, method='nr',
+            index=c('i','year'))
 
-lmAll <- pglm(y ~  dum.crisis + I(acq_cnt_5>0) + 
+lmAll <- pglm(y ~  dum.crisis + I(acq_cnt_5 > 0) + 
                 I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                I(sales_na_0_mn/1e6) + cent_deg_all +
-                 smmc1n + I(smmc1n^2) + 
-                 pres1n +
-                 feedback1 + # I(presconstr^2) +
-                 I(smmc1n^2):pres1n +
-                 I(smmc1n^2):feedback1,
-               data=dfreg, family = poisson, 
-               model = 'random', effect = 'twoways',
-               R = 100, method='nr',
-               index=c('i','year'))
+                I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                smmc1n +
+                pres1n +               
+                feedback1 + 
+                smmc1n:pres1n +                 
+                smmc1n:feedback1 + 
+                I(smmc1n^2) +
+                I(smmc1n^2):pres1n +
+                I(smmc1n^2):feedback1,
+              data=dfreg, family = poisson, 
+              model = 'within', effect = 'twoways',
+              R = 100, method='nr',
+              index=c('i','year'))
+
 
 lmn.list <- list(lm0,lm1,lm2,lm3,lmAll)
+# screenreg(lmn.list, digits = 3)
 screenreg(lmn.list, digits = 3, 
-          custom.coef.map = coef.map)
+          custom.coef.map = coef.map
+          )
 
 saveRDS(lmn.list, file = file.path(result_dir, 'acqmmc_pglm_poisson_list.rds'))
 texreg::htmlreg(lmn.list,
@@ -244,6 +363,32 @@ texreg::htmlreg(lmn.list,
 
 
 
+##=================================
+##  GLMM ML / BOOT
+##---------------------------------
+gmAll <- glmmML(y ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                  I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                  I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                  poly(smmc1n, 2) + 
+                  pres1n +
+                  feedback1 + # I(presconstr^2) +
+                  poly(smmc1n, 2):pres1n +
+                  poly(smmc1n, 2):feedback1,
+                data=dfreg, family = poisson, 
+                cluster= dfreg$i, 
+                boot=100)
+gmbAll <- glmmboot(y ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                   I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                   I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                   poly(smmc1n, 2) + 
+                   pres1n +
+                   feedback1 + # I(presconstr^2) +
+                   poly(smmc1n, 2):pres1n +
+                   poly(smmc1n, 2):feedback1,
+                 data=dfreg, family = poisson, 
+                 cluster= dfreg$i, 
+                 boot=500)
+round(summary(gmbAll))
 
 ##=======================================
 ##  GLMER
