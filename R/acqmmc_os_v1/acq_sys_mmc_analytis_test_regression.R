@@ -37,6 +37,19 @@ dtafile <- 'rp40_action_categories_2000_2018.dta'
 rvn <- read_dta(file.path(rvn_dir, dtafile))
 
 
+###
+## Complexity measure of actions 
+##  @see Yu, Subramaniam, & Cannella, 2009
+###
+complexity <- function(x, scale=FALSE) {
+  sumx <- sum(x)
+  sq.prop <- sapply(x, function(k) (k/sumx)^2 )
+  y <- 1/sum(sq.prop)
+  if (scale)
+    return(y / length(x))
+  return(y)
+}
+
 
 
 ###
@@ -247,9 +260,75 @@ cbrpmap <- read.csv(file.path(result_dir,cbrpmapfinalfile),
                     stringsAsFactors = F, na.strings = c('', ' ', 'NA', '-'))
 
 ##----------------------------------------
+##  MERGE Ravenpack IDs into CrunchBase Data
+##----------------------------------------
+dfreg <- merge(dfreg, cbrpmap, 
+               by.x='name',by.y='cb_company_name_unique',all.x=T,all.y=F)
+## Filter out firms that don't have RavenPack ID
+dfreg <- dfreg[!is.na(dfreg$rp_entity_id),]
+
+##----------------------------------------
 ##  Compute Ravenpack ACTIONS per Firm-Year
 ##----------------------------------------
-
+## init DVs
+dfreg$rp_Acquisitions <- 0
+dfreg$rp_Capacity <- 0
+dfreg$rp_Legal <- 0
+dfreg$rp_Market_expansions <- 0
+dfreg$rp_Marketing <- 0
+dfreg$rp_New_product <- 0
+dfreg$rp_Pricing <- 0
+dfreg$rp_Strategic_alliances <- 0
+##
+dfreg$rp_NON_acquisitions <- 0
+dfreg$rp_all <- 0
+dfreg$rp_complexity <- 0
+##
+# .rptmp <- data.frame(
+#   rp=Acquisitions='rp_Acquisitions',
+#   Capacity_related_actions='rp_Capacity',
+#   Legal_actions='rp_Legal',
+#   Market_expansion='rp_Market_expansions',
+#   Marketing_actions='rp_Marketing',
+#   New_Product_Action='rp_New_product',
+#   pricing_actions='rp_Pricing',
+#   strategic_alliance='rp_Strategic_alliances',
+# )
+.rptmp <- data.frame(
+  rp = c('Acquisitions', 'Capacity_related_actions', 
+         'Legal_actions', 'Market_expansion', 'Marketing_actions',
+         'New_Product_Action', 'pricing_actions',
+         'strategic_alliance'),
+  dfreg= c('rp_Acquisitions','rp_Capacity','rp_Legal',
+           'rp_Market_expansions','rp_Marketing',
+           'rp_New_product','rp_Pricing',
+           'rp_Strategic_alliances'),
+  val = rep(0,8), 
+  stringsAsFactors = F
+)
+## COMPUTE ACTION DVS FOR EACH FIRM_YEAR OBS
+for (i in 1:nrow(dfreg)) {
+  x <- dfreg[i,]
+  year <- as.numeric(as.character(x$year))
+  idx <- which(rvn$year==year & rvn$rp_entity_id==x$rp_entity_id)
+  sub <- rvn[idx,]
+  if (length(sub)>0 & nrow(sub)>0) {
+    cnt <- plyr::count(sub$action_category)
+    cnt <- merge(cnt,.rptmp[,c('rp','val')],by.x = 'x',by.y='rp',all=T)
+    cnt$freq <- apply(cnt[,c('freq','val')],1,function(x)max(x,na.rm=T))
+    cnt$val <- NULL
+    ## Assign simple count values by action type
+    for (k in 1:nrow(.rptmp)) {
+      rp_action <- .rptmp$rp[k]
+      dfreg_action <- .rptmp$dfreg[k]
+      dfreg[i,dfreg_action] <- cnt$freq[which(cnt$x==rp_action)]
+    }
+    ## Compute covariates of action distributions
+    dfreg$rp_complexity[i] <- complexity(cnt$freq)
+    dfreg$rp_all[i] <- sum(cnt$freq, na.rm = T)
+    dfreg$rp_NON_acquisitions[i] <- dfreg$rp_all[i] - dfreg$rp_Acquisitions[i]
+  }
+}
 
 ###
 ### ****************** HERE ******************
@@ -310,6 +389,158 @@ dfreg$cent_deg_all_sc <- scale(dfreg$cent_deg_all, center = T, scale = T)
 
 ## remove NAs in first year due to feedback lag
 dfreg <- dfreg[!is.na(dfreg$feedback1),]
+
+
+
+##-----------------------------------
+## RAVENPACK COMPARE DVS
+##-----------------------------------
+mrall <- pglm(rp_all ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                smmc1n +  pres1n +  feedback1 + 
+                smmc1n:pres1n +  smmc1n:feedback1 + 
+                I(smmc1n^2) +
+                I(smmc1n^2):pres1n +
+                I(smmc1n^2):feedback1,
+              data=dfreg, family = poisson, 
+              model = 'within', effect = 'twoways',
+              R = 100, method='nr',
+              index=c('i','year'))
+
+mracq <- pglm(rp_Acquisitions ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                smmc1n +  pres1n +  feedback1 + 
+                smmc1n:pres1n +  smmc1n:feedback1 + 
+                I(smmc1n^2) +
+                I(smmc1n^2):pres1n +
+                I(smmc1n^2):feedback1,
+              data=dfreg, family = poisson, 
+              model = 'within', effect = 'twoways',
+              R = 100, method='nr',
+              index=c('i','year'))
+
+mrna <- pglm(rp_NON_acquisitions ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                smmc1n +  pres1n +  feedback1 + 
+                smmc1n:pres1n +  smmc1n:feedback1 + 
+                I(smmc1n^2) +
+                I(smmc1n^2):pres1n +
+                I(smmc1n^2):feedback1,
+              data=dfreg, family = poisson, 
+              model = 'within', effect = 'twoways',
+              R = 100, method='nr',
+              index=c('i','year'))
+
+mrc <- pglm(rp_Capacity ~  dum.crisis + I(acq_cnt_5 > 0) + 
+              I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+              I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+              smmc1n +  pres1n +  feedback1 + 
+              smmc1n:pres1n +  smmc1n:feedback1 + 
+              I(smmc1n^2) +
+              I(smmc1n^2):pres1n +
+              I(smmc1n^2):feedback1,
+            data=dfreg, family = poisson, 
+            model = 'within', effect = 'twoways',
+            R = 100, method='nr',
+            index=c('i','year'))
+
+mrl <- pglm(rp_Legal ~  dum.crisis + I(acq_cnt_5 > 0) + 
+              I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+              I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+              smmc1n +  pres1n +  feedback1 + 
+              smmc1n:pres1n +  smmc1n:feedback1 + 
+              I(smmc1n^2) +
+              I(smmc1n^2):pres1n +
+              I(smmc1n^2):feedback1,
+            data=dfreg, family = poisson, 
+            model = 'within', effect = 'twoways',
+            R = 100, method='nr',
+            index=c('i','year'))
+
+mrme <- pglm(rp_Market_expansions ~  dum.crisis + I(acq_cnt_5 > 0) + 
+              I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+              I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+              smmc1n +  pres1n +  feedback1 + 
+              smmc1n:pres1n +  smmc1n:feedback1 + 
+              I(smmc1n^2) +
+              I(smmc1n^2):pres1n +
+              I(smmc1n^2):feedback1,
+            data=dfreg, family = poisson, 
+            model = 'within', effect = 'twoways',
+            R = 100, method='nr',
+            index=c('i','year'))
+
+mrmkt <- pglm(rp_Marketing ~  dum.crisis + I(acq_cnt_5 > 0) + 
+               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+               I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+               smmc1n +  pres1n +  feedback1 + 
+               smmc1n:pres1n +  smmc1n:feedback1 + 
+               I(smmc1n^2) +
+               I(smmc1n^2):pres1n +
+               I(smmc1n^2):feedback1,
+             data=dfreg, family = poisson, 
+             model = 'within', effect = 'twoways',
+             R = 100, method='nr',
+             index=c('i','year'))
+
+mrnp <- pglm(rp_New_product ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                smmc1n +  pres1n +  feedback1 + 
+                smmc1n:pres1n +  smmc1n:feedback1 + 
+                I(smmc1n^2) +
+                I(smmc1n^2):pres1n +
+                I(smmc1n^2):feedback1,
+              data=dfreg, family = poisson, 
+              model = 'within', effect = 'twoways',
+              R = 100, method='nr',
+              index=c('i','year'))
+
+mrp <- pglm(rp_Pricing ~  dum.crisis + I(acq_cnt_5 > 0) + 
+               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+               I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+               smmc1n +  pres1n +  feedback1 + 
+               smmc1n:pres1n +  smmc1n:feedback1 + 
+               I(smmc1n^2) +
+               I(smmc1n^2):pres1n +
+               I(smmc1n^2):feedback1,
+             data=dfreg, family = poisson, 
+             model = 'within', effect = 'twoways',
+             R = 100, method='nr',
+             index=c('i','year'))
+
+mrsa <- pglm(rp_Strategic_alliances ~  dum.crisis + I(acq_cnt_5 > 0) + 
+               I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+               I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+               smmc1n +  pres1n +  feedback1 + 
+               smmc1n:pres1n +  smmc1n:feedback1 + 
+               I(smmc1n^2) +
+               I(smmc1n^2):pres1n +
+               I(smmc1n^2):feedback1,
+             data=dfreg, family = poisson, 
+             model = 'within', effect = 'twoways',
+             R = 100, method='nr',
+             index=c('i','year'))
+
+mrcomp.list <- list(mrall,mracq,mrna,mrc,mrl,mrme,mrmkt,mrnp,mrp,mrsa)
+# screenreg(lmn.list, digits = 3)
+screenreg(mrcomp.list, digits = 3, 
+          custom.coef.map = coef.map
+)
+
+saveRDS(lmn.list, file = file.path(result_dir, 'acqmmc_pglm_poisson_list_ravenpack_compare_DV.rds'))
+texreg::htmlreg(mrcomp.list,
+                file.path(result_dir, 'acqmmc_pglm_poisson_list_ravenpack_compare_DV.html'),
+                digits = 3, custom.coef.map = coef.map)
+
+
+
+
+
+
 
 ##-----------------------------------
 ## POISSON - PGLM
