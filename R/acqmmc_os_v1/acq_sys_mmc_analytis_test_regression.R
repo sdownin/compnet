@@ -160,8 +160,8 @@ dfreg$year <- as.factor(dfreg$year)
 dfreg$y <- dfreg$y.cur + dfreg$y.new
 
 
-##----------------------------------------
-## RavenPack Actions
+##========================================
+## RavenPack NAME MAPPING BEGIN 
 ##----------------------------------------
 # RAVENPACK NAMES
 rpn <- unique(rvn[,c('rp_entity_id','entity_name')])
@@ -169,7 +169,6 @@ rpn$name.l <- str_to_lower(rpn$entity_name)
 # COHORT OF FIRMS
 cbrpmap <- data.frame(
   name = unique(as.character(dfreg$name)),
-  name.l= str_to_lower(unique(as.character(dfreg$name))),
   idx1 = NA, ## mode
   idx1pct = NA, ## confidence (%)
   rp_entity_id_1 = NA, ## top match ID
@@ -188,6 +187,11 @@ stringsAsFactors = F)
 for (i in 1:length(firms)) {
   firm_i <- gsub('\\W+', ' ', firms[i])
   if (i %% 10 == 0) cat(sprintf('i=%03s (%03.2f%s) %s \n',i,100*i/length(firms),'%',firms[i]))
+  ##
+  ## FIRST DO grep() string search, see if excatly match 1
+  ##  - else if multiple matches, test distance on matches
+  ##  - else test distance on all unmateched RavenPack firms
+  ##
   idf <- data.frame(
     name=rpn$entity_name,
     name.l=rpn$name.l,
@@ -230,8 +234,30 @@ for (i in 1:length(firms)) {
   }
 }
 
+## save mapping dataframe
+cbrpmapfile <- sprintf('crunchbase_ravenpack_name_mapping_n%s.csv', length(firms))
+write.csv(cbrpmap, file=file.path(result_dir,cbrpmapfile))
+
 
 ##----------------------------------------
+## LOAD FINALIZED RAVENPACK NAME MAPPING
+##----------------------------------------
+cbrpmapfinalfile <- sprintf('crunchbase_ravenpack_name_mapping_n%s_FINAL.csv', length(firms))
+cbrpmap <- read.csv(file.path(result_dir,cbrpmapfinalfile),
+                    stringsAsFactors = F, na.strings = c('', ' ', 'NA', '-'))
+
+##----------------------------------------
+##  Compute Ravenpack ACTIONS per Firm-Year
+##----------------------------------------
+
+
+###
+### ****************** HERE ******************
+###
+
+
+
+##========================================
 ## COEF NAME MAPPING
 ##----------------------------------------
 coef.map <- list(
