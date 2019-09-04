@@ -3,6 +3,7 @@
 ##   AMJ TERGM INTERPRET
 ##
 ##----------------------------------------------------------
+library(dplyr)
 
 work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
 data_dir <- file.path(work_dir, 'firm_nets_rnr2','firmctrl')
@@ -220,7 +221,7 @@ colors5 <- c( '#111111', '#333333','#555555', '#777777','#999999')
 yrs <- as.character(2007:2016)
 for (yr in yrs) {
   ## aware.all.cutoff
-  aware.frac <- ifelse(yr < '2013', .25, .35)
+  aware.frac <- ifelse(yr < '2013', .25, .25)
   xp <- idf$p[idf$year==yr & !is.na(idf$p)]
   aware.all.cutoff <- .qtl(xp, 1 - aware.frac)
   ## mutate group-period factors
@@ -242,7 +243,7 @@ for (yr in yrs) {
   ##
   ggplot(idf3) + aes(x = d_cat, y = p, color=aware.cutoff, pch=aware.cutoff) +
     geom_point(position=position_jitterdodge(dodge.width=dodge.width), lwd=2.5,
-               data=function(x)dplyr::filter_(x, ~ !low.otl)) +
+               data=function(x)dplyr::filter(x, ~ !low.otl)) +
     scale_color_manual(values=colors2rw) +
     scale_shape_manual(values=c(1,16)) +
     facet_grid(year ~ .) +  # facet_wrap(~ year) +
@@ -294,7 +295,7 @@ for (seed in seeds) {
   for (year in plot.years) {
     yr <- as.character(year)
     #
-    aware.frac <- ifelse(yr < '2013', .25, .35)
+    aware.frac <- ifelse(yr < '2013', .25, .25)
     xp <- idf$p[idf$year==yr & !is.na(idf$p)]
     aware.all.cutoff <- .qtl(xp, 1 - aware.frac)
     ## mutate group-period factors

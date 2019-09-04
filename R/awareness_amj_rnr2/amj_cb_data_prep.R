@@ -39,16 +39,16 @@ library(stringr, quietly = T)
   # cb list filename
   cb.list.file <- file.path(sup_data_dir,'cb_list.rds')
   
-  ## load full graph, else make full graph if not exists in working directory
-  if (file.exists(cb.list.file)) 
-  {
-    cat('\nloading CrunchBase `cb` list object...')
-    cb <- readRDS(cb.list.file)
-    cat('done.')
-    return(cb)
-    
-  } 
-  
+  # ## load full graph, else make full graph if not exists in working directory
+  # if (file.exists(cb.list.file)) 
+  # {
+  #   cat('\nloading CrunchBase `cb` list object...')
+  #   cb <- readRDS(cb.list.file)
+  #   cat('done.')
+  #   return(cb)
+  #   
+  # } 
+  # 
   
   
   ## Data list object

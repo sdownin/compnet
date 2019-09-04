@@ -18,8 +18,8 @@ library(lubridate)
   
   
   ## DIRECTORIES
-  data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2/SDC_data"
-  work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
+  data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2/SDC_data"
+  work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
   version_dir <- file.path(work_dir,'R','acqmmc_os_v1')
   
   ## SET WORING DIR

@@ -13,9 +13,9 @@
 {
   
   ## DIRECTORIES
-  data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
-  work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
-  img_dir  <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
+  data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
+  work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
+  img_dir  <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
   cs_dir <- file.path(work_dir, 'compustat')
   version_dir <- file.path(work_dir,'R','acqmmc_os_v1')
   net_dir <- file.path(work_dir,'acqmmc_os_v1','data')

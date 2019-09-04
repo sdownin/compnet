@@ -3,7 +3,7 @@
 ##  MMC & ACQUISITIONS 
 ##
 ##--------------------------------------------------------------
-# .libPaths('C:/Users/T430/Documents/R/win-library/3.2')
+# .libPaths('C:/Users/steph/Documents/R/win-library/3.2')
 library(igraph)
 library(intergraph)
 library(pglm)
@@ -15,9 +15,9 @@ library(stringr)
 library(stringdist)
 
 ## DIRECTORIES
-data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
-work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
-img_dir  <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
+data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
+work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
+img_dir  <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
 version_dir <- file.path(work_dir,'R','acqmmc_os_v1')
 net_dir <- file.path(work_dir,'acqmmc_os_v1','data')
 result_dir <- file.path(work_dir,'acqmmc_os_v1','data')
@@ -26,7 +26,7 @@ sup_data_dir <- file.path(work_dir,'acqmmc_os_v1','sup_data')  ## supplmental da
 ## set woring dir
 setwd(work_dir)
 
-rvn_dir <- 'D:\\RavenPack'
+rvn_dir <- 'C:\\Data\\RavenPack'
 
 ##============================
 ##   ACTION CATEGORIES
@@ -176,6 +176,7 @@ dfreg$y <- dfreg$y.cur + dfreg$y.new
 ##========================================
 ## RavenPack NAME MAPPING BEGIN 
 ##----------------------------------------
+firms <- sort(unique(dfreg$name))
 # RAVENPACK NAMES
 rpn <- unique(rvn[,c('rp_entity_id','entity_name')])
 rpn$name.l <- str_to_lower(rpn$entity_name)
@@ -392,8 +393,64 @@ dfreg <- dfreg[!is.na(dfreg$feedback1),]
 
 
 
+##===================================
+## RAVENPACK COMPARE Acquisition DV - Actions Moderator
+##-----------------------------------
+mract <- pglm(rp_Acquisitions ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                lag(rp_NON_acquisitions,1) +
+                smmc1n +  # pres1n +  feedback1 + 
+                #smmc1n:pres1n +  smmc1n:feedback1 + 
+                smmc1n:lag(rp_NON_acquisitions,1) + 
+                I(smmc1n^2) +
+                I(smmc1n^2):lag(rp_NON_acquisitions,1),
+              data=dfreg, family = poisson, 
+              model = 'within', effect = 'twoways',
+              R = 100, method='nr',
+              index=c('i','year'))
+summary(mract)
 
+mractl1 <- pglm(rp_Acquisitions ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                lag(rp_NON_acquisitions,0:1) +
+                smmc1n +  # pres1n +  feedback1 + 
+                #smmc1n:pres1n +  smmc1n:feedback1 + 
+                smmc1n:lag(rp_NON_acquisitions,0:1) + 
+                I(smmc1n^2) +
+                I(smmc1n^2):lag(rp_NON_acquisitions,0:1),
+              data=dfreg, family = poisson, 
+              model = 'within', effect = 'twoways',
+              R = 100, method='nr',
+              index=c('i','year'))
+summary(mractl1)
 
+mractl1 <- pglm(rp_Acquisitions ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                   I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                   I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                   smmc1n +
+                   I(smmc1n^2),
+                 data=dfreg, family = poisson, 
+                 model = 'within', effect = 'twoways',
+                 R = 100, method='nr',
+                 index=c('i','year'))
+summary(mractl1)
+
+mractall <- pglm(rp_Acquisitions ~  dum.crisis + I(acq_cnt_5 > 0) + 
+                  I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+                  I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
+                  lag(rp_NON_acquisitions,1) +
+                  smmc1n +  # pres1n +  feedback1 + 
+                  #smmc1n:pres1n +  smmc1n:feedback1 + 
+                  smmc1n:lag(rp_NON_acquisitions,1) + 
+                  I(smmc1n^2) +
+                  I(smmc1n^2):lag(rp_NON_acquisitions,1),
+                data=dfreg, family = poisson, 
+                model = 'within', effect = 'twoways',
+                R = 100, method='nr',
+                index=c('i','year'))
+summary(mractall)
 
 ##-----------------------------------
 ## RAVENPACK COMPARE DVS -- H1 only

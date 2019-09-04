@@ -4,7 +4,7 @@ library(igraph)
 library(intergraph)
 library(stringr)
 
-setwd("C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2")
+setwd("C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2")
 
 
 source(file.path(getwd(),'R','acqmmc_os_v1','acq_compnet_functions.R'))
