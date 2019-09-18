@@ -27,8 +27,8 @@ library(stringr, quietly = T)
 {
   
   ## DIRECTORIES
-  data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
-  work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
+  data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
+  work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
   cs_dir <- file.path(work_dir, 'compustat')   ### just using same compustat directly for all wrds data
   version_dir <- file.path(work_dir,'R','awareness_amj_rnr2')
   sup_data_dir <- file.path(work_dir,'amj_rnr2_sup_data')  ## supplmental data dir

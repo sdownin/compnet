@@ -1,0 +1,416 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<table cellspacing="0" align="center" style="border: none;">
+<caption align="bottom" style="margin-top:0.3em;">Statistical models</caption>
+<tr>
+<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;"><b></b></th>
+<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;"><b>Model 1</b></th>
+<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;"><b>Model 2</b></th>
+<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;"><b>Model 3</b></th>
+<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;"><b>Model 4</b></th>
+<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;"><b>Model 5</b></th>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">dum.crisis</td>
+<td style="padding-right: 12px; border: none;">-0.189<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.258<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.264<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.215<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.321<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.036)</td>
+<td style="padding-right: 12px; border: none;">(0.045)</td>
+<td style="padding-right: 12px; border: none;">(0.046)</td>
+<td style="padding-right: 12px; border: none;">(0.046)</td>
+<td style="padding-right: 12px; border: none;">(0.053)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">log(1 + acq_cnt_5)</td>
+<td style="padding-right: 12px; border: none;">0.160<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">0.202<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">0.160<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">0.206<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">0.191<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.039)</td>
+<td style="padding-right: 12px; border: none;">(0.040)</td>
+<td style="padding-right: 12px; border: none;">(0.039)</td>
+<td style="padding-right: 12px; border: none;">(0.040)</td>
+<td style="padding-right: 12px; border: none;">(0.040)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">rp_NON_acquisitions > 0TRUE</td>
+<td style="padding-right: 12px; border: none;">2.665<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">2.687<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">2.682<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">2.678<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">2.650<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.252)</td>
+<td style="padding-right: 12px; border: none;">(0.252)</td>
+<td style="padding-right: 12px; border: none;">(0.253)</td>
+<td style="padding-right: 12px; border: none;">(0.252)</td>
+<td style="padding-right: 12px; border: none;">(0.252)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">acq_sum_1/1e+09</td>
+<td style="padding-right: 12px; border: none;">-0.095<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.093<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.095<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.096<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.095<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.011)</td>
+<td style="padding-right: 12px; border: none;">(0.011)</td>
+<td style="padding-right: 12px; border: none;">(0.011)</td>
+<td style="padding-right: 12px; border: none;">(0.011)</td>
+<td style="padding-right: 12px; border: none;">(0.011)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">employee_na_age/1000</td>
+<td style="padding-right: 12px; border: none;">-0.001<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.001<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.001<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.001<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.001<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">sales_na_0_mn/1e+06</td>
+<td style="padding-right: 12px; border: none;">-0.207</td>
+<td style="padding-right: 12px; border: none;">0.210</td>
+<td style="padding-right: 12px; border: none;">-0.309</td>
+<td style="padding-right: 12px; border: none;">0.212</td>
+<td style="padding-right: 12px; border: none;">0.088</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.376)</td>
+<td style="padding-right: 12px; border: none;">(0.374)</td>
+<td style="padding-right: 12px; border: none;">(0.383)</td>
+<td style="padding-right: 12px; border: none;">(0.379)</td>
+<td style="padding-right: 12px; border: none;">(0.388)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">log(1 + cent_deg_mmc)</td>
+<td style="padding-right: 12px; border: none;">-0.320<sup style="vertical-align: 0px;">**</sup></td>
+<td style="padding-right: 12px; border: none;">-0.745</td>
+<td style="padding-right: 12px; border: none;">3.319<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;">-0.878</td>
+<td style="padding-right: 12px; border: none;">1.109</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.100)</td>
+<td style="padding-right: 12px; border: none;">(0.522)</td>
+<td style="padding-right: 12px; border: none;">(1.005)</td>
+<td style="padding-right: 12px; border: none;">(0.455)</td>
+<td style="padding-right: 12px; border: none;">(0.761)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">log(1 + cent_deg_mmc)^2</td>
+<td style="padding-right: 12px; border: none;">0.021<sup style="vertical-align: 0px;">*</sup></td>
+<td style="padding-right: 12px; border: none;">0.061</td>
+<td style="padding-right: 12px; border: none;">-0.288<sup style="vertical-align: 0px;">**</sup></td>
+<td style="padding-right: 12px; border: none;">0.095<sup style="vertical-align: 0px;">*</sup></td>
+<td style="padding-right: 12px; border: none;">-0.133</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.009)</td>
+<td style="padding-right: 12px; border: none;">(0.051)</td>
+<td style="padding-right: 12px; border: none;">(0.091)</td>
+<td style="padding-right: 12px; border: none;">(0.046)</td>
+<td style="padding-right: 12px; border: none;">(0.078)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_all</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.000</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_all:log(1 + cent_deg_mmc)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.000</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_all:log(1 + cent_deg_mmc)^2</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">-0.000</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_complexity</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">4.016<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(1.110)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_complexity:log(1 + cent_deg_mmc)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">-1.563<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.421)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_complexity:log(1 + cent_deg_mmc)^2</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.134<sup style="vertical-align: 0px;">***</sup></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.038)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_Acquisitions</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">-0.000</td>
+<td style="padding-right: 12px; border: none;">-0.004</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.003)</td>
+<td style="padding-right: 12px; border: none;">(0.005)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_NON_acquisitions</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.000<sup style="vertical-align: 0px;">**</sup></td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;"></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_Acquisitions:log(1 + cent_deg_mmc)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.001</td>
+<td style="padding-right: 12px; border: none;">0.003</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.001)</td>
+<td style="padding-right: 12px; border: none;">(0.002)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_Acquisitions:log(1 + cent_deg_mmc)^2</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">-0.000</td>
+<td style="padding-right: 12px; border: none;">-0.000<sup style="vertical-align: 0px;">*</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_net_invariant</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.015<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.004)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_net_relations</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">-0.003<sup style="vertical-align: 0px;">*</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.001)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_net_invariant:log(1 + cent_deg_mmc)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">-0.007<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.002)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_net_relations:log(1 + cent_deg_mmc)</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.001<sup style="vertical-align: 0px;">**</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_net_invariant:log(1 + cent_deg_mmc)^2</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">0.001<sup style="vertical-align: 0px;">***</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;">wdeg_rp_net_relations:log(1 + cent_deg_mmc)^2</td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">-0.000<sup style="vertical-align: 0px;">**</sup></td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;"></td>
+<td style="padding-right: 12px; border: none;">(0.000)</td>
+</tr>
+<tr>
+<td style="border-top: 1px solid black;">Log-Likelihood</td>
+<td style="border-top: 1px solid black;">-1727.366</td>
+<td style="border-top: 1px solid black;">-1710.768</td>
+<td style="border-top: 1px solid black;">-1716.855</td>
+<td style="border-top: 1px solid black;">-1708.337</td>
+<td style="border-top: 1px solid black;">-1688.825</td>
+</tr>
+<tr>
+<td style="border-bottom: 2px solid black;">Num. obs.</td>
+<td style="border-bottom: 2px solid black;">1681</td>
+<td style="border-bottom: 2px solid black;">1681</td>
+<td style="border-bottom: 2px solid black;">1681</td>
+<td style="border-bottom: 2px solid black;">1681</td>
+<td style="border-bottom: 2px solid black;">1681</td>
+</tr>
+<tr>
+<td style="padding-right: 12px; border: none;" colspan="7"><span style="font-size:0.8em"><sup style="vertical-align: 0px;">***</sup>p &lt; 0.001; <sup style="vertical-align: 0px;">**</sup>p &lt; 0.01; <sup style="vertical-align: 0px;">*</sup>p &lt; 0.05</span></td>
+</tr>
+</table>

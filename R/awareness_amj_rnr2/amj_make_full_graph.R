@@ -16,9 +16,9 @@ library(readxl)
   
   
   ## DIRECTORIES
-  data_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
-  work_dir <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/compnet2"
-  img_dir  <- "C:/Users/T430/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
+  data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
+  work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
+  img_dir  <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
   version_dir <- file.path(work_dir,'R','awareness_amj_rnr2')
   net_dir <- file.path(work_dir,'firm_nets_rnr2')
   sup_data_dir <- file.path(work_dir,'amj_rnr2_sup_data')  ## supplmental data dir
