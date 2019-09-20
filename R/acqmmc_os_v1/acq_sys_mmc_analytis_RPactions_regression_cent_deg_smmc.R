@@ -107,7 +107,7 @@ setMethod("extract", signature = className("maxLik", "maxLik"),
 
 
 # firms.todo <- c('ibm','qualtrics','medallia','first-mile-geo','verint')
-firms.todo <- c('amazon','apple','microsoft','ibm','google')
+firms.todo <- c('amazon','apple','microsoft','ibm','google','facebook')
 for (firm_i in firms.todo)
 {
   # firm_i <- firms.todo[1]
@@ -302,209 +302,32 @@ for (firm_i in firms.todo)
   
 }
   
-  
-  
-
-
-  
-  
-
-## POOLTEST
-mp <-   mract0 <- plm(log(1+rp_Acquisitions) ~ dum.crisis + log(1+acq_cnt_5) + I(rp_NON_acquisitions>0) +
-                        I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                        I(sales_na_0_mn/1e6) + 
-                        # log(1 + cent_deg_all) +
-                        log(1+cent_deg_mmc) +
-                        I(log(1+cent_deg_mmc)^2),
-                      data=dfreg, family = gaussian, 
-                      model = 'pooling',
-                      R = 100, method='nr',
-                      index=c('i','year'))
-mw <-   mract0 <- pvcm(log(1+rp_Acquisitions) ~ dum.crisis + log(1+acq_cnt_5) + I(rp_NON_acquisitions>0) +
-                         I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                         I(sales_na_0_mn/1e6) + 
-                         # log(1 + cent_deg_all) +
-                         log(1+cent_deg_mmc) +
-                         I(log(1+cent_deg_mmc)^2),
-                       data=dfreg, family = gaussian, 
-                       model = 'within', effect = 'individual',
-                       R = 100, method='nr',
-                       index=c('i','year'))
-screenreg(list(mp=mp, mw=mw))
-pooltest(mp, mw)
-#
-  
-
-pgl <-   mract0 <- pglm(rp_Acquisitions ~ dum.crisis + log(1+acq_cnt_5) + I(rp_NON_acquisitions>0) +
-                        I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                        I(sales_na_0_mn/1e6) + 
-                        # log(1 + cent_deg_all) +
-                        log(1+cent_deg_mmc) +
-                        I(log(1+cent_deg_mmc)^2),
-                      data=dfreg, family = poisson(link= "log"), 
-                      model = 'within', effect='twoways',
-                      R = 100, method='nr',
-                      index=c('i','year'))
-lme <-  mract0 <- glmer(rp_Acquisitions ~ dum.crisis + log(1+acq_cnt_5) + I(rp_NON_acquisitions>0) +
-                        I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                        I(sales_na_0_mn/1e6) + 
-                        # log(1 + cent_deg_all) +
-                        log(1+cent_deg_mmc) +
-                        I(log(1+cent_deg_mmc)^2) + 
-                          (1 | i) + (1|year) ,
-                      data=dfreg, family = poisson(link= "log"))
-screenreg(list(pgl=pgl,lme=lme))
-  
-  
-  
-  
-  mract0 <- pglm(rp_Acquisitions ~  dum.crisis + acq_cnt_5 + rp_NON_acquisitions +
-                   I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                   I(sales_na_0_mn/1e6) + 
-                   log(1 + cent_deg_all) +
-                   # log(1+wdeg_rp_NON_acquisitions) +
-                   # log(1+wdeg_rp_net_invariant) + 
-                   # log(1+wdeg_rp_net_relations) + 
-                   # log(1+wdeg_rp_Acquisitions) + 
-                   smmc35n +
-                   I(smmc35n^2) ,
-                 data=dfreg, family = poisson, 
-                 model = 'within', effect = 'twoways',
-                 R = 100, method='nr',
-                 index=c('i','year'))
-  summary(mract0)
-  
-  mract1 <- pglm(rp_Acquisitions ~  dum.crisis + acq_cnt_5 + rp_NON_acquisitions +
-                   I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                   I(sales_na_0_mn/1e6) + 
-                   log(1 + cent_deg_all) +
-                   log(1+wdeg_rp_NON_acquisitions) +
-                   # log(1+wdeg_rp_net_invariant) + 
-                   # log(1+wdeg_rp_net_relations) + 
-                   log(1+wdeg_rp_Acquisitions) + 
-                   smmc2n +
-                   smmc2n:log(1+wdeg_rp_Acquisitions) + 
-                   # smmc35n:log(1+wdeg_rp_net_relations) + 
-                   # smmc35n:log(1+wdeg_rp_net_invariant) + 
-                   I(smmc2n^2) +
-                   I(smmc2n^2):log(1+wdeg_rp_Acquisitions), # + 
-                   # I(smmc35n^2):log(1+wdeg_rp_net_relations) + 
-                   # I(smmc35n^2):log(1+wdeg_rp_net_invariant),
-                 data=dfreg, family = poisson, 
-                 model = 'within', effect = 'twoways',
-                 R = 100, method='nr',
-                 index=c('i','year'))
-  screenreg(mract1, single.row = T)
-  screenreg(list(mract0,mract1),single.row = T)
-  
-  
-  mract1 <- pglm(rp_Acquisitions ~  dum.crisis + acq_cnt_5 + rp_NON_acquisitions +
-                   I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                   I(sales_na_0_mn/1e6) + 
-                   # log(1 + cent_deg_all) +
-                   log(1+wdeg_rp_net_relations) +
-                   log(1+wdeg_rp_net_invariant) +
-                   log(1+wdeg_rp_Acquisitions) +
-                   log(1+cent_deg_mmc) +
-                   log(1+cent_deg_mmc):log(1+wdeg_rp_net_relations) +
-                   log(1+cent_deg_mmc):log(1+wdeg_rp_net_invariant) +
-                   log(1+cent_deg_mmc):log(1+wdeg_rp_Acquisitions) +
-                   I(log(1+cent_deg_mmc)^2) +
-                   I(log(1+cent_deg_mmc)^2):log(1+wdeg_rp_net_relations) +
-                   I(log(1+cent_deg_mmc)^2):log(1+wdeg_rp_net_invariant) +
-                   I(log(1+cent_deg_mmc)^2):log(1+wdeg_rp_Acquisitions),
-                 data=dfreg, family = poisson, 
-                 model = 'within', effect = 'twoways',
-                 R = 100, method='nr',
-                 index=c('i','year'))
-  
-  
-  
-  
-  
-  mract2 <- pglm(rp_Acquisitions ~  dum.crisis + acq_cnt_5 + rp_NON_acquisitions +
-                   I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                   I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
-                   wdeg_rp_Acquisitions +
-                   wdeg_rp_NON_acquisitions +
-                   smmc4n +
-                   smmc4n:wdeg_rp_Acquisitions + 
-                   smmc4n:wdeg_rp_NON_acquisitions + 
-                   I(smmc4n^2) +
-                   I(smmc4n^2):wdeg_rp_Acquisitions + 
-                   I(smmc4n^2):wdeg_rp_NON_acquisitions,
-                 data=dfreg, family = poisson, 
-                 model = 'within', effect = 'twoways',
-                 R = 100, method='nr',
-                 index=c('i','year'))
-  summary(mract2)
-  
-  
-  mract2b <- pglm(rp_Acquisitions ~  dum.crisis + acq_cnt_5 + rp_NON_acquisitions +
-                    I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                    I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
-                    wdeg_rp_net_restruct +
-                    wdeg_rp_net_invariant +
-                    smmc4n +
-                    smmc4n:wdeg_rp_net_restruct + 
-                    smmc4n:wdeg_rp_net_invariant + 
-                    I(smmc4n^2) +
-                    I(smmc4n^2):wdeg_rp_net_restruct + 
-                    I(smmc4n^2):wdeg_rp_net_invariant,
-                  data=dfreg, family = poisson, 
-                  model = 'within', effect = 'twoways',
-                  R = 100, method='nr',
-                  index=c('i','year'))
-  summary(mract2b)
-  
-  mract3 <- pglm(rp_Acquisitions ~ dum.crisis + acq_cnt_5 + rp_NON_acquisitions +
-                   I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
-                   I(sales_na_0_mn/1e6) + log(1 + cent_deg_all) +
-                   wdeg_rp_Acquisitions + 
-                   wdeg_rp_net_relations +
-                   wdeg_rp_net_invariant +
-                   smmc4n +
-                   smmc4n:wdeg_rp_Acquisitions + 
-                   smmc4n:wdeg_rp_net_relations +
-                   smmc4n:wdeg_rp_net_invariant +
-                   I(smmc4n^2) +
-                   I(smmc4n^2):wdeg_rp_Acquisitions +
-                   I(smmc4n^2):wdeg_rp_net_relations +
-                   I(smmc4n^2):wdeg_rp_net_invariant,
-                 data=dfreg, family = poisson, 
-                 model = 'within', effect = 'twoways',
-                 R = 100, method='nr',
-                 index=c('i','year'))
-  summary(mract3)  
-  
-  
-  
-  #
-  screenreg(list(mract0, mract1, mract2, mract2b, mract3), digits = 3, single.row = T)
-  
-  #
-  htmlfile <- sprintf('acq_sys_mmc_panel_RPactions_regression_RESULTS_table_ego-%s_d%s_nrow%s_%s.html', 
-                      firm_i_ego, d, nrow(dfreg), pow)
-  htmlreg(list(mract0, mract1, mract2, mract2b, mract3), 
-          file = file.path(result_dir,htmlfile), digits = 3)
-  
-    
-# }
 
 
 
 
+# ## PLOT U-Curve------
+library(ggplot2)
+library(tidyr)
+
+dfplot <- dfreg
+dfplot$log_acq <- log(1+dfreg$rp_Acquisitions)
+dfplot$log_rel <- log(1+dfreg$rp_net_relations)
+dfplot$log_inv <- log(1+dfreg$rp_net_invariant)
+dfplot$log_all <- log(1+dfreg$rp_all)
+dfplot$smmc <- log(1 + dfreg$cent_deg_mmc)
+# dfplot$acq_type <- as.factor(dfreg$rp_Acquisitions > 0)
+dfplot$sales_high <- as.factor(dfreg$sales_na_0_mn > median(dfreg$sales_na_0_mn))
+# dfplot$wdeg_Acq_hi <- as.factor(dfreg$wdeg_rp_Acquisitions > median(dfreg$wdeg_rp_Acquisitions))
+dfplot <- dfplot[which(dfplot$cent_deg_mmc>1 &
+                         ! as.character(dfplot$year) %in% c('')),] #'2008','2009','2010','2011'
+# dfplot <- dfplot[which(dfplot$rp_Acquisitions>0),]
+
+ggplot(dfplot, aes(x=smmc, y=log_acq, colour=sales_high)) +
+  stat_smooth(method = "lm",
+              formula = y ~ x + I(x^2),
+              size = 1, se=T) +
+  geom_point() + theme_bw() + facet_wrap(facets = .~year)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+##-------------------

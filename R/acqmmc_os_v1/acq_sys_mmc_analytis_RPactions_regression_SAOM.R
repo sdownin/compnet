@@ -13,6 +13,7 @@ library(readxl)
 library(haven)
 library(stringr)
 library(stringdist)
+library(parallel)
 
 ## DIRECTORIES
 data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
@@ -182,11 +183,12 @@ firm_i <- 'microsoft'
   # firmnamesub <- firmnamesall[fnidx] ## firms in all yeras of gmmcsub MMC network
   # nsub <- length(firmnamesub)
   ## which firm made at least 1 acquisitions
-  .filtername <- which(
+  .filtername <- dfl$name[which(
     dfl$cent_deg_mmc>0 &
     dfl$ipo>0
-  )
-  firmnamesub <- unique(as.character(dfl$name[.filtername]))
+  )]
+  ## filter names in vertex order with MMC rivals (is IPO firm)
+  firmnamesub <- V(nl$`2007`$gmmc)$vertex.names[which(V(nl$`2007`$gmmc)$vertex.names %in% .filtername)]
   nsub <- length(firmnamesub)
   #*********************88888888888
   
@@ -217,83 +219,232 @@ firm_i <- 'microsoft'
   #   mmcarr[,,t] <- gmmcadj[vids.gmmc,vids.gmmc]
   # }
   ## 2-year periods
-  mmcarr2 <- array(0, dim=c(nsub, nsub, npds/2))
-  for (t in 1:(npds/2)) {
-    a <- (t-1)*2 + 1
-    b <- (t-1)*2 + 2
-    mab <- mmcarr[,,a] + mmcarr[,,b]
-    mab[mab>0] <- 1
-    mmcarr2[,,t] <- mab
-  }
+  # mmcarr2 <- array(0, dim=c(nsub, nsub, npds/2))
+  # for (t in 1:(npds/2)) {
+  #   a <- (t-1)*2 + 1
+  #   b <- (t-1)*2 + 2
+  #   mab <- mmcarr[,,a] + mmcarr[,,b]
+  #   mab[mab>0] <- 1
+  #   mmcarr2[,,t] <- mab
+  # }
   
   ## COVARIATES (Acquisitions)
   arrAcq <- array(0,dim=c(nsub,npds))
+  arrAcqSq <- array(0,dim=c(nsub,npds))
+  arrSmmc <- array(0,dim=c(nsub,npds))
+  arrSmmcSq <- array(0,dim=c(nsub,npds))
+  arrEmploy <- array(0,dim=c(nsub,npds))
+  arrSales <- array(0,dim=c(nsub,npds))
+  arrAcqExper <- array(0,dim=c(nsub,npds))
+  arrDumCris <- array(0,dim=c(nsub,npds)) 
+  arrAcqSum <- array(0,dim=c(nsub,npds)) 
+  arrNonAcqAct <- array(0,dim=c(nsub,npds)) 
+  arrWdegAcq <- array(0,dim=c(nsub,npds))
   # arrW <- array(0,dim=c(nsub,npds))
   for (t in 1:length(nl)) {
-    idx.acq <- which(dfl$year==ys[t] & dfl$name %in% firmnamesub)
-    arrAcq[,t] <- round(log(1+dfl$rp_Acquisitions[idx.acq]))
+    for (i in 1:length(firmnamesub)) {
+      .namei <- firmnamesub[i]
+      idx <- which(dfl$year==ys[t] & dfl$name==.namei)
+      x <- dfl$rp_Acquisitions[idx]
+      z <- ceiling(1 + log(1+x))
+      z2 <- ceiling(1 + log10(1+x^2))
+      arrAcq[i,t] <- ifelse(z>5,5,z)
+      arrAcqSq[i,t] <- ifelse(z2>5,5,z2)
+      #
+      w <- dfl$cent_deg_mmc[idx]
+      arrSmmc[i,t] <- log(1+w)
+      arrSmmcSq[i,t] <- log(1+w)^2
+      #
+      arrWdegAcq[i,t] <- log(1 + dfl$wdeg_rp_Acquisitions[idx])
+      #
+      arrEmploy[i,t]    <- dfl$employee_na_age[idx]/1e+03
+      arrSales[i,t]     <- dfl$sales_na_0_mn[idx]/1e+06
+      arrAcqExper[i,t]  <- log(1 + dfl$acq_cnt_5[idx])
+      arrAcqSum[i,t]  <- dfl$acq_sum_1[idx]/1e+09
+      arrNonAcqAct[i,t] <- as.integer(dfl$rp_NON_acquisitions[idx] > 0)
+    }
   }
   
+  ## FILTER YEARS & Firms
+  nmacqall <- unique(dfl$name[which(dfl$rp_Acquisitions>0)])
+  firmsubidx <- which(firmnamesub %in% nmacqall)
+  firmnamesub2 <- firmnamesub[firmsubidx]
+  nlyrs <- as.numeric(names(nl))
+  yrsubidx <- (length(nlyrs)-5):(length(nlyrs)-1)
+  yrsub <- nlyrs[yrsubidx]
+  #
+  mmcarr2 <- mmcarr[firmsubidx,firmsubidx, yrsubidx ]
+  arrAcq2 <- arrAcq[firmsubidx, yrsubidx ]
+  arrAcqSq2 <- arrAcqSq[firmsubidx, yrsubidx ]
+  arrSmmc2 <- arrSmmc[firmsubidx, yrsubidx ]
+  arrSmmcSq2 <- arrSmmcSq[firmsubidx, yrsubidx ]
+  #
+  arrWdegAcq2 <- arrWdegAcq[firmsubidx, yrsubidx ]
+  #
+  arrEmploy2 <- arrEmploy[firmsubidx, yrsubidx ]
+  arrSales2 <- arrSales[firmsubidx, yrsubidx ]
+  arrAcqExper2 <- arrAcqExper[firmsubidx, yrsubidx ]
+  arrAcqSum2 <- arrAcqSum[firmsubidx, yrsubidx ]
+  arrNonAcqAct2 <- arrNonAcqAct[firmsubidx, yrsubidx ]
+  
   ##-------------------
-  ## SAOM
+  ## SAOM INIT VARS
   ##------------------
-  depMMC <- sienaDependent(mmcarr, type="oneMode", nodeSet=c('FIRMS'), 
+  depMMC <- sienaDependent(mmcarr2, type="oneMode", nodeSet=c('FIRMS'), 
                            sparse = FALSE, allowOnly = FALSE)
   # TREATMENT
-  depAcq <- sienaDependent(arrAcq, type="behavior", nodeSet=c('FIRMS'), 
+  depAcq <- sienaDependent(arrAcq2, type="behavior", nodeSet=c('FIRMS'), 
                              sparse = FALSE, allowOnly = FALSE)
-
-  # Controls
-  # moTrtLinearArray <- array(moTrtLinearWaves, dim=c(nrows, nyrs))
-  # moCovTrtLinear <- varCovar(moTrtLinearArray, nodeSet="FIRMS")
-  # #
-  # activWavesArray <- array(activWaves, dim=c(nrows, nyrs))
-  # 
-  
+  # #PREDICTOR
+  covSmmc <- varCovar(arrSmmc2, nodeSet="FIRMS")
+  covSmmcSq <- varCovar(arrSmmcSq2, nodeSet="FIRMS")
+  covWdegAcq <- varCovar(arrWdegAcq2, nodeSet="FIRMS")
+  # #CONTROLS
+  covEmploy <- varCovar(arrEmploy2, nodeSet="FIRMS")
+  covSales <- varCovar(arrSales2, nodeSet="FIRMS")
+  covAcqExper <- varCovar(arrAcqExper2, nodeSet="FIRMS")
+  covAcqSum <- varCovar(arrAcqSum2, nodeSet="FIRMS")
+  covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
+  #
   # NODES
-  firms <- firmnamesub
+  firms <- firmnamesub2
   nrows <- length(firms)
   FIRMS <- sienaNodeSet(nrows, 'FIRMS', firms)
+  ## create system data object
   
+  # sysEffects1 <- includeEffects(sysEffects1, inPopSqrt, name="depActiv", interaction1 = 'depMMC')
+  #
+  # pharmaEffects <- includeTimeDummy(pharmaEffects, outdeg, name="depActiv", interaction1 = 'depMMC', timeDummy = '5,6,7,8')
+  
+  ##-------------------------------------
+  ## SAOM MODEL 1 - H1
+  ##-------------------------------------
+  sysDat1 <- sienaDataCreate(depMMC, depAcq, 
+                            covWdegAcq, covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
+                            covEmploy, covSales, covAcqExper, 
+                            covAcqSum, covNonAcqAct, 
+                            nodeSets=list(FIRMS) ) #,smoke1, alcohol
   ##
-  sysDat <- sienaDataCreate(depMMC, depAcq,    ##dyCovTrt, dyCovTrtLinear, 
-                               nodeSets=list(FIRMS) ) #,smoke1, alcohol
-  #
-  pharmaEffects <- getEffects(pharmaDat)
-  #
-  effectsDocumentation(pharmaEffects)
-  # print01Report(pharmaDat, modelname="pharma-test-1")
-  
-  # pharmaEffects <- includeEffects(pharmaEffects, linear, name="depActiv")
-  pharmaEffects <- includeEffects(pharmaEffects, outdeg, name="depActiv", interaction1 = 'depMMC')
-  pharmaEffects <- includeEffects(pharmaEffects, outRate, name="depActiv", interaction1 = 'depMMC', type='rate')
-  # pharmaEffects <- includeEffects(pharmaEffects, isolate, name="depActiv", interaction1 = 'depMMC')
-  # pharmaEffects <- includeEffects(pharmaEffects, popAlt, name="depActiv", interaction1 = 'depMMC')
-  pharmaEffects <- includeEffects(pharmaEffects, density, name="depMMC")
-  # pharmaEffects <- includeEffects(pharmaEffects, inPop, name="depMMC")
-  # pharmaEffects <- includeEffects(pharmaEffects, outAct, name="depMMC")
-  pharmaEffects <- includeEffects(pharmaEffects, cycle4, name="depMMC")
-  pharmaEffects <- includeEffects(pharmaEffects, sameXCycle4, name="depMMC", interaction1 = 'depActiv')
-  #
-  pharmaEffects <- includeTimeDummy(pharmaEffects, outdeg, name="depActiv", interaction1 = 'depMMC', timeDummy = '5,6,7,8')
-  pharmaEffects <- includeTimeDummy(pharmaEffects, sameXCycle4, name="depMMC", interaction1 = 'depActiv', timeDummy = '5,6,7,8')
-  
-  #
-  pharmaModel <- sienaAlgorithmCreate(projname='pharma-mmc-test-proj-1')
-  
-  pharmaResults <- siena07(pharmaModel, data=pharmaDat, effects=pharmaEffects, 
+  sysEffects1 <- getEffects(sysDat1)
+  effectsDocumentation(sysEffects1)
+  ## NETWORK 
+  sysEffects1 <- includeEffects(sysEffects1, density, transTies, gwesp, 
+                                name="depMMC")
+  sysEffects1 <- includeEffects(sysEffects1, absDiffX, 
+                                name="depMMC", interaction1 = 'depAcq')
+  sysEffects1 <- includeEffects(sysEffects1, simX, 
+                                name="depMMC", interaction1 = 'depAcq')
+  sysEffects1 <- includeEffects(sysEffects1, diffXTransTrip, 
+                                name="depMMC", interaction1 = 'depAcq')
+  sysEffects1 <- includeEffects(sysEffects1, totDist2, 
+                                name="depMMC", interaction1 = 'depAcq')
+  ## BEHAVIOR
+  sysEffects1 <- includeEffects(sysEffects1, linear, quad, 
+                                name="depAcq")
+  sysEffects1 <- includeEffects(sysEffects1, totAlt,
+                                name="depAcq", interaction1="depMMC")
+  sysEffects1 <- includeInteraction(sysEffects1, quad, totAlt,
+                                    name="depAcq", interaction1=c("","depMMC"))
+  sysEffects1 <- includeEffects(sysEffects1, effFrom,
+                                name="depAcq", interaction1 = 'covSmmc')
+  sysEffects1 <- includeEffects(sysEffects1, effFrom,
+                                name="depAcq", interaction1 = 'covSmmcSq')
+  # (controls to BEHAVIOR)
+  sysEffects1 <- includeEffects(sysEffects1, effFrom,
+                                name="depAcq", interaction1 = 'covEmploy')
+  sysEffects1 <- includeEffects(sysEffects1, effFrom,
+                                name="depAcq", interaction1 = 'covSales')
+  sysEffects1 <- includeEffects(sysEffects1, effFrom,
+                                name="depAcq", interaction1 = 'covAcqExper')
+  sysEffects1 <- includeEffects(sysEffects1, effFrom,
+                                name="depAcq", interaction1 = 'covAcqSum')
+  sysEffects1 <- includeEffects(sysEffects1, effFrom,
+                                name="depAcq", interaction1 = 'covNonAcqAct')
+  ## model
+  sysModel1 <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-1')
+  ## estimate
+  sysResults1 <- siena07(sysModel1, data=sysDat1, effects=sysEffects1, 
                            batch = T,   returnDeps = T, ## necessary for GOF
-                           useCluster = T, nbrNodes = ncores, clusterType = 'PSOCK')
+                           useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
   
-  screenreg(pharmaResults, digits = 4)
+  # screenreg(sysResults1, digits = 4)
+  summary(sysResults1)
+  # save results
+  sysSAOMfile <- sprintf('acq_sys_mmc_SAOM_FIT_LIST_mod1_ego-%s_d%s_%s-%s.rds', 
+                       firm_i_ego, d, yrsub[1], yrsub[length(yrsub)])
+  saveRDS(list(results=sysResults1, model=sysModel1,
+               data=sysDat1,  effects=sysEffects1,
+               FIRMS=FIRMS, depMMC=depMMC, depAcq=depMMC), 
+          file = file.path(result_dir, sysSAOMfile))
   
+
   
+  ##-------------------------------------
+  ## SAOM MODEL 2 - H2
+  ##-------------------------------------
+  sysDat2 <- sienaDataCreate(depMMC, depAcq, 
+                             covWdegAcq, covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
+                             covEmploy, covSales, covAcqExper, 
+                             covAcqSum, covNonAcqAct, covWdegAcq,
+                             nodeSets=list(FIRMS) ) #,smoke1, alcohol
+  ##
+  sysEffects2 <- getEffects(sysDat2)
+  effectsDocumentation(sysEffects2)
+  # print01Report(pharmaDat, modelname="pharma-test-1")
+  ## NETWORK 
+  sysEffects2 <- includeEffects(sysEffects2, density, transTies, gwesp, 
+                                name="depMMC")
+  sysEffects2 <- includeEffects(sysEffects2, absDiffX, 
+                                name="depMMC", interaction1 = 'depAcq')
+  sysEffects2 <- includeEffects(sysEffects2, simX, 
+                                name="depMMC", interaction1 = 'depAcq')
+  sysEffects2 <- includeEffects(sysEffects2, diffXTransTrip, 
+                                name="depMMC", interaction1 = 'depAcq')
+  sysEffects2 <- includeEffects(sysEffects2, totDist2, 
+                                name="depMMC", interaction1 = 'depAcq')
+  ## BEHAVIOR
+  sysEffects2 <- includeEffects(sysEffects2, linear, quad, 
+                                name="depAcq")
+  #
+  sysEffects2 <- includeEffects(sysEffects2, totExposure,
+                                name="depAcq", interaction1="depMMC")
+  sysEffects2 <- includeInteraction(sysEffects2, quad, totExposure,
+                                    name="depAcq", interaction1=c("","depMMC"))
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covSmmc')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covSmmcSq')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covSmmc', interaction2 = 'covWdegAcq')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'covWdegAcq' )
+  # (controls to BEHAVIOR)
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covEmploy')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covSales')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covAcqExper')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covAcqSum')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covNonAcqAct')
+  ##
+  sysModel2 <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2')
   
-  # mmcl <- as.array(c(lapply(nl,function(x){
-  #   vids <- which(V(x$gmmcsub)$vertex.names %in% firmnames0)
-  #   as_adj(induced.subgraph(x$gmmcsub,vids), sparse = F)
-  # })), 
-  # dim=c(n0, n0, npds))
+  sysResults2 <- siena07(sysModel2, data=sysDat2, effects=sysEffects2, 
+                         batch = T,   returnDeps = T, ## necessary for GOF
+                         useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  
+  # screenreg(sysResults1, digits = 4)
+  summary(sysResults2)
+  
+  sysSAOMfile <- sprintf('acq_sys_mmc_SAOM_FIT_LIST_mod2_ego-%s_d%s_%s-%s.rds', 
+                         firm_i_ego, d, yrsub[1], yrsub[length(yrsub)])
+  saveRDS(list(results=sysResults2, model=sysModel2,
+               data=sysDat2,  effects=sysEffects2,
+               FIRMS=FIRMS, depMMC=depMMC, depAcq=depMMC), 
+          file = file.path(result_dir, sysSAOMfile))
   
   
   
