@@ -240,16 +240,16 @@ firm_i <- 'microsoft'
   arrAcqSum <- array(0,dim=c(nsub,npds)) 
   arrNonAcqAct <- array(0,dim=c(nsub,npds)) 
   arrWdegAcq <- array(0,dim=c(nsub,npds))
+  arrSmmc_WdegAcq <- array(0,dim=c(nsub,npds))
+  arrSmmcSq_WdegAcq <- array(0,dim=c(nsub,npds))
   # arrW <- array(0,dim=c(nsub,npds))
   for (t in 1:length(nl)) {
     for (i in 1:length(firmnamesub)) {
       .namei <- firmnamesub[i]
       idx <- which(dfl$year==ys[t] & dfl$name==.namei)
       x <- dfl$rp_Acquisitions[idx]
-      z <- ceiling(1 + log(1+x))
-      z2 <- ceiling(1 + log10(1+x^2))
+      z <- ceiling( log(1+x) )
       arrAcq[i,t] <- ifelse(z>5,5,z)
-      arrAcqSq[i,t] <- ifelse(z2>5,5,z2)
       #
       w <- dfl$cent_deg_mmc[idx]
       arrSmmc[i,t] <- log(1+w)
@@ -259,9 +259,12 @@ firm_i <- 'microsoft'
       #
       arrEmploy[i,t]    <- dfl$employee_na_age[idx]/1e+03
       arrSales[i,t]     <- dfl$sales_na_0_mn[idx]/1e+06
-      arrAcqExper[i,t]  <- log(1 + dfl$acq_cnt_5[idx])
-      arrAcqSum[i,t]  <- dfl$acq_sum_1[idx]/1e+09
+      arrAcqExper[i,t]  <- as.integer( dfl$acq_cnt_5[idx] > 0 )  # log(1 + dfl$acq_cnt_5[idx])
+      arrAcqSum[i,t]    <- dfl$acq_sum_1[idx]/1e+09
       arrNonAcqAct[i,t] <- as.integer(dfl$rp_NON_acquisitions[idx] > 0)
+      #
+      arrSmmc_WdegAcq[i,t]   <- arrWdegAcq[i,t] * arrSmmc[i,t]
+      arrSmmcSq_WdegAcq[i,t] <- arrWdegAcq[i,t] * arrSmmcSq[i,t]
     }
   }
   
@@ -280,6 +283,8 @@ firm_i <- 'microsoft'
   arrSmmcSq2 <- arrSmmcSq[firmsubidx, yrsubidx ]
   #
   arrWdegAcq2 <- arrWdegAcq[firmsubidx, yrsubidx ]
+  arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx, yrsubidx ]
+  arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx, yrsubidx ]
   #
   arrEmploy2 <- arrEmploy[firmsubidx, yrsubidx ]
   arrSales2 <- arrSales[firmsubidx, yrsubidx ]
@@ -305,17 +310,17 @@ firm_i <- 'microsoft'
   covAcqExper <- varCovar(arrAcqExper2, nodeSet="FIRMS")
   covAcqSum <- varCovar(arrAcqSum2, nodeSet="FIRMS")
   covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
+  covSmmc_covWdegAcq <- varCovar(arrSmmc_WdegAcq2, nodeSet="FIRMS")
+  covSmmcSq_covWdegAcq <- varCovar(arrSmmcSq_WdegAcq2, nodeSet="FIRMS")
   #
   # NODES
   firms <- firmnamesub2
   nrows <- length(firms)
   FIRMS <- sienaNodeSet(nrows, 'FIRMS', firms)
   ## create system data object
-  
   # sysEffects1 <- includeEffects(sysEffects1, inPopSqrt, name="depActiv", interaction1 = 'depMMC')
   #
   # pharmaEffects <- includeTimeDummy(pharmaEffects, outdeg, name="depActiv", interaction1 = 'depMMC', timeDummy = '5,6,7,8')
-  
   ##-------------------------------------
   ## SAOM MODEL 1 - H1
   ##-------------------------------------
@@ -323,28 +328,21 @@ firm_i <- 'microsoft'
                             covWdegAcq, covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
                             covEmploy, covSales, covAcqExper, 
                             covAcqSum, covNonAcqAct, 
+                            covSmmc_covWdegAcq, covSmmcSq_covWdegAcq,
                             nodeSets=list(FIRMS) ) #,smoke1, alcohol
   ##
   sysEffects1 <- getEffects(sysDat1)
   effectsDocumentation(sysEffects1)
   ## NETWORK 
-  sysEffects1 <- includeEffects(sysEffects1, density, transTies, gwesp, 
+  sysEffects1 <- includeEffects(sysEffects1, density, #transTies, gwesp, 
                                 name="depMMC")
-  sysEffects1 <- includeEffects(sysEffects1, absDiffX, 
-                                name="depMMC", interaction1 = 'depAcq')
-  sysEffects1 <- includeEffects(sysEffects1, simX, 
-                                name="depMMC", interaction1 = 'depAcq')
-  sysEffects1 <- includeEffects(sysEffects1, diffXTransTrip, 
-                                name="depMMC", interaction1 = 'depAcq')
-  sysEffects1 <- includeEffects(sysEffects1, totDist2, 
-                                name="depMMC", interaction1 = 'depAcq')
+  # sysEffects1 <- includeEffects(sysEffects1, absDiffX, 
+  #                               name="depMMC", interaction1 = 'depAcq')
+  # sysEffects1 <- includeEffects(sysEffects1, simX, 
+  #                               name="depMMC", interaction1 = 'depAcq')
   ## BEHAVIOR
-  sysEffects1 <- includeEffects(sysEffects1, linear, quad, 
-                                name="depAcq")
-  sysEffects1 <- includeEffects(sysEffects1, totAlt,
-                                name="depAcq", interaction1="depMMC")
-  sysEffects1 <- includeInteraction(sysEffects1, quad, totAlt,
-                                    name="depAcq", interaction1=c("","depMMC"))
+  # sysEffects1 <- includeEffects(sysEffects1, linear,  
+  #                               name="depAcq")
   sysEffects1 <- includeEffects(sysEffects1, effFrom,
                                 name="depAcq", interaction1 = 'covSmmc')
   sysEffects1 <- includeEffects(sysEffects1, effFrom,
@@ -356,10 +354,10 @@ firm_i <- 'microsoft'
                                 name="depAcq", interaction1 = 'covSales')
   sysEffects1 <- includeEffects(sysEffects1, effFrom,
                                 name="depAcq", interaction1 = 'covAcqExper')
-  sysEffects1 <- includeEffects(sysEffects1, effFrom,
-                                name="depAcq", interaction1 = 'covAcqSum')
-  sysEffects1 <- includeEffects(sysEffects1, effFrom,
-                                name="depAcq", interaction1 = 'covNonAcqAct')
+  # sysEffects1 <- includeEffects(sysEffects1, effFrom,
+  #                               name="depAcq", interaction1 = 'covAcqSum')
+  # sysEffects1 <- includeEffects(sysEffects1, effFrom,
+  #                               name="depAcq", interaction1 = 'covNonAcqAct')
   ## model
   sysModel1 <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-1')
   ## estimate
@@ -383,41 +381,36 @@ firm_i <- 'microsoft'
   ## SAOM MODEL 2 - H2
   ##-------------------------------------
   sysDat2 <- sienaDataCreate(depMMC, depAcq, 
-                             covWdegAcq, covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
+                             covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
                              covEmploy, covSales, covAcqExper, 
                              covAcqSum, covNonAcqAct, covWdegAcq,
+                             covSmmc_covWdegAcq,
+                             covSmmcSq_covWdegAcq ,
                              nodeSets=list(FIRMS) ) #,smoke1, alcohol
   ##
   sysEffects2 <- getEffects(sysDat2)
   effectsDocumentation(sysEffects2)
   # print01Report(pharmaDat, modelname="pharma-test-1")
   ## NETWORK 
-  sysEffects2 <- includeEffects(sysEffects2, density, transTies, gwesp, 
+  sysEffects2 <- includeEffects(sysEffects2, density, # transTies, gwesp, 
                                 name="depMMC")
-  sysEffects2 <- includeEffects(sysEffects2, absDiffX, 
-                                name="depMMC", interaction1 = 'depAcq')
-  sysEffects2 <- includeEffects(sysEffects2, simX, 
-                                name="depMMC", interaction1 = 'depAcq')
-  sysEffects2 <- includeEffects(sysEffects2, diffXTransTrip, 
-                                name="depMMC", interaction1 = 'depAcq')
-  sysEffects2 <- includeEffects(sysEffects2, totDist2, 
-                                name="depMMC", interaction1 = 'depAcq')
+  # sysEffects1 <- includeEffects(sysEffects1, absDiffX, 
+  #                               name="depMMC", interaction1 = 'depAcq')
+  # sysEffects1 <- includeEffects(sysEffects1, simX, 
+  #                               name="depMMC", interaction1 = 'depAcq')
   ## BEHAVIOR
-  sysEffects2 <- includeEffects(sysEffects2, linear, quad, 
-                                name="depAcq")
-  #
-  sysEffects2 <- includeEffects(sysEffects2, totExposure,
-                                name="depAcq", interaction1="depMMC")
-  sysEffects2 <- includeInteraction(sysEffects2, quad, totExposure,
-                                    name="depAcq", interaction1=c("","depMMC"))
+  # sysEffects1 <- includeEffects(sysEffects1, linear,  
+  #                               name="depAcq")
   sysEffects2 <- includeEffects(sysEffects2, effFrom,
                                 name="depAcq", interaction1 = 'covSmmc')
   sysEffects2 <- includeEffects(sysEffects2, effFrom,
                                 name="depAcq", interaction1 = 'covSmmcSq')
   sysEffects2 <- includeEffects(sysEffects2, effFrom,
-                                name="depAcq", interaction1 = 'covSmmc', interaction2 = 'covWdegAcq')
+                                name="depAcq", interaction1 = 'covWdegAcq')
   sysEffects2 <- includeEffects(sysEffects2, effFrom,
-                                name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'covWdegAcq' )
+                                name="depAcq", interaction1 = 'covSmmc_covWdegAcq')
+  sysEffects2 <- includeEffects(sysEffects2, effFrom,
+                                name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
   # (controls to BEHAVIOR)
   sysEffects2 <- includeEffects(sysEffects2, effFrom,
                                 name="depAcq", interaction1 = 'covEmploy')
@@ -425,10 +418,11 @@ firm_i <- 'microsoft'
                                 name="depAcq", interaction1 = 'covSales')
   sysEffects2 <- includeEffects(sysEffects2, effFrom,
                                 name="depAcq", interaction1 = 'covAcqExper')
-  sysEffects2 <- includeEffects(sysEffects2, effFrom,
-                                name="depAcq", interaction1 = 'covAcqSum')
-  sysEffects2 <- includeEffects(sysEffects2, effFrom,
-                                name="depAcq", interaction1 = 'covNonAcqAct')
+  # sysEffects1 <- includeEffects(sysEffects1, effFrom,
+  #                               name="depAcq", interaction1 = 'covAcqSum')
+  # sysEffects1 <- includeEffects(sysEffects1, effFrom,
+  #                               name="depAcq", interaction1 = 'covNonAcqAct')
+  #
   ##
   sysModel2 <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2')
   
