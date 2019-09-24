@@ -15,6 +15,8 @@ library(stringr)
 library(stringdist)
 library(parallel)
 library(RSiena)
+library(ggplot2)
+library(tidyr)
 
 ## DIRECTORIES
 data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
@@ -136,6 +138,8 @@ firm_i <- 'microsoft'
   firmfile <- sprintf('acq_sys_mmc_panel_RPactions_regression_df_ego-%s_d%s_%s-%s.csv', 
                       firm_i_ego, d, y1, y2)
   dfl <- read.csv(file.path(result_dir,firmfile), stringsAsFactors = F)
+  ## year names off by 1 (2006 - 2015) <-- +1
+  dfl$year <- dfl$year + 1
   # dfl$name <- as.character(dfl$name)
   
 
@@ -170,10 +174,15 @@ firm_i <- 'microsoft'
   names(nl) <- ys[(length(ys)-10+1):length(ys)]
   npds <- length(nl)
   
-  firmnamesall <- unique(unlist(sapply(nl,function(x)V(x$gmmcsub)$vertex.names)))
-  firmnames0 <- V(nl$`2007`$gmmcsub)$vertex.names
-  adj0 <- as_adj(nl$`2007`$gmmcsub, sparse = F)
+  firmnamesall <- unique(c(unlist(sapply(nl,function(x)V(x$gt)$vertex.names))))
+  firmnames0 <- V(nl$`2007`$gt)$vertex.names
+  adj0 <- as_adj(nl$`2007`$gt, sparse = T)
   n0 <- length(firmnames0)
+  
+  # firmnamesall <- unique(unlist(sapply(nl,function(x)V(x$gmmcsub)$vertex.names)))
+  # firmnames0 <- V(nl$`2007`$gmmcsub)$vertex.names
+  # adj0 <- as_adj(nl$`2007`$gmmcsub, sparse = F)
+  # n0 <- length(firmnames0)
   # firmnames <- unique(unlist(sapply(nl,function(x)V(x$gmmcsub)$vertex.names)))
   
   # ## which names in all years
@@ -184,56 +193,180 @@ firm_i <- 'microsoft'
   # firmnamesub <- firmnamesall[fnidx] ## firms in all yeras of gmmcsub MMC network
   # nsub <- length(firmnamesub)
   ## which firm made at least 1 acquisitions
-  .filtername <- dfl$name[which(
-    dfl$cent_deg_mmc>0 &
-    dfl$ipo>0
-  )]
+  firm.acq.1 <- unique(dfl$name[which(dfl$rp_Acquisitions > 0)])
+  .filtername <- unique(dfl$name[which(
+    dfl$cent_deg_mmc>0 
+    & dfl$ipo>0 
+    #& (dfl$name %in% firm.acq.1)  ## filter by who made at least one acquisition ?
+  )])
   ## filter names in vertex order with MMC rivals (is IPO firm)
-  firmnamesub <- V(nl$`2007`$gmmc)$vertex.names[which(V(nl$`2007`$gmmc)$vertex.names %in% .filtername)]
+  firmnamesub <- V(nl$`2007`$gt)$vertex.names[which(V(nl$`2007`$gt)$vertex.names %in% .filtername)]
   nsub <- length(firmnamesub)
   #*********************88888888888
+  
+  ## Aggregate DV Acquisitions by period (2 years, 3 years)
+  # agpdlist <- list(c('2008','2009','2010'), 
+  #                   c('2011','2012','2013'), 
+  #                   c('2014','2015','2016'))
+  # agpdlist <- list(c('2009','2010'),
+  #                  c('2011','2012'),
+  #                  c('2013','2014'),
+  #                  c('2015','2016'))
+  agpdlist <- list(c('2010'),c('2011'),c('2012'),c('2013'),
+                   c('2014'),c('2015'),c('2016'))
+  npds <- length(agpdlist)
+  ## number of years in each period to aggregate
+  pdyrs <- length(agpdlist[[1]])
+  ## network waves (snapshots)
+  netwavepds <- as.character(c(sapply(agpdlist, function(x)as.numeric(x[1]))))
+  nwaves <- length(netwavepds)  ## number of network snapshots 
+  
+  dfla <- data.frame()
+  for (t in 1:npds) {
+    t_yrs <- agpdlist[[t]]
+    cat(sprintf('t_yrs %s\n',paste(t_yrs, collapse = ',')))
+    for (i in 1:length(firmnamesub)) {
+      xti <- dfl[which(dfl$year %in% t_yrs & dfl$name==firmnamesub[i]), ]
+      xti <- xti[order(xti$year, decreasing = F),]
+      ## previous year
+      yn1 <- as.integer(min(t_yrs)) - 1
+      xtin1 <- dfl[which(dfl$year == yn1 & dfl$name==firmnamesub[i]), ]
+      ## previous year
+      yn2 <- as.integer(min(t_yrs)) - 2
+      xtin2 <- dfl[which(dfl$year == yn2 & dfl$name==firmnamesub[i]), ]
+      #
+      .tmp <- data.frame(
+        i=i, name=firmnamesub[i],
+        pd=t, y1=t_yrs[1], y2=t_yrs[length(t_yrs)],
+        type=xti$type[1], 
+        # ## Mean of previous period years for covariates of state (size, position)
+        # employee_na_age=mean(xti$employee_na_age, na.rm=T),
+        # sales_na_0_mn=mean(xti$sales_na_0_mn, na.rm=T),
+        # acq_cnt_5=mean(xti$acq_cnt_5, na.rm=T),
+        # acq_sum_1=mean(xti$acq_sum_1, na.rm=T),
+        # cent_deg_mmc=mean(xti$cent_deg_mmc, na.rm=T),
+        ## State (size, position) in peirod t is ending value from range in period (t-1)
+        employee_na_age= xti$employee_na_age[1],
+        sales_na_0_mn= xti$sales_na_0_mn[1],
+        acq_cnt_5= xti$acq_cnt_5[1],
+        acq_sum_1= xti$acq_sum_1[1],
+        cent_deg_mmc= xti$cent_deg_mmc[1],
+        ## mean of period range yeras for DVs and covars of BEHVAIOR (action counts)
+        rp_Acquisitions=mean(c(xti$rp_Acquisitions,
+                               xtin1$rp_Acquisitions,
+                               xtin2$rp_Acquisitions), na.rm=T),
+        rp_NON_acquisitions=mean(xti$rp_NON_acquisitions, na.rm=T),
+        wdeg_rp_Acquisitions=mean(xti$wdeg_rp_Acquisitions, na.rm=T)
+      )
+      dfla <- rbind(dfla,.tmp)
+    }
+  }
+  
+  # igraph::coreness()
+  # igraph::eccentricity()
+  # igraph::triangles()
+  # igraph::
   
   ##------------------------------------
   ## NETWORK DV ARRAY
   ##------------------------------------
-  mmcarr <- array(0, dim=c(nsub, nsub, npds))
-  for (t in 1:length(nl)) {
-    x <- nl[[t]]
-    # gmmc.e <- igraph::delete.edges(x$gmmc, which(E(x$gmmc)$weight < 2))
-    # ## create subgraph removing isolates
-    # gmmcsub <- igraph::induced.subgraph(gmmc.e, which(igraph::degree(gmmc.e) > 0))
-    # vids <- which(
-    #   V(x$gmmc)$vertex.names %in% firmnamesub & 
-    #     V(x$gmmc)$vertex.names %in% V(gmmcsub)$vertex.names
-    # )
-    vids <- which(V(x$gmmc)$vertex.names %in% firmnamesub)
-    mmcarr[,,t] <- as_adj(induced.subgraph(x$gmmc,vids), sparse = F)
+  mmcarr <- array(0, dim=c(nsub, nsub, nwaves))
+  comparr <- array(0, dim=c(nsub, nsub, nwaves))
+  arrSmmc <- array(0,dim=c(nsub,nwaves))
+  arrSmmcSq <- array(0,dim=c(nsub,nwaves))
+  for (t in 1:nwaves) {
+    wave <- netwavepds[t]
+    cat(sprintf('wave %s\n',wave))
+    t_nl <- which(names(nl) == wave)
+    x <- nl[[t_nl]]
+    ## adjmat from compnet
+    compadj <- as_adj(x$gt)
+    ## weighted adjmat from MMC network
+    mmcadj <- as_adj(x$gmmc,attr = 'weight')
+    ## MMC values ported to compnet adjmat (x * 0 --> 0; x * 1 --> x)
+    compadj.mmcadj <- as.matrix(compadj * mmcadj)
+    compadj.w.mmc <- compadj.mmcadj
+    ## indices of MMC edges
+    idx.compadj.w.mmc.gt1 <- which(compadj.w.mmc > 1)
+    ## set all edges to 0 and assign only MMC edges to 1
+    compadj.w.mmc[!is.na(compadj.w.mmc)] <- 0
+    compadj.w.mmc[idx.compadj.w.mmc.gt1] <- 1
+    #
+    vids <- which(V(x$gt)$vertex.names %in% firmnamesub)
+    ## Compnet subgraph for firms cohort (public acquirers)
+    gtsub <- induced.subgraph(x$gt,vids)
+    comparr[,,t] <- as_adj(gtsub, sparse = F)
+    ## MMCnet subgraph for firms cohort
+    gtsubmmc <- induced.subgraph(graph.adjacency(compadj.w.mmc),vids)
+    mmcarr[,,t] <- as_adj(gtsubmmc, sparse = F)
+    ##---SMMC-CENTRALITY-----------------
+    # arrSmmc[,t] <- log( 1 + igraph::degree(gtsubmmc) )
+    # arrSmmc[,t] <- log( 1 + igraph::power_centrality(gtsubmmc, exponent = 0)*100 )
+    # arrSmmc[,t] <- log(  igraph::subgraph.centrality(gtsubmmc, diag = F) )
+    # arrSmmc[,t] <- igraph::coreness(gtsubmmc)
+    # arrSmmc[,t] <- log (1 + 100 / igraph::eccentricity(gtsubmmc) )
+    # trans <- igraph::transitivity(gtsubmmc, type = 'local') * 100
+    # trans[is.nan(trans) | is.na(trans)] <- 0
+    # arrSmmc[,t] <- trans
+    # gtsubmmc.w <- induced.subgraph(graph.adjacency(compadj.mmcadj, weighted = T),vids)
+    # trans <- igraph::transitivity(gtsubmmc.w, type = 'barrat')
+    # trans[is.nan(trans) | is.na(trans)] <- 0
+    # arrSmmc[,t] <- trans * 100
+    arrSmmc[,t] <- log(1 + igraph::authority_score(gtsubmmc.w)$vector * 100)
+    # arrSmmc[,t] <-  log(1 + igraph::betweenness(gtsubmmc))
+    # arrSmmc[,t] <-  log( 1 + igraph::eigen_centrality(gtsubmmc)$vector * 100)
+    # arrSmmc[,t] <- log(1 + authority_score(gtsubmmc)$vector*100)
+    # arrSmmc[,t] <-  constraint(gtsubmmc)*100
+    # const <- constraint(gtsubmmc) * 100
+    # const[is.nan(const) | is.na(const)] <- 0
+    # arrSmmc[,t] <- const
+    # eig <- eigen_centrality(gtsubmmc.w)
+    # arrSmmc[,t] <- bonpow(gtsubmmc.w, exponent = 1/max(eig$value))
+    arrSmmcSq[,t] <- arrSmmc[,t]^2
   }
-  # for (t in 1:length(nl)) {
-  #   x <- nl[[t]]
-  #   gmmcadj <- matrix(0, nrow=vcount(x$gmmc), ncol=vcount(x$gmmc))
-  #   vids.gmmcsub <- which(V(x$gmmcsub)$vertex.names %in% firmnamesub)
-  #   ## period t gmmcsub adjmat inserted into whole gmmc adjmat
-  #   gmmcadj[vids.gmmcsub,vids.gmmcsub] <- as_adj(induced.subgraph(x$gmmcsub,vids.gmmcsub), sparse = F)
-  #   ## subset all years firms from gmmc adjmat into allyears array
-  #   vids.gmmc <- which(V(x$gmmc)$vertex.names %in% firmnamesub)
-  #   mmcarr[,,t] <- gmmcadj[vids.gmmc,vids.gmmc]
-  # }
-  ## 2-year periods
-  # mmcarr2 <- array(0, dim=c(nsub, nsub, npds/2))
-  # for (t in 1:(npds/2)) {
-  #   a <- (t-1)*2 + 1
-  #   b <- (t-1)*2 + 2
-  #   mab <- mmcarr[,,a] + mmcarr[,,b]
-  #   mab[mab>0] <- 1
-  #   mmcarr2[,,t] <- mab
-  # }
   
+  ##-------Plot-------
+  dfla$smmc <- NA
+  dfla$smmcSq <- NA
+  for (t in 1:npds) {
+    for (i in 1:length(firmnamesub)) {
+      idx <- which(dfla$pd==t & dfla$name==firmnamesub[i])
+      dfla$smmc[idx] <- arrSmmc[i,t]
+    }
+  }
+  dfplot <- dfla
+  dfplot$year <- apply(dfplot[,c('y1','y2')],1,function(x)x[1])
+  dfplot$log_acq <- log2(1+dfla$rp_Acquisitions) 
+  # dfplot$smmc <-  log(1 + dfla$cent_deg_mmc)
+  dfplot$sales_high <- as.factor(dfla$sales_na_0_mn > median(dfla$sales_na_0_mn, na.rm = T))
+  # dfplot$sales_high <- as.factor(dfla$smmc > 0)
+  # dfplot <- dfplot[which(dfplot$rp_Acquisitions>0),]
+  ggplot(dfplot, aes(x=smmc, y=log_acq, colour=sales_high)) +
+    stat_smooth(method = "lm",formula=y~x+I(x^2), se=T, size=1) +
+    geom_point() + theme_bw() + facet_wrap(facets = .~year)
+  ##------------------
+  
+  # mract1 <- pglm(rp_Acquisitions ~  acq_cnt_5 + rp_NON_acquisitions +
+  #                  I(acq_sum_1/1e9)  + I(employee_na_age/1e3) + 
+  #                  I(sales_na_0_mn/1e6) +
+  #                  log(1+wdeg_rp_Acquisitions) + 
+  #                  smmc +
+  #                  smmc:log(1+wdeg_rp_Acquisitions) + 
+  #                  I(smmc^2) +
+  #                  I(smmc^2):log(1+wdeg_rp_Acquisitions),
+  #                data=dfplot, family = poisson, 
+  #                model = 'within', effect = 'twoways',
+  #                R = 100, method='nr',
+  #                index=c('i','year'))
+  # screenreg(mract1, single.row = T, digits = 3)
+  
+  ##------------------
+ 
   ## COVARIATES (Acquisitions)
   arrAcq <- array(0,dim=c(nsub,npds))
   arrAcqSq <- array(0,dim=c(nsub,npds))
-  arrSmmc <- array(0,dim=c(nsub,npds))
-  arrSmmcSq <- array(0,dim=c(nsub,npds))
+  arrDegMmc <- array(0,dim=c(nsub,npds))
+  arrDegMmcSq <- array(0,dim=c(nsub,npds))
   arrEmploy <- array(0,dim=c(nsub,npds))
   arrSales <- array(0,dim=c(nsub,npds))
   arrAcqExper <- array(0,dim=c(nsub,npds))
@@ -244,25 +377,26 @@ firm_i <- 'microsoft'
   arrSmmc_WdegAcq <- array(0,dim=c(nsub,npds))
   arrSmmcSq_WdegAcq <- array(0,dim=c(nsub,npds))
   # arrW <- array(0,dim=c(nsub,npds))
-  for (t in 1:length(nl)) {
+  for (t in 1:npds) {
     for (i in 1:length(firmnamesub)) {
       .namei <- firmnamesub[i]
-      idx <- which(dfl$year==ys[t] & dfl$name==.namei)
-      x <- dfl$rp_Acquisitions[idx]
-      z <- ceiling( 1 + log(1+x) )
-      arrAcq[i,t] <- ifelse(z>5,5,z)
+      idx <- which(dfla$pd==t & dfla$name==.namei)
+      x <- dfla$rp_Acquisitions[idx]
+      z <- ceiling( log2( 1 + x ) )
+      thresh <- 4
+      arrAcq[i,t] <-  ifelse(z > thresh, thresh, z)
       #
-      w <- dfl$cent_deg_mmc[idx]
-      arrSmmc[i,t] <- log(1+w)
-      arrSmmcSq[i,t] <- log(1+w)^2
+      w <- dfla$cent_deg_mmc[idx]
+      arrDegMmc[i,t] <- log(1+w)
+      arrDegMmcSq[i,t] <- log(1+w)^2
       #
-      arrWdegAcq[i,t] <- log(1 + dfl$wdeg_rp_Acquisitions[idx])
+      arrWdegAcq[i,t] <- log(1 + dfla$wdeg_rp_Acquisitions[idx])
       #
-      arrEmploy[i,t]    <- dfl$employee_na_age[idx]/1e+03
-      arrSales[i,t]     <- dfl$sales_na_0_mn[idx]/1e+06
-      arrAcqExper[i,t]  <- as.integer( dfl$acq_cnt_5[idx] > 0 )  # log(1 + dfl$acq_cnt_5[idx])
-      arrAcqSum[i,t]    <- dfl$acq_sum_1[idx]/1e+09
-      arrNonAcqAct[i,t] <- as.integer(dfl$rp_NON_acquisitions[idx] > 0)
+      arrEmploy[i,t]    <- dfla$employee_na_age[idx]/1e+03
+      arrSales[i,t]     <- dfla$sales_na_0_mn[idx]/1e+06
+      arrAcqExper[i,t]  <- as.integer( dfla$acq_cnt_5[idx] > 0 )  # log(1 + dfl$acq_cnt_5[idx])
+      arrAcqSum[i,t]    <- dfla$acq_sum_1[idx]/1e+09
+      arrNonAcqAct[i,t] <- as.integer(dfla$rp_NON_acquisitions[idx] > 0)
       #
       arrSmmc_WdegAcq[i,t]   <- arrWdegAcq[i,t] * arrSmmc[i,t]
       arrSmmcSq_WdegAcq[i,t] <- arrWdegAcq[i,t] * arrSmmcSq[i,t]
@@ -270,38 +404,53 @@ firm_i <- 'microsoft'
   }
   
   ## FILTER YEARS & Firms
-  nmacqall <- unique(dfl$name[which(dfl$rp_Acquisitions>0)])
-  # firmsubidx <- which(firmnamesub %in% nmacqall) ## 
-  firmsubidx <- 1:length(firmnamesub)
+  nmacqall <- unique(dfla$name[which(dfla$rp_Acquisitions>0)])
+  ##
+  firmsubidx <- which(firmnamesub %in% nmacqall) ## ## FILTER ACQUISITIONS > 0
+  # firmsubidx <- 1:length(firmnamesub)  ## KEEP ALL
+  ##
   firmnamesub2 <- firmnamesub[firmsubidx]
-  nlyrs <- as.numeric(names(nl))
-  yrsubidx <- (length(nlyrs)-5):(length(nlyrs)-1)
-  yrsub <- nlyrs[yrsubidx]
+  # nlyrs <- as.numeric(names(nl))
+  # yrsubidx <- (length(nlyrs)-4):(length(nlyrs)-1)
+  # yrsub <- nlyrs[yrsubidx]
   #
-  mmcarr2 <- mmcarr[firmsubidx,firmsubidx, yrsubidx ]
-  arrAcq2 <- arrAcq[firmsubidx, yrsubidx ]
-  arrAcqSq2 <- arrAcqSq[firmsubidx, yrsubidx ]
-  arrSmmc2 <- arrSmmc[firmsubidx, yrsubidx ]
-  arrSmmcSq2 <- arrSmmcSq[firmsubidx, yrsubidx ]
+  mmcarr2 <- mmcarr[firmsubidx,firmsubidx,  ]
+  comparr2 <- comparr[firmsubidx,firmsubidx,  ]
   #
-  arrWdegAcq2 <- arrWdegAcq[firmsubidx, yrsubidx ]
-  arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx, yrsubidx ]
-  arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx, yrsubidx ]
+  arrAcq2 <- arrAcq[firmsubidx,  ]
+  arrAcqSq2 <- arrAcqSq[firmsubidx,  ]
+  ##-----------------------------
+  # ##*****MMC subset of compnet (ONLY CrunchBase relations filtered if has MMC)******
+  # arrSmmc2 <- arrSmmc[firmsubidx,  ]
+  # arrSmmcSq2 <- arrSmmcSq[firmsubidx,  ]
+  # ## All MMC spaces count (not just CrunchBase relations) Degree Centrality
+  arrSmmc2 <- arrDegMmc[firmsubidx,  ]
+  arrSmmcSq2 <- arrDegMmcSq[firmsubidx,  ]
+  ##------------------------------
   #
-  arrEmploy2 <- arrEmploy[firmsubidx, yrsubidx ]
-  arrSales2 <- arrSales[firmsubidx, yrsubidx ]
-  arrAcqExper2 <- arrAcqExper[firmsubidx, yrsubidx ]
-  arrAcqSum2 <- arrAcqSum[firmsubidx, yrsubidx ]
-  arrNonAcqAct2 <- arrNonAcqAct[firmsubidx, yrsubidx ]
+  arrWdegAcq2 <- arrWdegAcq[firmsubidx,  ]
+  arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx,  ]
+  arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx,  ]
+  #
+  arrEmploy2 <- arrEmploy[firmsubidx,  ]
+  arrSales2 <- arrSales[firmsubidx,  ]
+  arrAcqExper2 <- arrAcqExper[firmsubidx,  ]
+  arrAcqSum2 <- arrAcqSum[firmsubidx,  ]
+  arrNonAcqAct2 <- arrNonAcqAct[firmsubidx,  ]
+  
   
   ##-------------------
   ## SAOM INIT VARS
   ##------------------
   depMMC <- sienaDependent(mmcarr2, type="oneMode", nodeSet=c('FIRMS'), 
                            sparse = FALSE, allowOnly = FALSE)
+  depComp <- sienaDependent(comparr2, type="oneMode", nodeSet=c('FIRMS'), 
+                           sparse = FALSE, allowOnly = FALSE)
   # TREATMENT
   depAcq <- sienaDependent(arrAcq2, type="behavior", nodeSet=c('FIRMS'), 
                              sparse = FALSE, allowOnly = FALSE)
+  depNonAcq <- sienaDependent(arrNonAcqAct2, type="behavior", nodeSet=c('FIRMS'), 
+                           sparse = FALSE, allowOnly = FALSE)
   # #PREDICTOR
   covSmmc <- varCovar(arrSmmc2, nodeSet="FIRMS")
   covSmmcSq <- varCovar(arrSmmcSq2, nodeSet="FIRMS")
@@ -311,7 +460,7 @@ firm_i <- 'microsoft'
   covSales <- varCovar(arrSales2, nodeSet="FIRMS")
   covAcqExper <- varCovar(arrAcqExper2, nodeSet="FIRMS")
   covAcqSum <- varCovar(arrAcqSum2, nodeSet="FIRMS")
-  covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
+  # covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
   covSmmc_covWdegAcq <- varCovar(arrSmmc_WdegAcq2, nodeSet="FIRMS")
   covSmmcSq_covWdegAcq <- varCovar(arrSmmcSq_WdegAcq2, nodeSet="FIRMS")
   #
@@ -323,6 +472,88 @@ firm_i <- 'microsoft'
   # sysEffects1 <- includeEffects(sysEffects1, inPopSqrt, name="depActiv", interaction1 = 'depMMC')
   #
   # pharmaEffects <- includeTimeDummy(pharmaEffects, outdeg, name="depActiv", interaction1 = 'depMMC', timeDummy = '5,6,7,8')
+
+  
+  
+  ##-------------------------------------
+  ## SAOM  *****TESTING TESTING TESTING****
+  ##-------------------------------------
+  sysDat2t <- sienaDataCreate(depMMC, depAcq, #depNonAcq,
+                              covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
+                              covEmploy, covSales, covAcqExper,
+                              covWdegAcq, covSmmcSq_covWdegAcq,
+                              nodeSets=list(FIRMS) ) #,smoke1, alcohol
+  ##
+  sysEffects2t <- getEffects(sysDat2t)
+  effectsDocumentation(sysEffects2t)
+  ## NETWORK  COMP
+  # sysEffects2t <- includeEffects(sysEffects2t, density, # transTies, gwesp,
+  #                                name="depComp")
+  ## NETWORK  MMC
+  sysEffects2t <- includeEffects(sysEffects2t, gwesp, #density
+                                 name="depMMC")
+  sysEffects2t <- includeEffects(sysEffects2t, egoX, #density
+                                 name="depMMC", interaction1 = 'depAcq')
+  # sysEffects2t <- includeEffects(sysEffects2t, density, # transTies, gwesp, 
+  #                                name="depComp")
+  # sysEffects2t <- includeEffects(sysEffects2t, egoX, 
+  #                                name="depMMC", type='creation', interaction1 = 'covSmmc')
+  ## CONTROL BEHVAIOR
+  sysEffects2t <- includeEffects(sysEffects2t, effFrom,
+                                 name="depAcq", interaction1 = 'covEmploy')
+  sysEffects2t <- includeEffects(sysEffects2t, effFrom,
+                                 name="depAcq", interaction1 = 'covSales')
+  sysEffects2t <- includeEffects(sysEffects2t, effFrom,
+                                 name="depAcq", interaction1 = 'covAcqExper')
+  ## BEHAVIOR
+  sysEffects2t <- includeEffects(sysEffects2t, effFrom,
+                                 name="depAcq", interaction1 = 'covSmmc')
+  sysEffects2t <- includeEffects(sysEffects2t, effFrom,
+                                 name="depAcq", interaction1 = 'covSmmcSq')
+  # sysEffects2t <- includeEffects(sysEffects2t, effFrom,
+  #                                name="depAcq", interaction1 = 'covWdegAcq')
+  # sysEffects2t <- includeEffects(sysEffects2t, effFrom,
+  #                                name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
+  # sysEffects2t <- includeEffects(sysEffects2t, avSim, # avSimAltX, totAlt
+  #                                name="depAcq", interaction1 = 'depComp')
+  sysEffects2t <- includeEffects(sysEffects2t, totSimEgoX, # avSimAltX,
+                                 name="depAcq", interaction1= 'covSmmcSq', interaction2= 'depMMC')
+  # sysEffects2t <- includeEffects(sysEffects2t, totAltEgoX,
+  #                                name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'depMMC')
+  # sysEffects2t <- includeInteraction(sysEffects2t, quad, totAlt,
+  #                                   name="depAcq", interaction1=c("","depMMC"))
+  ##
+  sysModel2t <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2t')
+  
+  sysResults2t <- siena07(sysModel2t, data=sysDat2t, effects=sysEffects2t, 
+                          batch = T,   returnDeps = T, ## necessary for GOF
+                          useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  
+  # 
+  summary(sysResults2t)
+  screenreg(sysResults2t, digits = 4,single.row = T)
+  
+  #
+  sysSAOMfile <- sprintf('acq_sys_mmc_SAOM_FIT_LIST_mod2t_nonMMCnet_ego-%s_d%s_%s.rds', 
+                         firm_i_ego, d, paste(netwavepds,collapse = '-'))
+  saveRDS(list(results=sysResults2t, model=sysModel2,
+               data=sysDat2,  effects=sysEffects2,
+               FIRMS=FIRMS, depMMC=depMMC, depAcq=depMMC), 
+          file = file.path(result_dir, sysSAOMfile))
+  
+  cnt = plyr::count(c(arrAcq2))
+  cnt$pct = round(100 * cnt$freq / sum(cnt$freq), 1)
+  print(cnt)
+  gf2b = RSiena::sienaGOF(sysResults2t, BehaviorDistribution,
+                          varName="depAcq"); plot(gf2b)
+  gf2o = RSiena::sienaGOF(sysResults2t, OutdegreeDistribution,
+                          varName="depMMC"); plot(gf2o)
+  gf2c = RSiena::sienaGOF(sysResults2t, TriadCensus,
+                          varName="depMMC"); plot(gf2c)
+  #
+  
+  igraph::cen
+ 
   ##-------------------------------------
   ## SAOM MODEL 1 - H1
   ##-------------------------------------
@@ -360,6 +591,7 @@ firm_i <- 'microsoft'
   #                               name="depAcq", interaction1 = 'covAcqSum')
   # sysEffects1 <- includeEffects(sysEffects1, effFrom,
   #                               name="depAcq", interaction1 = 'covNonAcqAct')
+  
   ## model
   sysModel1 <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-1')
   ## estimate
@@ -370,7 +602,7 @@ firm_i <- 'microsoft'
   # screenreg(sysResults1, digits = 4)
   summary(sysResults1)
   # save results
-  sysSAOMfile <- sprintf('acq_sys_mmc_SAOM_FIT_LIST_mod1_ego-%s_d%s_%s-%s.rds', 
+  sysSAOMfile <- sprintf('acq_sys_mmc_SAOM_FIT_LIST_mod1_nonMMCnet_ego-%s_d%s_%s-%s.rds', 
                        firm_i_ego, d, yrsub[1], yrsub[length(yrsub)])
   saveRDS(list(results=sysResults1, model=sysModel1,
                data=sysDat1,  effects=sysEffects1,
@@ -378,7 +610,12 @@ firm_i <- 'microsoft'
           file = file.path(result_dir, sysSAOMfile))
   
 
-  
+  gf1b = RSiena::sienaGOF(sysResults1, BehaviorDistribution,
+                         varName="depAcq")
+  gf1o = RSiena::sienaGOF(sysResults1, OutdegreeDistribution,
+                          varName="depMMC")
+  gf1c = RSiena::sienaGOF(sysResults1, TriadCensus,
+                          varName="depMMC")
   ##-------------------------------------
   ## SAOM MODEL 2 - H2
   ##-------------------------------------
@@ -435,12 +672,26 @@ firm_i <- 'microsoft'
   # screenreg(sysResults1, digits = 4)
   summary(sysResults2)
   
-  sysSAOMfile <- sprintf('acq_sys_mmc_SAOM_FIT_LIST_mod2_ego-%s_d%s_%s-%s.rds', 
+  sysSAOMfile <- sprintf('acq_sys_mmc_SAOM_FIT_LIST_mod2_nonMMCnet_ego-%s_d%s_%s-%s.rds', 
                          firm_i_ego, d, yrsub[1], yrsub[length(yrsub)])
   saveRDS(list(results=sysResults2, model=sysModel2,
                data=sysDat2,  effects=sysEffects2,
                FIRMS=FIRMS, depMMC=depMMC, depAcq=depMMC), 
           file = file.path(result_dir, sysSAOMfile))
+  
+  
+  
+  
+  gf2b = RSiena::sienaGOF(sysResults2, BehaviorDistribution,
+                          varName="depAcq")
+  gf2o = RSiena::sienaGOF(sysResults2, OutdegreeDistribution,
+                          varName="depMMC")
+  gf2c = RSiena::sienaGOF(sysResults2, TriadCensus,
+                          varName="depMMC")
+  
+  
+  
+  
   
   
   

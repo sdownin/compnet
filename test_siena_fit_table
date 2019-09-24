@@ -1,0 +1,38 @@
+<TABLE border=1  rules=none frame = hsides>
+<TR><TD>Effect</TD><TD>&nbsp;&nbsp;&nbsp;par.</TD><TD></TD>
+					<TD>&nbsp;&nbsp;&nbsp;(s.e.)</TD> <TD>t stat.</TD> </TR>
+<TR> <TD colspan=4 align=left> Network Dynamics   </TD> </TR> <TR> </TR>
+
+<TR><TD>constant depMMC rate (period 1)             </TD><TD align="right">    0.8165</TD><TD align="left"></TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.4700)</TD><TD align="right">.</TD></TR>
+<TR><TD>constant depMMC rate (period 2)             </TD><TD align="right">    0.5039</TD><TD align="left"></TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.1408)</TD><TD align="right">.</TD></TR>
+
+
+<TR><TD>degree (density)                            </TD><TD align="right">    1.1656</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(273.0062)</TD><TD align="right">  0.0043</TD></TR>
+<TR><TD>transitive triads                           </TD><TD align="right">    0.4290</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  1.6588)</TD><TD align="right">  0.2586</TD></TR>
+<TR><TD>GWESP (69)                                  </TD><TD align="right">    2.7710</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  2.1380)</TD><TD align="right">  1.2961</TD></TR>
+<TR><TD>depAcq ego                                  </TD><TD align="right">   12.9216</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(237.6899)</TD><TD align="right">  0.0544</TD></TR>
+</TABLE>
+<TR> <TD colspan=4 align=left> Behaviour Dynamics   </TD> </TR> <TR> </TR>
+
+<TR><TD>rate depAcq (period 1)                      </TD><TD align="right">    6.0067</TD><TD align="left"></TD><TD align="right">&nbsp;&nbsp;&nbsp;(  3.7840)</TD><TD align="right">.</TD></TR>
+<TR><TD>rate depAcq (period 2)                      </TD><TD align="right">  174.1619</TD><TD align="left"></TD><TD align="right">&nbsp;&nbsp;&nbsp;( 30.5073)</TD><TD align="right">.</TD></TR>
+
+
+<TR><TD>depAcq linear shape                         </TD><TD align="right">    0.0292</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.0750)</TD><TD align="right">  0.3894</TD></TR>
+<TR><TD>depAcq quadratic shape                      </TD><TD align="right">&nbsp;&ndash;0.1059</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.0708)</TD><TD align="right">&nbsp;&ndash;1.4949</TD></TR>
+<TR><TD>depAcq: effect from covSmmc                 </TD><TD align="right">&nbsp;&ndash;0.4791</TD><TD align="left">&#134</TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.2724)</TD><TD align="right">&nbsp;&ndash;1.7586</TD></TR>
+<TR><TD>depAcq: effect from covSmmcSq               </TD><TD align="right">    0.7408</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.5100)</TD><TD align="right">  1.4527</TD></TR>
+<TR><TD>depAcq: tot. sim. (depMMC) x ego's covSmmcSq</TD><TD align="right">&nbsp;&ndash;0.0439</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.1133)</TD><TD align="right">&nbsp;&ndash;0.3873</TD></TR>
+<TR><TD>depAcq: effect from covEmploy               </TD><TD align="right">    0.0021</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.0013)</TD><TD align="right">  1.5635</TD></TR>
+<TR><TD>depAcq: effect from covSales                </TD><TD align="right">    0.3484</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.8621)</TD><TD align="right">  0.4041</TD></TR>
+<TR><TD>depAcq: effect from covAcqExper             </TD><TD align="right">    0.2062</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.1321)</TD><TD align="right">  1.5613</TD></TR>
+<TR><TD>depAcq: effect from covWdegAcq              </TD><TD align="right">    0.1323</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.0897)</TD><TD align="right">  1.4745</TD></TR>
+<TR><TD>depAcq: effect from covSmmcSq_covWdegAcq    </TD><TD align="right">&nbsp;&ndash;0.0898</TD><TD align="left">                 </TD><TD align="right">&nbsp;&nbsp;&nbsp;(  0.0753)</TD><TD align="right">&nbsp;&ndash;1.1925</TD></TR>
+</TABLE>
+<TABLE border=1  rules=none frame = below>
+<TR> <TD colspan=4 align=left> &#134 p < 0.1;
+							* p < 0.05; ** p < 0.01; *** p < 0.001;  </TD> </TR> <TR> </TR> 
+ <TR> <TD colspan=9 align=left>
+							all convergence t ratios < 1.75.</TD> </TR> <TR> </TR> <TR> <TD colspan=9 align=left>
+							Overall maximum convergence ratio 2.96.</TD> </TR> <TR> </TR>
+</TABLE>

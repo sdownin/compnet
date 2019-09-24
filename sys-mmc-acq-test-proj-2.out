@@ -1,0 +1,813 @@
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 20/09/2019 11:43:59
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Estimation by stochastic approximation algorithm.
+=================================================
+
+Random initialization of random number stream.
+Current random number seed is 322435.
+Effects object used: sysEffects2 
+Model Type:
+ 
+Behavioral Model Type:
+ 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Standard errors are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Initial value of gain parameter is  0.5656854.
+Reduction factor for gain parameter is  0.5000000.
+Number of subphases in Phase 2 is 4.
+
+Initial parameter values are 
+  1. rate:  constant depMMC rate (period 1)                19.5990
+  2. rate:  constant depMMC rate (period 2)                17.7995
+  3. rate:  constant depMMC rate (period 3)                22.0482
+  4. rate:  constant depMMC rate (period 4)                17.5996
+  5. rate:  constant depMMC rate (period 5)                19.9988
+  6. eval:  degree (density)                                0.3500
+  7. eval:  transitive triads                               0.0000
+  8. rate:  rate depAcq (period 1)                          1.2611
+  9. rate:  rate depAcq (period 2)                          1.6651
+ 10. rate:  rate depAcq (period 3)                          2.0401
+ 11. rate:  rate depAcq (period 4)                          1.5944
+ 12. rate:  rate depAcq (period 5)                          1.4494
+ 13. eval:  depAcq linear shape                             0.0556
+ 14. eval:  depAcq quadratic shape                          0.0000
+ 15. eval:  depAcq: effect from covSmmc                     0.0000
+ 16. eval:  depAcq: effect from covSmmcSq                   0.0000
+ 17. eval:  depAcq: effect from covEmploy                   0.0000
+ 18. eval:  depAcq: effect from covSales                    0.0000
+ 19. eval:  depAcq: effect from covAcqExper                 0.0000
+ 20. eval:  depAcq: effect from covWdegAcq                  0.0000
+ 21. eval:  depAcq: effect from covSmmc_covWdegAcq          0.0000
+ 22. eval:  depAcq: effect from covSmmcSq_covWdegAcq        0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                               784.0000
+  2. Amount of network change in period 2                               712.0000
+  3. Amount of network change in period 3                               882.0000
+  4. Amount of network change in period 4                               704.0000
+  5. Amount of network change in period 5                               800.0000
+  6. Number of edges                                                   9535.0000
+  7. Number of transitive triads                                       134378.0000
+  8. Amount of behavioral change in period 1 on depAcq                   56.0000
+  9. Amount of behavioral change in period 2 on depAcq                   68.0000
+ 10. Amount of behavioral change in period 3 on depAcq                   80.0000
+ 11. Amount of behavioral change in period 4 on depAcq                   68.0000
+ 12. Amount of behavioral change in period 5 on depAcq                   66.0000
+ 13. depAcq centered sum                                                 27.6667
+ 14. depAcq sum of cent. squares                                        769.1344
+ 15. depAcq x covSmmc                                                   455.8415
+ 16. depAcq x covSmmcSq                                                3954.8044
+ 17. depAcq x covEmploy                                                16546.8516
+ 18. depAcq x covSales                                                   18.4691
+ 19. depAcq x covAcqExper                                               367.8358
+ 20. depAcq x covWdegAcq                                                170.7774
+ 21. depAcq x covSmmc_covWdegAcq                                       2753.5240
+ 22. depAcq x covSmmcSq_covWdegAcq                                     23678.1604
+
+ 22 parameters, 22 statistics
+
+Estimation of derivatives by the LR method (type 1).
+
+
+@2
+End of stochastic approximation algorithm, phase 3.
+---------------------------------------------------
+
+Total of 2186 iterations.
+Parameter estimates based on 1186 iterations,
+convergence diagnostics, covariance and derivative matrices based on 1000 iterations.
+
+Information for convergence diagnosis.
+Averages, standard deviations, and t-ratios for deviations from targets:
+  1.   0.8320   34.2530   0.0243 
+  2.  -0.7980   35.0911  -0.0227 
+  3.  -0.2660   38.9118  -0.0068 
+  4.  -0.1800   35.5457  -0.0051 
+  5.  -2.0780   37.2010  -0.0559 
+  6.   1.3850   69.8965   0.0198 
+  7.  77.3900 2272.0902   0.0341 
+  8.   0.5100    7.0091   0.0728 
+  9.  -0.3030    7.1308  -0.0425 
+ 10.   0.1890    8.0598   0.0234 
+ 11.   0.2270    7.0156   0.0324 
+ 12.  -0.1460    7.3437  -0.0199 
+ 13.  -0.3810   19.6920  -0.0193 
+ 14.  -0.3664   37.2143  -0.0098 
+ 15.  -0.2536   45.9759  -0.0055 
+ 16.   9.1778  334.3171   0.0275 
+ 17. -28.5217 1522.1426  -0.0187 
+ 18.  -0.1225    2.1029  -0.0582 
+ 19.   0.1157   21.9385   0.0053 
+ 20.  -0.6269   13.2226  -0.0474 
+ 21.   3.7842  274.1754   0.0138 
+ 22.  23.0809 2000.7835   0.0115 
+
+Good convergence is indicated by the t-ratios being close to zero.
+
+Overall maximum convergence ratio =  2.6321 .
+
+
+
+@2
+Estimation Results.
+-------------------
+
+Regular end of estimation algorithm.
+Total of 2186 iteration steps.
+
+
+@3
+Estimates and standard errors
+                             
+Network Dynamics
+ 1. rate:  constant depMMC rate (period 1)                         7.4628  (   0.5160)
+ 2. rate:  constant depMMC rate (period 2)                         6.6344  (   0.4554)
+ 3. rate:  constant depMMC rate (period 3)                         9.1879  (   0.7161)
+ 4. rate:  constant depMMC rate (period 4)                         6.6558  (   0.4627)
+ 5. rate:  constant depMMC rate (period 5)                         7.9297  (   0.5517)
+ 6. eval:  degree (density)                                       -1.8954  (   0.0565)
+ 7. eval:  transitive triads                                       0.0787  (   0.0019)
+
+Behavior Dynamics
+ 8. rate:  rate depAcq (period 1)                                  5.8235  (   2.4100)
+ 9. rate:  rate depAcq (period 2)                                  6.5135  (   2.2659)
+10. rate:  rate depAcq (period 3)                                 10.1396  (   5.8535)
+11. rate:  rate depAcq (period 4)                                  5.1111  (   1.2399)
+12. rate:  rate depAcq (period 5)                                  4.9088  (   1.8962)
+13. eval:  depAcq linear shape                                    -0.4766  (   0.0612)
+14. eval:  depAcq quadratic shape                                  0.0790  (   0.0329)
+15. eval:  depAcq: effect from covSmmc                            -0.4540  (   1.0357)
+16. eval:  depAcq: effect from covSmmcSq                           0.1272  (   0.1813)
+17. eval:  depAcq: effect from covEmploy                           0.0012  (   0.0007)
+18. eval:  depAcq: effect from covSales                            0.3173  (   0.5161)
+19. eval:  depAcq: effect from covAcqExper                         0.2062  (   0.0509)
+20. eval:  depAcq: effect from covWdegAcq                          0.2639  (   0.1098)
+21. eval:  depAcq: effect from covSmmc_covWdegAcq                  0.0529  (   0.1801)
+22. eval:  depAcq: effect from covSmmcSq_covWdegAcq               -0.0186  (   0.0310)
+
+
+@3
+Covariance matrices
+                   
+Covariance matrix of estimates (correlations below diagonal):
+     0.266      0.022     -0.032     -0.011     -0.006     -0.001      0.000     -0.512      0.004      0.376     -0.025      0.050      0.003     -0.001     -0.046      0.006      0.000      0.024      0.002     -0.009      0.009     -0.001
+     0.093      0.207      0.001     -0.013     -0.009     -0.001      0.000     -0.016     -0.025      0.079     -0.023     -0.011      0.000      0.000     -0.027      0.004      0.000      0.004      0.001     -0.002      0.005     -0.001
+    -0.085      0.002      0.513      0.021     -0.007      0.005      0.000      0.156     -0.022     -2.429      0.070      0.033     -0.013      0.006      0.021     -0.002      0.000     -0.042      0.000      0.015     -0.006      0.001
+    -0.045     -0.062      0.063      0.214     -0.006      0.002      0.000      0.061     -0.039     -0.074      0.032     -0.042      0.000      0.000      0.017     -0.002      0.000     -0.009     -0.001     -0.002     -0.003      0.000
+    -0.020     -0.035     -0.017     -0.023      0.304      0.001      0.000      0.094      0.060      0.014     -0.017     -0.315      0.000      0.000      0.021     -0.003      0.000     -0.032      0.001      0.002     -0.004      0.001
+    -0.049     -0.031      0.135      0.080      0.042      0.003      0.000      0.011     -0.004     -0.077      0.003      0.008      0.000      0.000      0.003     -0.001      0.000     -0.001      0.000      0.000     -0.001      0.000
+     0.082      0.048     -0.194     -0.130     -0.108     -0.914      0.000      0.000      0.000      0.003      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000
+    -0.412     -0.015      0.090      0.055      0.071      0.081     -0.102      5.808     -0.263     -1.943      0.127     -0.341     -0.014      0.011      0.549     -0.083      0.000     -0.242     -0.007      0.033     -0.098      0.015
+     0.003     -0.024     -0.014     -0.037      0.048     -0.029     -0.029     -0.048      5.134      0.098     -0.169     -0.169     -0.026      0.005      0.088      0.001      0.000     -0.054      0.003      0.036     -0.014      0.000
+     0.125      0.030     -0.579     -0.027      0.004     -0.234      0.255     -0.138      0.007     34.264     -0.865     -0.842      0.163     -0.073     -0.798      0.124      0.002      0.654     -0.024     -0.268      0.172     -0.025
+    -0.039     -0.040      0.079      0.056     -0.025      0.042     -0.033      0.043     -0.060     -0.119      1.537     -0.149     -0.012      0.005      0.110     -0.005      0.000     -0.011     -0.003      0.010     -0.020      0.001
+     0.051     -0.013      0.025     -0.047     -0.301      0.077      0.006     -0.075     -0.039     -0.076     -0.063      3.595      0.001      0.002     -0.023      0.002      0.000      0.206     -0.008      0.003      0.006     -0.001
+     0.100     -0.003     -0.286      0.007     -0.006     -0.072      0.081     -0.097     -0.185      0.454     -0.157      0.005      0.004     -0.001     -0.006      0.001      0.000      0.004      0.000     -0.004      0.001      0.000
+    -0.056     -0.010      0.260     -0.018     -0.024      0.107     -0.112      0.141      0.065     -0.381      0.129      0.038     -0.569      0.001      0.000      0.000      0.000     -0.002     -0.001      0.000      0.000      0.000
+    -0.086     -0.057      0.029      0.035      0.037      0.059     -0.096      0.220      0.037     -0.132      0.085     -0.012     -0.089      0.010      1.073     -0.179      0.000     -0.139      0.001      0.025     -0.186      0.031
+     0.061      0.049     -0.015     -0.029     -0.032     -0.056      0.083     -0.190      0.003      0.117     -0.023      0.005      0.052     -0.038     -0.952      0.033      0.000      0.022      0.000     -0.002      0.031     -0.006
+    -0.035      0.053     -0.273     -0.001      0.126     -0.086      0.072      0.073      0.008      0.489     -0.123     -0.136      0.303     -0.310      0.074     -0.083      0.000      0.000      0.000      0.000      0.000      0.000
+     0.089      0.019     -0.115     -0.036     -0.111     -0.050      0.084     -0.195     -0.046      0.216     -0.017      0.211      0.116     -0.124     -0.260      0.237     -0.290      0.266     -0.007     -0.003      0.025     -0.004
+     0.062      0.039     -0.008     -0.052      0.052      0.001      0.004     -0.056      0.025     -0.079     -0.043     -0.083      0.038     -0.315      0.022     -0.016      0.011     -0.264      0.003      0.001      0.000      0.000
+    -0.157     -0.035      0.195     -0.039      0.041      0.049     -0.074      0.124      0.146     -0.417      0.072      0.013     -0.538      0.038      0.221     -0.112     -0.249     -0.061      0.166      0.012     -0.005      0.000
+     0.095      0.063     -0.047     -0.038     -0.040     -0.067      0.105     -0.225     -0.034      0.164     -0.091      0.017      0.111     -0.019     -0.998      0.940     -0.055      0.266     -0.013     -0.252      0.032     -0.005
+    -0.068     -0.054      0.026      0.033      0.035      0.061     -0.090      0.195     -0.005     -0.136      0.029     -0.010     -0.065      0.043      0.959     -0.998      0.072     -0.242      0.000      0.130     -0.951      0.001
+
+Derivative matrix of expected statistics X by parameters and
+covariance/correlation matrix of X can be found using
+summary(ans) within R, or by using the 'verbose' option in Siena07.
+ 
+Total computation time 298.65 seconds.
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 20/09/2019 11:51:45
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Estimation by stochastic approximation algorithm.
+=================================================
+
+Random initialization of random number stream.
+Current random number seed is 265839.
+Effects object used: sysEffects2 
+Model Type:
+ 
+Behavioral Model Type:
+ 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Standard errors are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Initial value of gain parameter is  0.5656854.
+Reduction factor for gain parameter is  0.5000000.
+Number of subphases in Phase 2 is 4.
+
+Initial parameter values are 
+  1. rate:  constant depMMC rate (period 1)                22.0482
+  2. rate:  constant depMMC rate (period 2)                17.5996
+  3. rate:  constant depMMC rate (period 3)                19.9988
+  4. eval:  degree (density)                                0.3342
+  5. eval:  transitive triads                               0.0000
+  6. rate:  rate depAcq (period 1)                          2.0401
+  7. rate:  rate depAcq (period 2)                          1.5944
+  8. rate:  rate depAcq (period 3)                          1.4494
+  9. eval:  depAcq linear shape                             0.0098
+ 10. eval:  depAcq quadratic shape                          0.0000
+ 11. eval:  depAcq: effect from covSmmc                     0.0000
+ 12. eval:  depAcq: effect from covSmmcSq                   0.0000
+ 13. eval:  depAcq: effect from covEmploy                   0.0000
+ 14. eval:  depAcq: effect from covSales                    0.0000
+ 15. eval:  depAcq: effect from covAcqExper                 0.0000
+ 16. eval:  depAcq: effect from covWdegAcq                  0.0000
+ 17. eval:  depAcq: effect from covSmmc_covWdegAcq          0.0000
+ 18. eval:  depAcq: effect from covSmmcSq_covWdegAcq        0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                               882.0000
+  2. Amount of network change in period 2                               704.0000
+  3. Amount of network change in period 3                               800.0000
+  4. Number of edges                                                   5955.0000
+  5. Number of transitive triads                                       87405.0000
+  6. Amount of behavioral change in period 1 on depAcq                   80.0000
+  7. Amount of behavioral change in period 2 on depAcq                   68.0000
+  8. Amount of behavioral change in period 3 on depAcq                   66.0000
+  9. depAcq centered sum                                                  3.5000
+ 10. depAcq sum of cent. squares                                        469.0216
+ 11. depAcq x covSmmc                                                   284.1173
+ 12. depAcq x covSmmcSq                                                2585.9787
+ 13. depAcq x covEmploy                                                9570.0080
+ 14. depAcq x covSales                                                   12.1000
+ 15. depAcq x covAcqExper                                               208.0704
+ 16. depAcq x covWdegAcq                                                106.6594
+ 17. depAcq x covSmmc_covWdegAcq                                       1728.2560
+ 18. depAcq x covSmmcSq_covWdegAcq                                     15616.5580
+
+ 18 parameters, 18 statistics
+
+Estimation of derivatives by the LR method (type 1).
+
+
+@2
+End of stochastic approximation algorithm, phase 3.
+---------------------------------------------------
+
+Total of 2170 iterations.
+Parameter estimates based on 1170 iterations,
+convergence diagnostics, covariance and derivative matrices based on 1000 iterations.
+
+Information for convergence diagnosis.
+Averages, standard deviations, and t-ratios for deviations from targets:
+  1.   1.1320   37.4586   0.0302 
+  2.  -1.1200   35.6102  -0.0315 
+  3.   1.0100   36.5822   0.0276 
+  4.   1.9010   61.9829   0.0307 
+  5.  59.3120 2093.6987   0.0283 
+  6.  -0.2100    7.7615  -0.0271 
+  7.   0.0080    7.3902   0.0011 
+  8.  -0.0570    7.0805  -0.0081 
+  9.  -0.0630   16.2585  -0.0039 
+ 10.  -0.2696   28.7995  -0.0094 
+ 11.   2.3435   33.6819   0.0696 
+ 12.  20.6679  258.4986   0.0800 
+ 13. -19.9899 1270.8703  -0.0157 
+ 14.  -0.0646    1.9095  -0.0338 
+ 15.   0.0035   16.4398   0.0002 
+ 16.   0.2148    9.3423   0.0230 
+ 17.  16.6176  202.8215   0.0819 
+ 18. 109.0986 1557.1642   0.0701 
+
+Good convergence is indicated by the t-ratios being close to zero.
+
+Overall maximum convergence ratio =  1.7724 .
+
+
+
+@2
+Estimation Results.
+-------------------
+
+Regular end of estimation algorithm.
+Total of 2170 iteration steps.
+
+
+@3
+Estimates and standard errors
+                             
+Network Dynamics
+ 1. rate:  constant depMMC rate (period 1)                         9.4724  (   0.6580)
+ 2. rate:  constant depMMC rate (period 2)                         6.9184  (   0.4263)
+ 3. rate:  constant depMMC rate (period 3)                         8.3206  (   0.5444)
+ 4. eval:  degree (density)                                       -2.1685  (   0.0790)
+ 5. eval:  transitive triads                                       0.0817  (   0.0024)
+
+Behavior Dynamics
+ 6. rate:  rate depAcq (period 1)                                 10.1900  (   4.8274)
+ 7. rate:  rate depAcq (period 2)                                  5.1190  (   1.5423)
+ 8. rate:  rate depAcq (period 3)                                  5.1235  (   1.7339)
+ 9. eval:  depAcq linear shape                                    -0.4649  (   0.0748)
+10. eval:  depAcq quadratic shape                                  0.0833  (   0.0417)
+11. eval:  depAcq: effect from covSmmc                             0.9456  (   1.6733)
+12. eval:  depAcq: effect from covSmmcSq                          -0.1180  (   0.2932)
+13. eval:  depAcq: effect from covEmploy                           0.0008  (   0.0007)
+14. eval:  depAcq: effect from covSales                            0.3196  (   0.5237)
+15. eval:  depAcq: effect from covAcqExper                         0.1523  (   0.0642)
+16. eval:  depAcq: effect from covWdegAcq                          0.2668  (   0.1363)
+17. eval:  depAcq: effect from covSmmc_covWdegAcq                 -0.1908  (   0.2893)
+18. eval:  depAcq: effect from covSmmcSq_covWdegAcq                0.0244  (   0.0501)
+
+
+@3
+Covariance matrices
+                   
+Covariance matrix of estimates (correlations below diagonal):
+     0.433     -0.009     -0.008     -0.005      0.000      0.340     -0.077      0.064      0.007     -0.004     -0.012      0.001      0.000      0.015      0.004      0.000      0.002      0.000
+    -0.032      0.182     -0.003      0.001      0.000     -0.092     -0.014     -0.027      0.001      0.000      0.003     -0.002      0.000     -0.002      0.000     -0.001      0.000      0.000
+    -0.021     -0.014      0.296      0.003      0.000     -0.042     -0.028      0.090      0.005     -0.003      0.039     -0.009      0.000     -0.004      0.000      0.000     -0.007      0.002
+    -0.087      0.029      0.076      0.006      0.000     -0.051     -0.005     -0.006      0.000      0.000     -0.005      0.001      0.000      0.000      0.000      0.000      0.001      0.000
+     0.065     -0.029     -0.122     -0.938      0.000      0.002      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000
+     0.107     -0.045     -0.016     -0.133      0.174     23.304      0.293      0.017      0.049      0.061      0.242     -0.018      0.000     -0.500      0.023     -0.100     -0.033      0.003
+    -0.076     -0.022     -0.034     -0.043      0.046      0.039      2.379     -0.104     -0.025      0.023     -0.350      0.071      0.000      0.055     -0.005      0.001      0.063     -0.013
+     0.056     -0.037      0.095     -0.045      0.073      0.002     -0.039      3.006      0.028     -0.005      0.404     -0.041      0.000     -0.106      0.016     -0.050     -0.066      0.007
+     0.139      0.046      0.134     -0.066      0.068      0.136     -0.214      0.215      0.006     -0.001      0.007     -0.002      0.000     -0.004      0.000     -0.005     -0.001      0.000
+    -0.131     -0.013     -0.120      0.015      0.026      0.302      0.364     -0.072     -0.412      0.002     -0.009      0.001      0.000     -0.003      0.000     -0.001      0.002      0.000
+    -0.011      0.004      0.043     -0.041      0.037      0.030     -0.135      0.139      0.057     -0.125      2.800     -0.468      0.000     -0.317     -0.011      0.008     -0.483      0.081
+     0.007     -0.013     -0.057      0.037     -0.031     -0.013      0.157     -0.081     -0.092      0.108     -0.953      0.086      0.000      0.051      0.002      0.001      0.080     -0.015
+    -0.079     -0.024      0.048      0.074     -0.065     -0.098     -0.177     -0.034      0.117     -0.150      0.251     -0.269      0.000      0.000      0.000      0.000      0.000      0.000
+     0.042     -0.009     -0.015     -0.002     -0.019     -0.198      0.068     -0.117     -0.107     -0.132     -0.361      0.334     -0.416      0.274     -0.006      0.011      0.054     -0.009
+     0.087      0.011     -0.009     -0.054      0.047      0.074     -0.051      0.142      0.077     -0.167     -0.103      0.095     -0.127     -0.168      0.004      0.000      0.002      0.000
+    -0.001     -0.023      0.002      0.024     -0.068     -0.153      0.003     -0.210     -0.499     -0.184      0.037      0.024     -0.125      0.156     -0.016      0.019     -0.002      0.000
+     0.012     -0.004     -0.045      0.038     -0.033     -0.024      0.141     -0.132     -0.051      0.134     -0.998      0.945     -0.249      0.357      0.117     -0.056      0.084     -0.014
+    -0.007      0.012      0.058     -0.035      0.029      0.012     -0.162      0.077      0.090     -0.116      0.960     -0.999      0.269     -0.334     -0.113     -0.013     -0.954      0.003
+
+Derivative matrix of expected statistics X by parameters and
+covariance/correlation matrix of X can be found using
+summary(ans) within R, or by using the 'verbose' option in Siena07.
+ 
+Total computation time 196.97 seconds.
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 20/09/2019 11:58:54
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Estimation by stochastic approximation algorithm.
+=================================================
+
+Random initialization of random number stream.
+Current random number seed is 482171.
+Effects object used: sysEffects2 
+Model Type:
+ 
+Behavioral Model Type:
+ 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Standard errors are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Initial value of gain parameter is  0.5656854.
+Reduction factor for gain parameter is  0.5000000.
+Number of subphases in Phase 2 is 4.
+
+Initial parameter values are 
+  1. rate:  constant depMMC rate (period 1)                17.7995
+  2. rate:  constant depMMC rate (period 2)                22.0482
+  3. rate:  constant depMMC rate (period 3)                17.5996
+  4. rate:  constant depMMC rate (period 4)                19.9988
+  5. eval:  degree (density)                                0.3830
+  6. eval:  transitive triads                               0.0000
+  7. rate:  rate depAcq (period 1)                          1.6651
+  8. rate:  rate depAcq (period 2)                          2.0401
+  9. rate:  rate depAcq (period 3)                          1.5944
+ 10. rate:  rate depAcq (period 4)                          1.4494
+ 11. eval:  depAcq linear shape                             0.0221
+ 12. eval:  depAcq quadratic shape                          0.0000
+ 13. eval:  depAcq: effect from covSmmc                     0.0000
+ 14. eval:  depAcq: effect from covSmmcSq                   0.0000
+ 15. eval:  depAcq: effect from covEmploy                   0.0000
+ 16. eval:  depAcq: effect from covSales                    0.0000
+ 17. eval:  depAcq: effect from covAcqExper                 0.0000
+ 18. eval:  depAcq: effect from covWdegAcq                  0.0000
+ 19. eval:  depAcq: effect from covSmmc_covWdegAcq          0.0000
+ 20. eval:  depAcq: effect from covSmmcSq_covWdegAcq        0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                               712.0000
+  2. Amount of network change in period 2                               882.0000
+  3. Amount of network change in period 3                               704.0000
+  4. Amount of network change in period 4                               800.0000
+  5. Number of edges                                                   7835.0000
+  6. Number of transitive triads                                       113384.0000
+  7. Amount of behavioral change in period 1 on depAcq                   68.0000
+  8. Amount of behavioral change in period 2 on depAcq                   80.0000
+  9. Amount of behavioral change in period 3 on depAcq                   68.0000
+ 10. Amount of behavioral change in period 4 on depAcq                   66.0000
+ 11. depAcq centered sum                                                  9.2000
+ 12. depAcq sum of cent. squares                                        619.4341
+ 13. depAcq x covSmmc                                                   387.2540
+ 14. depAcq x covSmmcSq                                                3375.7903
+ 15. depAcq x covEmploy                                                13895.8143
+ 16. depAcq x covSales                                                   15.5192
+ 17. depAcq x covAcqExper                                                44.9074
+ 18. depAcq x covWdegAcq                                                139.7036
+ 19. depAcq x covSmmc_covWdegAcq                                       2344.4638
+ 20. depAcq x covSmmcSq_covWdegAcq                                     20334.3983
+
+ 20 parameters, 20 statistics
+
+Estimation of derivatives by the LR method (type 1).
+
+
+@2
+End of stochastic approximation algorithm, phase 3.
+---------------------------------------------------
+
+Total of 2236 iterations.
+Parameter estimates based on 1236 iterations,
+convergence diagnostics, covariance and derivative matrices based on 1000 iterations.
+
+Information for convergence diagnosis.
+Averages, standard deviations, and t-ratios for deviations from targets:
+  1.  -1.1540   35.3777  -0.0326 
+  2.   1.5240   38.0829   0.0400 
+  3.   0.0060   35.1504   0.0002 
+  4.   1.9440   37.6389   0.0516 
+  5.   2.6140   61.8004   0.0423 
+  6.  85.9370 2088.5971   0.0411 
+  7.   0.2410    7.2148   0.0334 
+  8.   0.1430    7.8433   0.0182 
+  9.   0.5210    7.3469   0.0709 
+ 10.  -0.2390    7.2523  -0.0330 
+ 11.   0.9240   18.6573   0.0495 
+ 12.  -0.8820   31.9767  -0.0276 
+ 13.   0.4438   42.4962   0.0104 
+ 14.   4.8459  317.5761   0.0153 
+ 15. -33.6601 1459.3586  -0.0231 
+ 16.  -0.0684    1.8858  -0.0362 
+ 17.  -0.1651    6.6376  -0.0249 
+ 18.   0.1664   11.2573   0.0148 
+ 19.   7.1252  255.4000   0.0279 
+ 20. -10.1740 1911.2816  -0.0053 
+
+Good convergence is indicated by the t-ratios being close to zero.
+
+Overall maximum convergence ratio =  3.6224 .
+
+
+
+@2
+Estimation Results.
+-------------------
+
+Regular end of estimation algorithm.
+Total of 2236 iteration steps.
+
+
+@3
+Estimates and standard errors
+                             
+Network Dynamics
+ 1. rate:  constant depMMC rate (period 1)                         6.5932  (   0.5027)
+ 2. rate:  constant depMMC rate (period 2)                         9.3880  (   0.6735)
+ 3. rate:  constant depMMC rate (period 3)                         6.7807  (   0.4787)
+ 4. rate:  constant depMMC rate (period 4)                         8.1107  (   0.5513)
+ 5. eval:  degree (density)                                       -1.9752  (   0.0700)
+ 6. eval:  transitive triads                                       0.0791  (   0.0021)
+
+Behavior Dynamics
+ 7. rate:  rate depAcq (period 1)                                  5.5228  (   3.0603)
+ 8. rate:  rate depAcq (period 2)                                  9.0910  (   5.4422)
+ 9. rate:  rate depAcq (period 3)                                  4.7651  (   1.6457)
+10. rate:  rate depAcq (period 4)                                  4.8812  (   1.3136)
+11. eval:  depAcq linear shape                                    -0.4776  (   0.0654)
+12. eval:  depAcq quadratic shape                                  0.0932  (   0.0347)
+13. eval:  depAcq: effect from covSmmc                            -0.2637  (   1.5243)
+14. eval:  depAcq: effect from covSmmcSq                           0.1283  (   0.2729)
+15. eval:  depAcq: effect from covEmploy                           0.0011  (   0.0008)
+16. eval:  depAcq: effect from covSales                            0.6033  (   0.5481)
+17. eval:  depAcq: effect from covAcqExper                         0.2260  (   0.1368)
+18. eval:  depAcq: effect from covWdegAcq                          0.2701  (   0.1380)
+19. eval:  depAcq: effect from covSmmc_covWdegAcq                  0.0112  (   0.2618)
+20. eval:  depAcq: effect from covSmmcSq_covWdegAcq               -0.0161  (   0.0463)
+
+
+@3
+Covariance matrices
+                   
+Covariance matrix of estimates (correlations below diagonal):
+     0.253     -0.003      0.000      0.010     -0.006      0.000      0.743      0.103      0.053     -0.025     -0.001      0.004      0.023     -0.006      0.000     -0.005     -0.005     -0.008     -0.004      0.001
+    -0.009      0.454      0.003      0.034     -0.001      0.000      0.018     -1.643      0.092     -0.031     -0.009     -0.003     -0.010      0.006      0.000      0.001      0.002      0.019      0.000     -0.001
+    -0.001      0.009      0.229      0.001     -0.002      0.000      0.037     -0.093      0.114      0.012      0.000      0.000     -0.011      0.004      0.000     -0.001      0.006     -0.003      0.002     -0.001
+     0.035      0.092      0.003      0.304     -0.004      0.000      0.190     -0.437     -0.050     -0.042     -0.001      0.000      0.000     -0.001      0.000     -0.012     -0.003      0.000      0.000      0.000
+    -0.163     -0.021     -0.060     -0.100      0.005      0.000     -0.088      0.043      0.009     -0.004      0.000      0.000      0.006     -0.001      0.000      0.001      0.001      0.000     -0.001      0.000
+     0.176     -0.124      0.022     -0.002     -0.904      0.000      0.002      0.001      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000
+     0.483      0.009      0.025      0.112     -0.412      0.366      9.366      0.208      0.412     -0.135     -0.006      0.039     -0.095     -0.001      0.000     -0.075     -0.114     -0.077      0.013      0.001
+     0.038     -0.448     -0.036     -0.146      0.112      0.126      0.012     29.617     -0.247     -0.109      0.138      0.055      0.449     -0.154      0.002     -0.382      0.080     -0.280     -0.062      0.025
+     0.064      0.083      0.144     -0.055      0.075     -0.062      0.082     -0.028      2.708     -0.077     -0.003      0.017      0.321     -0.059      0.000      0.027      0.070     -0.012     -0.054      0.010
+    -0.038     -0.035      0.019     -0.058     -0.044      0.038     -0.034     -0.015     -0.036      1.726     -0.009     -0.003     -0.088      0.035      0.000      0.155      0.014      0.036      0.013     -0.006
+    -0.025     -0.197      0.014     -0.022      0.086      0.007     -0.029      0.387     -0.027     -0.102      0.004      0.000      0.000     -0.001      0.000     -0.003      0.000     -0.005      0.000      0.000
+     0.212     -0.136      0.017     -0.009     -0.079      0.138      0.365      0.290      0.305     -0.069     -0.217      0.001      0.000      0.000      0.000     -0.002      0.000     -0.001      0.000      0.000
+     0.031     -0.009     -0.015      0.000      0.052     -0.021     -0.020      0.054      0.128     -0.044     -0.005      0.000      2.323     -0.396      0.000     -0.287      0.012      0.022     -0.399      0.068
+    -0.041      0.033      0.034     -0.004     -0.063      0.020     -0.001     -0.104     -0.130      0.098     -0.065     -0.047     -0.951      0.074      0.000      0.050      0.000      0.000      0.067     -0.013
+    -0.055     -0.203      0.001     -0.125      0.044      0.073     -0.132      0.463     -0.103     -0.104      0.265     -0.056      0.207     -0.227      0.000      0.000      0.000      0.000      0.000      0.000
+    -0.018      0.002     -0.005     -0.040      0.030     -0.042     -0.045     -0.128      0.029      0.216     -0.086     -0.097     -0.343      0.333     -0.507      0.300     -0.003      0.011      0.049     -0.009
+    -0.076      0.026      0.090     -0.045      0.120     -0.071     -0.273      0.107      0.312      0.078     -0.006     -0.096      0.055     -0.010      0.102     -0.046      0.019      0.001     -0.002      0.000
+    -0.111      0.207     -0.042     -0.004     -0.017     -0.076     -0.181     -0.373     -0.052      0.197     -0.580     -0.262      0.105      0.012     -0.204      0.140      0.069      0.019     -0.004      0.000
+    -0.033      0.002      0.014     -0.003     -0.049      0.021      0.016     -0.044     -0.124      0.037      0.015      0.010     -0.999      0.942     -0.199      0.342     -0.053     -0.123      0.069     -0.012
+     0.043     -0.029     -0.034      0.006      0.060     -0.019      0.004      0.100      0.126     -0.093      0.061      0.038      0.958     -0.999      0.225     -0.336      0.007     -0.003     -0.951      0.002
+
+Derivative matrix of expected statistics X by parameters and
+covariance/correlation matrix of X can be found using
+summary(ans) within R, or by using the 'verbose' option in Siena07.
+ 
+Total computation time 282.06 seconds.
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 22/09/2019 17:19:03
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Estimation by stochastic approximation algorithm.
+=================================================
+
+Random initialization of random number stream.
+Current random number seed is 270553.
+Effects object used: sysEffects2 
+Model Type:
+ 
+Behavioral Model Type:
+ 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Standard errors are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Initial value of gain parameter is  0.5656854.
+Reduction factor for gain parameter is  0.5000000.
+Number of subphases in Phase 2 is 4.
+
+Initial parameter values are 
+  1. rate:  constant depMMC rate (period 1)                 0.3049
+  2. rate:  constant depMMC rate (period 2)                 0.6048
+  3. rate:  constant depMMC rate (period 3)                 0.3549
+  4. rate:  constant depMMC rate (period 4)                 0.2549
+  5. eval:  degree (density)                               -0.2980
+  6. eval:  transitive triads                               0.0000
+  7. rate:  rate depAcq (period 1)                          1.6651
+  8. rate:  rate depAcq (period 2)                          2.0401
+  9. rate:  rate depAcq (period 3)                          1.5944
+ 10. rate:  rate depAcq (period 4)                          1.4494
+ 11. eval:  depAcq linear shape                             0.0221
+ 12. eval:  depAcq quadratic shape                          0.0000
+ 13. eval:  depAcq: effect from covSmmc                     0.0000
+ 14. eval:  depAcq: effect from covSmmcSq                   0.0000
+ 15. eval:  depAcq: effect from covEmploy                   0.0000
+ 16. eval:  depAcq: effect from covSales                    0.0000
+ 17. eval:  depAcq: effect from covAcqExper                 0.0000
+ 18. eval:  depAcq: effect from covWdegAcq                  0.0000
+ 19. eval:  depAcq: effect from covSmmc_covWdegAcq          0.0000
+ 20. eval:  depAcq: effect from covSmmcSq_covWdegAcq        0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                                12.0000
+  2. Amount of network change in period 2                                24.0000
+  3. Amount of network change in period 3                                14.0000
+  4. Amount of network change in period 4                                10.0000
+  5. Number of edges                                                    407.0000
+  6. Number of transitive triads                                        210.0000
+  7. Amount of behavioral change in period 1 on depAcq                   68.0000
+  8. Amount of behavioral change in period 2 on depAcq                   80.0000
+  9. Amount of behavioral change in period 3 on depAcq                   68.0000
+ 10. Amount of behavioral change in period 4 on depAcq                   66.0000
+ 11. depAcq centered sum                                                  9.2000
+ 12. depAcq sum of cent. squares                                        619.4341
+ 13. depAcq x covSmmc                                                   387.2540
+ 14. depAcq x covSmmcSq                                                3375.7903
+ 15. depAcq x covEmploy                                                13895.8143
+ 16. depAcq x covSales                                                   15.5192
+ 17. depAcq x covAcqExper                                                44.9074
+ 18. depAcq x covWdegAcq                                                139.7036
+ 19. depAcq x covSmmc_covWdegAcq                                       2344.4638
+ 20. depAcq x covSmmcSq_covWdegAcq                                     20334.3983
+
+ 20 parameters, 20 statistics
+
+Estimation of derivatives by the LR method (type 1).
+
+
+@2
+End of stochastic approximation algorithm, phase 3.
+---------------------------------------------------
+
+Total of 2178 iterations.
+Parameter estimates based on 1178 iterations,
+convergence diagnostics, covariance and derivative matrices based on 1000 iterations.
+
+Information for convergence diagnosis.
+Averages, standard deviations, and t-ratios for deviations from targets:
+  1.   0.3600    5.0912   0.0707 
+  2.  -0.1140    6.7945  -0.0168 
+  3.  -0.4460    4.8913  -0.0912 
+  4.  -0.1120    4.4622  -0.0251 
+  5.  -0.5340    5.2762  -0.1012 
+  6.  -0.7120    8.8755  -0.0802 
+  7.   0.3670    7.2905   0.0503 
+  8.   0.2510    8.0407   0.0312 
+  9.   0.3140    7.4076   0.0424 
+ 10.  -0.0310    7.3204  -0.0042 
+ 11.   0.9390   18.5046   0.0507 
+ 12.   1.3058   34.0007   0.0384 
+ 13.   1.1928   42.6356   0.0280 
+ 14.   8.6702  320.0359   0.0271 
+ 15. -48.8729 1426.3564  -0.0343 
+ 16.  -0.0445    1.9904  -0.0224 
+ 17.   0.2644    7.0608   0.0374 
+ 18.   0.2548   10.9037   0.0234 
+ 19.  10.1337  255.6606   0.0396 
+ 20.  25.5651 1923.9788   0.0133 
+
+Good convergence is indicated by the t-ratios being close to zero.
+
+Overall maximum convergence ratio =  2.4951 .
+
+
+
+@2
+Estimation Results.
+-------------------
+
+Regular end of estimation algorithm.
+Total of 2178 iteration steps.
+
+
+@3
+Estimates and standard errors
+                             
+Network Dynamics
+ 1. rate:  constant depMMC rate (period 1)                         0.0839  (   0.0332)
+ 2. rate:  constant depMMC rate (period 2)                         0.1683  (   0.0531)
+ 3. rate:  constant depMMC rate (period 3)                         0.0960  (   0.0403)
+ 4. rate:  constant depMMC rate (period 4)                         0.0672  (   0.0306)
+ 5. eval:  degree (density)                                       -2.6372  (   0.4721)
+ 6. eval:  transitive triads                                       2.3548  (   0.7315)
+
+Behavior Dynamics
+ 7. rate:  rate depAcq (period 1)                                  5.4571  (   1.2438)
+ 8. rate:  rate depAcq (period 2)                                  8.9997  (  12.6522)
+ 9. rate:  rate depAcq (period 3)                                  4.8619  (   1.6164)
+10. rate:  rate depAcq (period 4)                                  4.8490  (   1.3113)
+11. eval:  depAcq linear shape                                    -0.4799  (   0.0681)
+12. eval:  depAcq quadratic shape                                  0.0917  (   0.0333)
+13. eval:  depAcq: effect from covSmmc                             1.4324  (   1.5473)
+14. eval:  depAcq: effect from covSmmcSq                          -0.1790  (   0.2853)
+15. eval:  depAcq: effect from covEmploy                           0.0013  (   0.0007)
+16. eval:  depAcq: effect from covSales                            0.4006  (   0.5364)
+17. eval:  depAcq: effect from covAcqExper                         0.2243  (   0.1384)
+18. eval:  depAcq: effect from covWdegAcq                          0.2829  (   0.1277)
+19. eval:  depAcq: effect from covSmmc_covWdegAcq                 -0.2784  (   0.2632)
+20. eval:  depAcq: effect from covSmmcSq_covWdegAcq                0.0362  (   0.0480)
+
+
+@3
+Covariance matrices
+                   
+Covariance matrix of estimates (correlations below diagonal):
+     0.001      0.000      0.000      0.000      0.000     -0.002      0.001      0.023      0.000     -0.003      0.000      0.000      0.001      0.000      0.000      0.001      0.000      0.000      0.000      0.000
+     0.073      0.003      0.000      0.000      0.003     -0.008      0.000      0.212     -0.006      0.000      0.000      0.000      0.009     -0.002      0.000     -0.002     -0.001      0.000     -0.001      0.000
+     0.006     -0.066      0.002      0.000     -0.002      0.001      0.000     -0.042      0.012      0.000      0.000      0.000     -0.003      0.001      0.000      0.001      0.000      0.000      0.000      0.000
+    -0.027     -0.015      0.007      0.001     -0.002      0.003      0.000     -0.039      0.003      0.004      0.000      0.000     -0.003      0.001      0.000      0.001      0.000      0.000      0.000      0.000
+     0.016      0.134     -0.088     -0.114      0.223     -0.245     -0.026      2.248     -0.065      0.017      0.004     -0.001      0.101     -0.021      0.000     -0.020     -0.012     -0.001     -0.015      0.003
+    -0.062     -0.209      0.049      0.134     -0.711      0.535      0.033     -4.001      0.171      0.072     -0.007      0.002     -0.233      0.046      0.000      0.053      0.018      0.000      0.036     -0.007
+     0.031     -0.005     -0.009     -0.013     -0.045      0.036      1.547     -2.080     -0.111     -0.059     -0.001      0.003     -0.182      0.033      0.000      0.047     -0.004      0.008      0.029     -0.005
+     0.055      0.316     -0.082     -0.100      0.376     -0.432     -0.132    160.078     -2.108     -1.883      0.207      0.024      5.080     -1.125      0.003     -1.501     -0.778     -0.047     -0.721      0.169
+     0.005     -0.066      0.183      0.051     -0.086      0.144     -0.055     -0.103      2.613      0.098      0.006      0.008     -0.710      0.128      0.000      0.011     -0.002     -0.040      0.123     -0.022
+    -0.063     -0.002      0.004      0.101      0.027      0.075     -0.036     -0.114      0.046      1.720     -0.005      0.003     -0.263      0.051      0.000      0.119     -0.001     -0.005      0.043     -0.008
+     0.064      0.123     -0.007     -0.066      0.125     -0.144     -0.011      0.240      0.057     -0.061      0.005     -0.001     -0.007      0.000      0.000     -0.002     -0.001     -0.004      0.001      0.000
+    -0.055     -0.059      0.009      0.044     -0.066      0.084      0.072      0.057      0.150      0.067     -0.447      0.001     -0.007      0.001      0.000     -0.001     -0.001     -0.001      0.001      0.000
+     0.024      0.113     -0.040     -0.059      0.138     -0.206     -0.095      0.260     -0.284     -0.130     -0.064     -0.126      2.394     -0.423      0.000     -0.328     -0.024      0.043     -0.406      0.072
+    -0.032     -0.137      0.056      0.067     -0.159      0.221      0.092     -0.312      0.277      0.136      0.018      0.090     -0.958      0.081      0.000      0.061      0.006     -0.005      0.071     -0.014
+     0.021      0.123     -0.065     -0.054      0.113     -0.176      0.044      0.280     -0.161     -0.140      0.197     -0.167      0.281     -0.313      0.000      0.000      0.000      0.000      0.000      0.000
+     0.030     -0.076      0.036      0.036     -0.077      0.136      0.071     -0.221      0.013      0.169     -0.054     -0.079     -0.395      0.399     -0.496      0.288     -0.001      0.008      0.055     -0.010
+    -0.037     -0.165      0.036     -0.026     -0.185      0.173     -0.024     -0.444     -0.007     -0.004     -0.155     -0.111     -0.111      0.146     -0.069     -0.011      0.019      0.000      0.003     -0.001
+     0.016     -0.012     -0.034     -0.016     -0.018      0.002      0.048     -0.029     -0.192     -0.032     -0.500     -0.125      0.218     -0.132     -0.028      0.119      0.028      0.016     -0.008      0.001
+    -0.020     -0.099      0.037      0.053     -0.122      0.189      0.089     -0.216      0.288      0.125      0.081      0.138     -0.998      0.946     -0.266      0.386      0.092     -0.239      0.069     -0.012
+     0.029      0.127     -0.053     -0.062      0.147     -0.209     -0.089      0.279     -0.282     -0.132     -0.029     -0.102      0.965     -0.999      0.303     -0.396     -0.132      0.146     -0.956      0.002
+
+Derivative matrix of expected statistics X by parameters and
+covariance/correlation matrix of X can be found using
+summary(ans) within R, or by using the 'verbose' option in Siena07.
+ 
+Total computation time 21.53 seconds.
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 23/09/2019 01:30:38
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Estimation by stochastic approximation algorithm.
+=================================================
+
+Random initialization of random number stream.
+Current random number seed is 800795.
+Effects object used: sysEffects2 
+Model Type:
+ 
+Behavioral Model Type:
+ 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Standard errors are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Initial value of gain parameter is  0.5656854.
+Reduction factor for gain parameter is  0.5000000.
+Number of subphases in Phase 2 is 4.
+
+Initial parameter values are 
+  1. rate:  constant depMMC rate (period 1)                 0.3049
+  2. rate:  constant depMMC rate (period 2)                 0.6048
+  3. rate:  constant depMMC rate (period 3)                 0.3549
+  4. rate:  constant depMMC rate (period 4)                 0.2549
+  5. eval:  degree (density)                               -0.2980
+  6. eval:  transitive triads                               0.0000
+  7. rate:  rate depAcq (period 1)                          1.6651
+  8. rate:  rate depAcq (period 2)                          2.0401
+  9. rate:  rate depAcq (period 3)                          1.5944
+ 10. rate:  rate depAcq (period 4)                          1.4494
+ 11. eval:  depAcq linear shape                             0.0221
+ 12. eval:  depAcq quadratic shape                          0.0000
+ 13. eval:  depAcq: effect from covSmmc                     0.0000
+ 14. eval:  depAcq: effect from covSmmcSq                   0.0000
+ 15. eval:  depAcq: effect from covEmploy                   0.0000
+ 16. eval:  depAcq: effect from covSales                    0.0000
+ 17. eval:  depAcq: effect from covAcqExper                 0.0000
+ 18. eval:  depAcq: effect from covWdegAcq                  0.0000
+ 19. eval:  depAcq: effect from covSmmc_covWdegAcq          0.0000
+ 20. eval:  depAcq: effect from covSmmcSq_covWdegAcq        0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                                12.0000
+  2. Amount of network change in period 2                                24.0000
+  3. Amount of network change in period 3                                14.0000
+  4. Amount of network change in period 4                                10.0000
+  5. Number of edges                                                    407.0000
+  6. Number of transitive triads                                        210.0000
+  7. Amount of behavioral change in period 1 on depAcq                   68.0000
+  8. Amount of behavioral change in period 2 on depAcq                   80.0000
+  9. Amount of behavioral change in period 3 on depAcq                   68.0000
+ 10. Amount of behavioral change in period 4 on depAcq                   66.0000
+ 11. depAcq centered sum                                                  9.2000
+ 12. depAcq sum of cent. squares                                        619.4341
+ 13. depAcq x covSmmc                                                   387.2540
+ 14. depAcq x covSmmcSq                                                3375.7903
+ 15. depAcq x covEmploy                                                13895.8143
+ 16. depAcq x covSales                                                   15.5192
+ 17. depAcq x covAcqExper                                                44.9074
+ 18. depAcq x covWdegAcq                                                139.7036
+ 19. depAcq x covSmmc_covWdegAcq                                       2344.4638
+ 20. depAcq x covSmmcSq_covWdegAcq                                     20334.3983
+
+ 20 parameters, 20 statistics

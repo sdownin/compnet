@@ -1,0 +1,139 @@
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 24/09/2019 12:13:06
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Simulations.
+============
+
+Random initialization of random number stream.
+Current random number seed is 491069.
+Effects object used: sysEff 
+Model Type:
+ 
+Behavioral Model Type:
+ 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Derivatives are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Parameter values are 
+  1. rate:  constant depMMC rate (period 1)                 2.0045
+  2. rate:  constant depMMC rate (period 2)                 1.9532
+  3. eval:  degree (density)                               -0.8578
+  4. eval:  transitive triads                               0.0000
+  5. eval:  GWESP (69)                                      0.0000
+  6. eval:  depAcq ego                                      0.0000
+  7. rate:  rate depAcq (period 1)                          1.5076
+  8. rate:  rate depAcq (period 2)                          2.1883
+  9. eval:  depAcq linear shape                             0.1253
+ 10. eval:  depAcq quadratic shape                          0.0000
+ 11. eval:  depAcq: effect from covSmmc                     0.0000
+ 12. eval:  depAcq: effect from covSmmcSq                   0.0000
+ 13. eval:  depAcq: tot. sim. (depMMC) x ego's covSmmcSq    0.0000
+ 14. eval:  depAcq: effect from covEmploy                   0.0000
+ 15. eval:  depAcq: effect from covSales                    0.0000
+ 16. eval:  depAcq: effect from covAcqExper                 0.0000
+ 17. eval:  depAcq: effect from covWdegAcq                  0.0000
+ 18. eval:  depAcq: effect from covSmmcSq_covWdegAcq        0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                                78.0000
+  2. Amount of network change in period 2                                76.0000
+  3. Number of edges                                                    204.0000
+  4. Number of transitive triads                                        119.0000
+  5. Numb. edgew. shrd prtns.(69)                                       437.1683
+  6. Sum of degrees x depAcq                                            519.8101
+  7. Amount of behavioral change in period 1 on depAcq                   75.0000
+  8. Amount of behavioral change in period 2 on depAcq                   95.0000
+  9. depAcq centered sum                                                 27.0000
+ 10. depAcq sum of cent. squares                                        413.4557
+ 11. depAcq x covSmmc                                                   159.7130
+ 12. depAcq x covSmmcSq                                                 626.4820
+ 13. depAcq tot. sim. (depMMC) x ego's covSmmcSq                         24.7390
+ 14. depAcq x covEmploy                                                7623.2071
+ 15. depAcq x covSales                                                    9.2048
+ 16. depAcq x covAcqExper                                               191.8055
+ 17. depAcq x covWdegAcq                                                 90.8388
+ 18. depAcq x covSmmcSq_covWdegAcq                                     3678.3181
+
+ 18 parameters, 18 statistics
+
+Number of subphases is specified as 0.
+Therefore the estimation phase is skipped
+ and the program passes on immediately to phase 3
+ for checking the current parameter values and calculating standard errors.
+Estimation of derivatives by the LR method (type 1).
+
+
+
+
+@2
+Simulation Results.
+-------------------
+
+Regular end of simulation algorithm.
+Total of 1000 iteration steps.
+
+
+@3
+Parameter values
+                
+Network Dynamics
+ 1. rate:  constant depMMC rate (period 1)                         2.0045  
+ 2. rate:  constant depMMC rate (period 2)                         1.9532  
+ 3. eval:  degree (density)                                       -0.8578  
+ 4. eval:  transitive triads                                       0.0000  
+ 5. eval:  GWESP (69)                                              0.0000  
+ 6. eval:  depAcq ego                                              0.0000  
+
+Behavior Dynamics
+ 7. rate:  rate depAcq (period 1)                                  1.5076  
+ 8. rate:  rate depAcq (period 2)                                  2.1883  
+ 9. eval:  depAcq linear shape                                     0.1253  
+10. eval:  depAcq quadratic shape                                  0.0000  
+11. eval:  depAcq: effect from covSmmc                             0.0000  
+12. eval:  depAcq: effect from covSmmcSq                           0.0000  
+13. eval:  depAcq: tot. sim. (depMMC) x ego's covSmmcSq            0.0000  
+14. eval:  depAcq: effect from covEmploy                           0.0000  
+15. eval:  depAcq: effect from covSales                            0.0000  
+16. eval:  depAcq: effect from covAcqExper                         0.0000  
+17. eval:  depAcq: effect from covWdegAcq                          0.0000  
+18. eval:  depAcq: effect from covSmmcSq_covWdegAcq                0.0000  
+
+
+@3
+Simulated statistics
+                    
+Estimated means and standard deviations, standard errors of the mean 
+  1. Amount of network change in period 1                     252.714   20.462   0.3851
+  2. Amount of network change in period 2                     250.286   20.382   0.3820
+  3. Number of edges                                          356.219   13.864   0.3046
+  4. Number of transitive triads                               73.356   10.326   0.1084
+  5. Numb. edgew. shrd prtns.(69)                             340.230   39.778   0.5129
+  6. Sum of degrees x depAcq                                  300.530   38.535   0.9920
+  7. Amount of behavioral change in period 1 on depAcq         47.958    6.337   0.1781
+  8. Amount of behavioral change in period 2 on depAcq         61.039    6.976   0.2051
+  9. depAcq centered sum                                       28.799   11.470   0.1343
+ 10. depAcq sum of cent. squares                              424.162   27.433   0.4796
+ 11. depAcq x covSmmc                                         124.692   13.192   0.1565
+ 12. depAcq x covSmmcSq                                       496.497   42.426   0.5407
+ 13. depAcq tot. sim. (depMMC) x ego's covSmmcSq               10.545   42.127   1.1445
+ 14. depAcq x covEmploy                                      7666.099  817.933  10.2599
+ 15. depAcq x covSales                                          7.325    1.033   0.0120
+ 16. depAcq x covAcqExper                                     184.917   11.841   0.1618
+ 17. depAcq x covWdegAcq                                       63.143   15.785   0.2043
+ 18. depAcq x covSmmcSq_covWdegAcq                           2927.818  252.217   3.2094
+
+Standard errors of the mean are less than s.d./sqrt(n) 
+because of regression on scores (Dolby option). 
+Total computation time 6.3 seconds.
