@@ -45,7 +45,22 @@ complexity <- function(x, scale=FALSE) {
   return(y)
 }
 
-
+##
+#  Check Siena Model Converged
+#   - max overall t ratio < 0.25
+#   - all t-ratio < 0.1
+#  @return bool
+##
+checkSienaConv <- function(res, t.lim=0.1,max.lim=0.25) {
+  tmax <- res$tconv.max
+  ts <- res$tconv
+  ck.tmax <- tmax < max.lim
+  ck.ts <- all(ts < t.lim)
+  ck <- all(ck.tmax, ck.ts)
+  cat(sprintf('\nCONVERGED:  %s\n  tconv.max (%.3f) < 0.25  %s\n  all t (max %.3f) < 0.10  %s\n\n',
+              ck, tmax, ck.tmax, max(ts), ck.ts))
+  return(ck)
+}
 
 ###
 ## PGLM FUNCTION FOR TEXREG TABLE
@@ -260,14 +275,22 @@ firm_i <- 'microsoft'
         rp_Acquisitions_ma=mean(c(xti$rp_Acquisitions,
                                xtin1$rp_Acquisitions,
                                xtin2$rp_Acquisitions), na.rm=T),
+        rp_NON_acquisitions=mean(xti$rp_NON_acquisitions, na.rm=T),
         ## sum(t-1,t-2,t-3) previous 3yr acquisitions == Acq Experience
         acq_exp_3=sum(c(xtin1$rp_Acquisitions,
                         xtin2$rp_Acquisitions,
                         xtin3$rp_Acquisitions), na.rm=T),
-        rp_NON_acquisitions=mean(xti$rp_NON_acquisitions, na.rm=T),
-        wdeg_rp_Acquisitions=mean(xti$wdeg_rp_Acquisitions, na.rm=T)
+        ## competitive pressure
+        wdeg_rp_Acquisitions=mean(xti$wdeg_rp_Acquisitions, na.rm=T),
+        wdeg_rp_all=sum(c(xti$wdeg_rp_Acquisitions, xti$wdeg_rp_Capacity,
+                          xti$wdeg_rp_Legal, xti$wdeg_rp_Market_expansions,
+                          xti$wdeg_rp_Marketing,  xti$wdeg_rp_New_product,
+                          xti$wdeg_rp_Pricing,  xti$wdeg_rp_Strategic_alliances), na.rm=T)
       )
+      .tmp$wdeg_rp_NON_acquisitions <- .tmp$wdeg_rp_all - .tmp$wdeg_rp_Acquisitions
+      #
       dfla <- rbind(dfla,.tmp)
+      #
     }
   }
   
@@ -385,8 +408,11 @@ firm_i <- 'microsoft'
   arrAcqSum <- array(0,dim=c(nsub,npds)) 
   arrNonAcqAct <- array(0,dim=c(nsub,npds)) 
   arrWdegAcq <- array(0,dim=c(nsub,npds))
+  arrWdegAll <- <- array(0,dim=c(nsub,npds))
   arrSmmc_WdegAcq <- array(0,dim=c(nsub,npds))
   arrSmmcSq_WdegAcq <- array(0,dim=c(nsub,npds))
+  arrSmmc_WdegAll <- array(0,dim=c(nsub,npds))
+  arrSmmcSq_WdegAll <- array(0,dim=c(nsub,npds))
   # arrW <- array(0,dim=c(nsub,npds))
   for (t in 1:npds) {
     for (i in 1:length(firmnamesub)) {
@@ -395,7 +421,7 @@ firm_i <- 'microsoft'
       x <- dfla$rp_Acquisitions_ma[idx]  ## Acq MOVING AVERAGE
       # x <- dfla$rp_Acquisitions[idx]   ## Acq
       z <- ceiling( log2( 1 + x ) )
-      thresh <- 5
+      thresh <- 4
       arrAcq[i,t] <-  ifelse(z > thresh, thresh, z)
       #
       w <- dfla$cent_deg_mmc[idx]
@@ -403,6 +429,7 @@ firm_i <- 'microsoft'
       arrDegMmcSq[i,t] <- log(1+w)^2
       #
       arrWdegAcq[i,t] <- log(1 + dfla$wdeg_rp_Acquisitions[idx])
+      arrWdegAll[i,t] <- log(1 + dfla$wdeg_rp_all[idx])
       #
       arrEmploy[i,t]    <- dfla$employee_na_age[idx]/1e+03
       arrSales[i,t]     <- dfla$sales_na_0_mn[idx]/1e+06
@@ -413,11 +440,13 @@ firm_i <- 'microsoft'
       #
       arrSmmc_WdegAcq[i,t]   <- arrWdegAcq[i,t] * arrSmmc[i,t]
       arrSmmcSq_WdegAcq[i,t] <- arrWdegAcq[i,t] * arrSmmcSq[i,t]
+      arrSmmc_WdegAll[i,t]   <- arrWdegAll[i,t] * arrSmmc[i,t]
+      arrSmmcSq_WdegAll[i,t] <- arrWdegAll[i,t] * arrSmmcSq[i,t]
     }
   }
   
   ## FILTER YEARS
-  yridx <- c(1,3,5,7)
+  yridx <- c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
   ## FILTER FIRMS
   nmacqall <- unique(dfla$name[which(dfla$rp_Acquisitions>0)])
   ##
@@ -444,8 +473,11 @@ firm_i <- 'microsoft'
   ##------------------------------
   #
   arrWdegAcq2 <- arrWdegAcq[firmsubidx, yridx ]
+  arrWdegAll2 <- arrWdegAll[firmsubidx, yridx ]
   arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx, yridx ]
   arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx, yridx ]
+  arrSmmc_WdegAll2   <- arrSmmc_WdegAll[firmsubidx, yridx ]
+  arrSmmcSq_WdegAll2 <- arrSmmcSq_WdegAll[firmsubidx, yridx ]
   #
   arrEmploy2 <- arrEmploy[firmsubidx, yridx ]
   arrSales2 <- arrSales[firmsubidx, yridx ]
@@ -470,6 +502,7 @@ firm_i <- 'microsoft'
   covSmmc <- varCovar(arrSmmc2, nodeSet="FIRMS")
   covSmmcSq <- varCovar(arrSmmcSq2, nodeSet="FIRMS")
   covWdegAcq <- varCovar(arrWdegAcq2, nodeSet="FIRMS")
+  covWdegAll <- varCovar(arrWdegAll2, nodeSet="FIRMS")
   # #CONTROLS
   covEmploy <- varCovar(arrEmploy2, nodeSet="FIRMS")
   covSales <- varCovar(arrSales2, nodeSet="FIRMS")
@@ -478,6 +511,8 @@ firm_i <- 'microsoft'
   # covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
   covSmmc_covWdegAcq <- varCovar(arrSmmc_WdegAcq2, nodeSet="FIRMS")
   covSmmcSq_covWdegAcq <- varCovar(arrSmmcSq_WdegAcq2, nodeSet="FIRMS")
+  covSmmc_covWdegAll <- varCovar(arrSmmc_WdegAll2, nodeSet="FIRMS")
+  covSmmcSq_covWdegAll <- varCovar(arrSmmcSq_WdegAll2, nodeSet="FIRMS")
   #
   # NODES
   firms <- firmnamesub2
@@ -515,16 +550,17 @@ firm_i <- 'microsoft'
                            name="depAcq", interaction1 = 'covSmmcSq')
   #
   sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2t-H1b', 
-                                 modelType = c(depMMC=2), 
-                                 behModelType = c(depAcq=2),
-                                 firstg = 0.05,  ## default: 0.2
-                                 n2start=100,    ## default: 2.52*(p+7)
+                                 # behModelType = c(depAcq=2),
+                                 firstg = 0.1,  ## default: 0.2
+                                 n2start=80,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
-                                 seed=111, maxlike=F)
+                                 seed=135, maxlike=F)
   
   sysResH1b <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                       # prevAns = sysResH1b,
                       batch = T,   returnDeps = T, ## necessary for GOF
                       useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResH1b)
   # 
   summary(sysResH1b); screenreg(sysResH1b, digits = 4,single.row = T)
   gfh1b.be = RSiena::sienaGOF(sysResH1b, BehaviorDistribution,
@@ -559,16 +595,17 @@ firm_i <- 'microsoft'
                            name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
   #
   sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2t-H2b', 
-                                 modelType = c(depMMC=2), 
-                                 behModelType = c(depAcq=2),
-                                 firstg = 0.05,  ## default: 0.2
-                                 n2start=100,    ## default: 2.52*(p+7)
-                                 nsub = 4,       ## default: 4
-                                 seed=111, maxlike=F)
+                                 # behModelType = c(depAcq=2),
+                                 firstg = 0.1,  ## default: 0.2
+                                 n2start=120,    ## default: 2.52*(p+7)
+                                 nsub = 5,       ## default: 4
+                                 seed=135, maxlike=F)
   
   sysResH2b <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                       # prevAns = sysResH2b,
                        batch = T,   returnDeps = T, ## necessary for GOF
                        useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResH2b)
   # 
   summary(sysResH2b); screenreg(sysResH2b, digits=4,single.row=T)
   gfh2b.be = RSiena::sienaGOF(sysResH2b, BehaviorDistribution,
@@ -604,16 +641,18 @@ firm_i <- 'microsoft'
                            name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
   #
   sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2t-H2s', 
-                                 modelType = c(depMMC=2), 
-                                 behModelType = c(depAcq=2),
-                                 firstg = 0.05,  ## default: 0.2
-                                 n2start=100,    ## default: 2.52*(p+7)
+                                 # modelType = c(depMMC=2),                                  
+                                 # behModelType = c(depAcq=2),
+                                 firstg = 0.1,  ## default: 0.2
+                                 n2start=110,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
-                                 seed=111, maxlike=F)
+                                 seed=135, maxlike=F)
   
   sysResH2s <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                       # prevAns = sysResH2b,
                        batch = T,   returnDeps = T, ## necessary for GOF
                        useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResH2s)
   # 
   summary(sysResH2s); screenreg(sysResH2s, digits = 4,single.row = T)
   gfh2s.be = RSiena::sienaGOF(sysResH2s, BehaviorDistribution,
@@ -628,7 +667,8 @@ firm_i <- 'microsoft'
   sysDat <- sienaDataCreate(depAcq, depMMC,
                             covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
                             covEmploy, covSales, covAcqExper,
-                            covWdegAcq, covSmmcSq_covWdegAcq,
+                            covWdegAcq, 
+                            covSmmc_covWdegAcq,  covSmmcSq_covWdegAcq,
                             nodeSets=list(FIRMS) ) #,smoke1, alcohol
   ##
   sysEff <- getEffects(sysDat)
@@ -637,7 +677,9 @@ firm_i <- 'microsoft'
   sysEff <- includeEffects(sysEff, density, gwesp, #density
                             name="depMMC")
   ## NETWORK SELECTION
-  sysEff <- includeEffects(sysEff, egoX, #density
+  # sysEff <- includeEffects(sysEff, RateX, #density
+  #                          name="depMMC",interaction1 = 'depAcq')
+  sysEff <- includeEffects(sysEff, altX,
                             name="depMMC",interaction1 = 'depAcq')
   ## CONTROL BEHVAIOR
   sysEff <- includeEffects(sysEff, effFrom,
@@ -654,23 +696,38 @@ firm_i <- 'microsoft'
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depAcq", interaction1 = 'covWdegAcq')
   sysEff <- includeEffects(sysEff, effFrom,
+                           name="depAcq", interaction1 = 'covSmmc_covWdegAcq')
+  sysEff <- includeEffects(sysEff, effFrom,
                            name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
   # ## BEHAVIOR INFLUENCE
-  sysEff <- includeEffects(sysEff, totSimEgoX,
-                                 name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'depMMC')
+  sysEff <- includeEffects(sysEff, avSimEgoX,
+                           name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'depMMC')
+  
+  sysEff <- includeEffects(sysEff, avAlt,
+                          name="depAcq", interaction1="depMMC")
+  sysEff <- includeInteraction(sysEff, quad, avAlt,
+                              name="depAcq", interaction1=c("","depMMC"))
+  
+  
+  # sysEff <- includeEffects(sysEff, totSimEgoX,
+  #                                name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'depMMC')
   #
   sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2t-H2c', 
-                                 modelType = c(depMMC=2), 
-                                 behModelType = c(depAcq=2),
-                                 firstg = 0.05,  ## default: 0.2
-                                 n2start=100,    ## default: 2.52*(p+7)
-                                 nsub = 4,       ## default: 4
-                                 seed=111, maxlike=F)
+                                 # modelType = c(depMMC=2), 
+                                 # behModelType = c(depAcq=2),
+                                 firstg = 0.1,  ## default: 0.2
+                                 n2start=120,    ## default: 2.52*(p+7)
+                                 nsub = 5,       ## default: 4
+                                 seed=135, maxlike=F)
   
   sysResH2c <- siena07(sysMod, data=sysDat, effects=sysEff, #prevAns = sysResH2c,
+                       #prevAns = sysResH2c,
                        batch = T,   returnDeps = T, ## necessary for GOF
                        useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
-
+  conv <- checkSienaConv(sysResH2c)
+  #
   screenreg(sysResH2c,single.row = T,digits=4)
   summary(sysResH2c) 
   screenreg(sysResH2c, digits = 4,single.row = T)
@@ -709,10 +766,88 @@ firm_i <- 'microsoft'
   
   
   
+  ##-------------------------------------
+  ##
+  ##
+  ## SAOM *** COEVOLUTION *** ALTERNATIVE MODEL
+  ##
+  ##
+  ##-------------------------------------
+  sysDat <- sienaDataCreate(depAcq, depMMC,
+                            covSmmc, covSmmcSq,    ##dyCovTrt, dyCovTrtLinear, 
+                            covEmploy, covSales, covAcqExper,
+                            covWdegAcq, covSmmc_covWdegAcq, covSmmcSq_covWdegAcq,
+                            covWdegAll, covSmmc_covWdegAll, covSmmcSq_covWdegAll,
+                            nodeSets=list(FIRMS) ) #,smoke1, alcohol
+  ##
+  sysEff <- getEffects(sysDat)
+  # effectsDocumentation(sysEff)
+  ## NETWORK CONTROL
+  sysEff <- includeEffects(sysEff, density, gwesp, #density
+                           name="depMMC")
+  ## NETWORK SELECTION
+  # sysEff <- includeEffects(sysEff, RateX, #density
+  #                          name="depMMC",interaction1 = 'depAcq')
+  sysEff <- includeEffects(sysEff, altX,
+                           name="depMMC",interaction1 = 'depAcq')
+  ## CONTROL BEHVAIOR
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depAcq", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depAcq", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depAcq", interaction1 = 'covAcqExper')
+  ## BEHAVIOR
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depAcq", interaction1 = 'covSmmc')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depAcq", interaction1 = 'covSmmcSq')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depAcq", interaction1 = 'covWdegAcq')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depAcq", interaction1 = 'covSmmc_covWdegAcq')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depAcq", interaction1 = 'covSmmcSq_covWdegAcq')
+  # ## BEHAVIOR INFLUENCE
+  sysEff <- includeEffects(sysEff, avSimEgoX, #degAbsContrX,
+                           name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'depMMC')
+  
+  sysEff <- includeTimeDummy(sysEff, effFrom, timeDummy="3,4", 
+                             name="depAcq", interaction1 = 'covSmmcSq')
+  # 
+  # sysEff <- includeEffects(sysEff, avAlt,
+  #                          name="depAcq", interaction1="depMMC")
+  # sysEff <- includeInteraction(sysEff, quad, avAlt,
+  #                              name="depAcq", interaction1=c("","depMMC"))
   
   
+  # sysEff <- includeEffects(sysEff, totSimEgoX,
+  #                                name="depAcq", interaction1 = 'covSmmcSq', interaction2 = 'depMMC')
+  #
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-2t-H2c', 
+                                 firstg = 0.1,  ## default: 0.2
+                                 n2start=120,    ## default: 2.52*(p+7)
+                                 nsub = 4,       ## default: 4
+                                 seed=135, maxlike=F)
+  
+  sysResH2c <- siena07(sysMod, data=sysDat, effects=sysEff, #prevAns = sysResH2c,
+                       prevAns = sysResH2c,
+                       batch = T,   returnDeps = T, ## necessary for GOF
+                       useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResH2c)
+  #
+  screenreg(sysResH2c,single.row = T,digits=4)
+  summary(sysResH2c) 
+  screenreg(sysResH2c, digits = 4,single.row = T)
   
   
+  cnt = plyr::count(c(arrAcq2))
+  cnt$pct = round(100 * cnt$freq / sum(cnt$freq), 1)
+  print(cnt)
+  gf2c.be = RSiena::sienaGOF(sysResH2c, BehaviorDistribution,
+                             varName="depAcq"); plot(gf2c.be)  
   
   
   
