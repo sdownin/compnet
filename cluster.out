@@ -2493,3 +2493,1155 @@ starting worker pid=9536 on localhost:11384 at 23:16:08.450
 starting worker pid=15916 on localhost:11384 at 23:16:08.634
 starting worker pid=17232 on localhost:11384 at 23:16:08.818
 starting worker pid=16560 on localhost:11384 at 23:16:08.997
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=17656 on localhost:11384 at 23:28:34.863
+starting worker pid=6940 on localhost:11384 at 23:28:35.045
+starting worker pid=9924 on localhost:11384 at 23:28:35.240
+starting worker pid=15140 on localhost:11384 at 23:28:35.434
+starting worker pid=4092 on localhost:11384 at 23:28:35.617
+starting worker pid=6704 on localhost:11384 at 23:28:35.796
+starting worker pid=12124 on localhost:11384 at 23:28:35.980
+starting worker pid=10652 on localhost:11384 at 23:28:36.158
+starting worker pid=19368 on localhost:11384 at 23:30:44.420
+starting worker pid=15108 on localhost:11384 at 23:30:44.611
+starting worker pid=17744 on localhost:11384 at 23:30:44.820
+starting worker pid=14796 on localhost:11384 at 23:30:45.016
+starting worker pid=3320 on localhost:11384 at 23:30:45.198
+starting worker pid=8184 on localhost:11384 at 23:30:45.380
+starting worker pid=15456 on localhost:11384 at 23:30:45.560
+starting worker pid=17816 on localhost:11384 at 23:30:45.746
+starting worker pid=948 on localhost:11384 at 23:35:41.947
+starting worker pid=9576 on localhost:11384 at 23:35:42.125
+starting worker pid=2660 on localhost:11384 at 23:35:42.320
+starting worker pid=3280 on localhost:11384 at 23:35:42.513
+starting worker pid=14528 on localhost:11384 at 23:35:42.693
+starting worker pid=10024 on localhost:11384 at 23:35:42.870
+starting worker pid=18100 on localhost:11384 at 23:35:43.050
+starting worker pid=11044 on localhost:11384 at 23:35:43.229
+starting worker pid=13572 on localhost:11384 at 23:37:04.200
+starting worker pid=11064 on localhost:11384 at 23:37:04.379
+starting worker pid=9632 on localhost:11384 at 23:37:04.569
+starting worker pid=2092 on localhost:11384 at 23:37:04.789
+starting worker pid=692 on localhost:11384 at 23:37:04.967
+starting worker pid=15568 on localhost:11384 at 23:37:05.148
+starting worker pid=19084 on localhost:11384 at 23:37:05.327
+starting worker pid=14284 on localhost:11384 at 23:37:05.508
+starting worker pid=18624 on localhost:11384 at 23:39:17.423
+starting worker pid=14300 on localhost:11384 at 23:39:17.614
+starting worker pid=5916 on localhost:11384 at 23:39:17.814
+starting worker pid=4600 on localhost:11384 at 23:39:17.997
+starting worker pid=2084 on localhost:11384 at 23:39:18.174
+starting worker pid=6028 on localhost:11384 at 23:39:18.353
+starting worker pid=15916 on localhost:11384 at 23:39:18.531
+starting worker pid=5784 on localhost:11384 at 23:39:18.710
+starting worker pid=7028 on localhost:11384 at 23:41:33.365
+starting worker pid=3352 on localhost:11384 at 23:41:33.546
+starting worker pid=17352 on localhost:11384 at 23:41:33.751
+starting worker pid=18900 on localhost:11384 at 23:41:33.937
+starting worker pid=10288 on localhost:11384 at 23:41:34.115
+starting worker pid=10648 on localhost:11384 at 23:41:34.299
+starting worker pid=1788 on localhost:11384 at 23:41:34.477
+starting worker pid=16844 on localhost:11384 at 23:41:34.656
+starting worker pid=17264 on localhost:11384 at 23:41:55.693
+starting worker pid=11772 on localhost:11384 at 23:41:55.879
+starting worker pid=12180 on localhost:11384 at 23:41:56.089
+starting worker pid=5592 on localhost:11384 at 23:41:56.276
+starting worker pid=7596 on localhost:11384 at 23:41:56.460
+starting worker pid=14620 on localhost:11384 at 23:41:56.641
+starting worker pid=17344 on localhost:11384 at 23:41:56.826
+starting worker pid=18648 on localhost:11384 at 23:41:57.007
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=16320 on localhost:11384 at 23:46:01.041
+starting worker pid=9448 on localhost:11384 at 23:46:01.225
+starting worker pid=12924 on localhost:11384 at 23:46:01.420
+starting worker pid=18868 on localhost:11384 at 23:46:01.614
+starting worker pid=1360 on localhost:11384 at 23:46:01.799
+starting worker pid=15280 on localhost:11384 at 23:46:01.979
+starting worker pid=17288 on localhost:11384 at 23:46:02.159
+starting worker pid=15380 on localhost:11384 at 23:46:02.337
+starting worker pid=4940 on localhost:11384 at 23:48:45.852
+starting worker pid=17596 on localhost:11384 at 23:48:46.033
+starting worker pid=14000 on localhost:11384 at 23:48:46.219
+starting worker pid=16364 on localhost:11384 at 23:48:46.423
+starting worker pid=15692 on localhost:11384 at 23:48:46.628
+starting worker pid=13680 on localhost:11384 at 23:48:46.817
+starting worker pid=296 on localhost:11384 at 23:48:46.999
+starting worker pid=13628 on localhost:11384 at 23:48:47.183
+starting worker pid=4148 on localhost:11384 at 23:49:56.610
+starting worker pid=8392 on localhost:11384 at 23:49:56.789
+starting worker pid=5696 on localhost:11384 at 23:49:56.991
+starting worker pid=5472 on localhost:11384 at 23:49:57.178
+starting worker pid=10472 on localhost:11384 at 23:49:57.359
+starting worker pid=17220 on localhost:11384 at 23:49:57.542
+starting worker pid=16464 on localhost:11384 at 23:49:57.725
+starting worker pid=15336 on localhost:11384 at 23:49:57.900
+starting worker pid=8908 on localhost:11384 at 00:06:50.646
+starting worker pid=3364 on localhost:11384 at 00:06:50.829
+starting worker pid=17000 on localhost:11384 at 00:06:51.005
+starting worker pid=13024 on localhost:11384 at 00:06:51.202
+starting worker pid=14444 on localhost:11384 at 00:06:51.391
+starting worker pid=16968 on localhost:11384 at 00:06:51.578
+starting worker pid=12004 on localhost:11384 at 00:06:51.758
+starting worker pid=472 on localhost:11384 at 00:06:51.932
+starting worker pid=9072 on localhost:11384 at 00:08:32.192
+starting worker pid=13824 on localhost:11384 at 00:08:32.382
+starting worker pid=15700 on localhost:11384 at 00:08:32.561
+starting worker pid=8436 on localhost:11384 at 00:08:32.742
+starting worker pid=3536 on localhost:11384 at 00:08:32.922
+starting worker pid=16156 on localhost:11384 at 00:08:33.099
+starting worker pid=16248 on localhost:11384 at 00:08:33.276
+starting worker pid=10220 on localhost:11384 at 00:08:33.456
+starting worker pid=1828 on localhost:11384 at 11:48:45.578
+starting worker pid=17304 on localhost:11384 at 11:48:45.768
+starting worker pid=5780 on localhost:11384 at 11:48:45.977
+starting worker pid=4080 on localhost:11384 at 11:48:46.176
+starting worker pid=19092 on localhost:11384 at 11:48:46.355
+starting worker pid=13236 on localhost:11384 at 11:48:46.534
+starting worker pid=304 on localhost:11384 at 11:48:46.716
+starting worker pid=7984 on localhost:11384 at 11:48:46.898
+starting worker pid=15932 on localhost:11384 at 11:59:23.550
+starting worker pid=16112 on localhost:11384 at 11:59:23.735
+starting worker pid=1108 on localhost:11384 at 11:59:23.916
+starting worker pid=16672 on localhost:11384 at 11:59:24.093
+starting worker pid=2112 on localhost:11384 at 11:59:24.281
+starting worker pid=8032 on localhost:11384 at 11:59:24.458
+starting worker pid=1080 on localhost:11384 at 11:59:24.637
+starting worker pid=12760 on localhost:11384 at 11:59:24.817
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=6716 on localhost:11384 at 12:00:25.750
+starting worker pid=16068 on localhost:11384 at 12:00:25.930
+starting worker pid=10672 on localhost:11384 at 12:00:26.142
+starting worker pid=12292 on localhost:11384 at 12:00:26.368
+starting worker pid=3748 on localhost:11384 at 12:00:26.544
+starting worker pid=17228 on localhost:11384 at 12:00:26.722
+starting worker pid=18788 on localhost:11384 at 12:00:26.907
+starting worker pid=4016 on localhost:11384 at 12:00:27.094
+starting worker pid=8076 on localhost:11384 at 12:03:05.180
+starting worker pid=10052 on localhost:11384 at 12:03:05.361
+starting worker pid=15636 on localhost:11384 at 12:03:05.554
+starting worker pid=2892 on localhost:11384 at 12:03:05.760
+starting worker pid=9956 on localhost:11384 at 12:03:05.940
+starting worker pid=2004 on localhost:11384 at 12:03:06.126
+starting worker pid=9280 on localhost:11384 at 12:03:06.304
+starting worker pid=17400 on localhost:11384 at 12:03:06.481
+starting worker pid=10196 on localhost:11384 at 12:04:03.381
+starting worker pid=19144 on localhost:11384 at 12:04:03.562
+starting worker pid=18056 on localhost:11384 at 12:04:03.745
+starting worker pid=1460 on localhost:11384 at 12:04:03.952
+starting worker pid=14180 on localhost:11384 at 12:04:04.137
+starting worker pid=13160 on localhost:11384 at 12:04:04.313
+starting worker pid=3708 on localhost:11384 at 12:04:04.493
+starting worker pid=1448 on localhost:11384 at 12:04:04.672
+starting worker pid=11164 on localhost:11384 at 12:04:51.627
+starting worker pid=4368 on localhost:11384 at 12:04:51.810
+starting worker pid=3848 on localhost:11384 at 12:04:51.999
+starting worker pid=16016 on localhost:11384 at 12:04:52.198
+starting worker pid=15320 on localhost:11384 at 12:04:52.378
+starting worker pid=12320 on localhost:11384 at 12:04:52.557
+starting worker pid=5432 on localhost:11384 at 12:04:52.737
+starting worker pid=5164 on localhost:11384 at 12:04:52.919
+starting worker pid=16768 on localhost:11384 at 12:05:44.649
+starting worker pid=12824 on localhost:11384 at 12:05:44.834
+starting worker pid=14204 on localhost:11384 at 12:05:45.021
+starting worker pid=2192 on localhost:11384 at 12:05:45.224
+starting worker pid=11772 on localhost:11384 at 12:05:45.425
+starting worker pid=7228 on localhost:11384 at 12:05:45.604
+starting worker pid=15252 on localhost:11384 at 12:05:45.803
+starting worker pid=10092 on localhost:11384 at 12:05:45.987
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=9940 on localhost:11384 at 12:06:22.872
+starting worker pid=16584 on localhost:11384 at 12:06:23.051
+starting worker pid=8376 on localhost:11384 at 12:06:23.270
+starting worker pid=13484 on localhost:11384 at 12:06:23.472
+starting worker pid=19224 on localhost:11384 at 12:06:23.660
+starting worker pid=17380 on localhost:11384 at 12:06:23.837
+starting worker pid=15580 on localhost:11384 at 12:06:24.015
+starting worker pid=11992 on localhost:11384 at 12:06:24.196
+starting worker pid=11544 on localhost:11384 at 12:14:51.341
+starting worker pid=8616 on localhost:11384 at 12:14:51.520
+starting worker pid=15260 on localhost:11384 at 12:14:51.700
+starting worker pid=14720 on localhost:11384 at 12:14:51.882
+starting worker pid=2884 on localhost:11384 at 12:14:52.062
+starting worker pid=2612 on localhost:11384 at 12:14:52.241
+starting worker pid=18540 on localhost:11384 at 12:14:52.424
+starting worker pid=16140 on localhost:11384 at 12:14:52.609
+starting worker pid=13760 on localhost:11384 at 12:16:19.178
+starting worker pid=18812 on localhost:11384 at 12:16:19.363
+starting worker pid=16916 on localhost:11384 at 12:16:19.548
+starting worker pid=692 on localhost:11384 at 12:16:19.735
+starting worker pid=17452 on localhost:11384 at 12:16:19.917
+starting worker pid=19104 on localhost:11384 at 12:16:20.105
+starting worker pid=5408 on localhost:11384 at 12:16:20.287
+starting worker pid=17284 on localhost:11384 at 12:16:20.483
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=14404 on localhost:11384 at 12:19:22.829
+starting worker pid=16708 on localhost:11384 at 12:19:23.023
+starting worker pid=9684 on localhost:11384 at 12:19:23.219
+starting worker pid=15688 on localhost:11384 at 12:19:23.396
+starting worker pid=6784 on localhost:11384 at 12:19:23.593
+starting worker pid=14988 on localhost:11384 at 12:19:23.773
+starting worker pid=14748 on localhost:11384 at 12:19:23.950
+starting worker pid=7204 on localhost:11384 at 12:19:24.130
+starting worker pid=14544 on localhost:11384 at 12:21:57.917
+starting worker pid=19012 on localhost:11384 at 12:21:58.092
+starting worker pid=2916 on localhost:11384 at 12:21:58.276
+starting worker pid=16464 on localhost:11384 at 12:21:58.471
+starting worker pid=15928 on localhost:11384 at 12:21:58.659
+starting worker pid=14388 on localhost:11384 at 12:21:58.839
+starting worker pid=2624 on localhost:11384 at 12:21:59.013
+starting worker pid=1512 on localhost:11384 at 12:21:59.196
+starting worker pid=18036 on localhost:11384 at 12:22:19.864
+starting worker pid=16724 on localhost:11384 at 12:22:20.040
+starting worker pid=10400 on localhost:11384 at 12:22:20.219
+starting worker pid=11120 on localhost:11384 at 12:22:20.411
+starting worker pid=18772 on localhost:11384 at 12:22:20.607
+starting worker pid=15252 on localhost:11384 at 12:22:20.783
+starting worker pid=14536 on localhost:11384 at 12:22:20.960
+starting worker pid=17776 on localhost:11384 at 12:22:21.147
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=14180 on localhost:11384 at 12:24:04.519
+starting worker pid=18116 on localhost:11384 at 12:24:04.699
+starting worker pid=7832 on localhost:11384 at 12:24:04.878
+starting worker pid=12192 on localhost:11384 at 12:24:05.073
+starting worker pid=17400 on localhost:11384 at 12:24:05.269
+starting worker pid=13588 on localhost:11384 at 12:24:05.452
+starting worker pid=14892 on localhost:11384 at 12:24:05.635
+starting worker pid=10376 on localhost:11384 at 12:24:05.816
+starting worker pid=13512 on localhost:11384 at 12:26:35.966
+starting worker pid=10560 on localhost:11384 at 12:26:36.141
+starting worker pid=6324 on localhost:11384 at 12:26:36.321
+starting worker pid=18948 on localhost:11384 at 12:26:36.500
+starting worker pid=12964 on localhost:11384 at 12:26:36.683
+starting worker pid=16716 on localhost:11384 at 12:26:36.862
+starting worker pid=17484 on localhost:11384 at 12:26:37.038
+starting worker pid=17488 on localhost:11384 at 12:26:37.217
+starting worker pid=8376 on localhost:11384 at 12:27:34.705
+starting worker pid=2880 on localhost:11384 at 12:27:34.882
+starting worker pid=15232 on localhost:11384 at 12:27:35.060
+starting worker pid=5564 on localhost:11384 at 12:27:35.249
+starting worker pid=7256 on localhost:11384 at 12:27:35.434
+starting worker pid=972 on localhost:11384 at 12:27:35.609
+starting worker pid=18828 on localhost:11384 at 12:27:35.789
+starting worker pid=17084 on localhost:11384 at 12:27:35.969
+starting worker pid=9684 on localhost:11384 at 12:28:06.467
+starting worker pid=8080 on localhost:11384 at 12:28:06.645
+starting worker pid=8252 on localhost:11384 at 12:28:06.823
+starting worker pid=6384 on localhost:11384 at 12:28:07.016
+starting worker pid=9200 on localhost:11384 at 12:28:07.247
+starting worker pid=10292 on localhost:11384 at 12:28:07.423
+starting worker pid=11816 on localhost:11384 at 12:28:07.601
+starting worker pid=8172 on localhost:11384 at 12:28:07.777
+starting worker pid=19168 on localhost:11384 at 12:28:43.432
+starting worker pid=6108 on localhost:11384 at 12:28:43.617
+starting worker pid=16080 on localhost:11384 at 12:28:43.796
+starting worker pid=15012 on localhost:11384 at 12:28:43.985
+starting worker pid=15080 on localhost:11384 at 12:28:44.184
+starting worker pid=19112 on localhost:11384 at 12:28:44.363
+starting worker pid=3280 on localhost:11384 at 12:28:44.540
+starting worker pid=19332 on localhost:11384 at 12:28:44.722
+starting worker pid=6228 on localhost:11384 at 12:29:51.723
+starting worker pid=11812 on localhost:11384 at 12:29:51.902
+starting worker pid=3444 on localhost:11384 at 12:29:52.077
+starting worker pid=15388 on localhost:11384 at 12:29:52.267
+starting worker pid=11728 on localhost:11384 at 12:29:52.466
+starting worker pid=11688 on localhost:11384 at 12:29:52.645
+starting worker pid=17816 on localhost:11384 at 12:29:52.821
+starting worker pid=19240 on localhost:11384 at 12:29:53.000
+starting worker pid=17896 on localhost:11384 at 12:31:30.117
+starting worker pid=12100 on localhost:11384 at 12:31:30.292
+starting worker pid=1032 on localhost:11384 at 12:31:30.469
+starting worker pid=692 on localhost:11384 at 12:31:30.666
+starting worker pid=7140 on localhost:11384 at 12:31:30.851
+starting worker pid=16596 on localhost:11384 at 12:31:31.029
+starting worker pid=5388 on localhost:11384 at 12:31:31.208
+starting worker pid=2112 on localhost:11384 at 12:31:31.386
+starting worker pid=18400 on localhost:11384 at 12:35:32.500
+starting worker pid=18224 on localhost:11384 at 12:35:32.681
+starting worker pid=10220 on localhost:11384 at 12:35:32.859
+starting worker pid=9452 on localhost:11384 at 12:35:33.055
+starting worker pid=11496 on localhost:11384 at 12:35:33.235
+starting worker pid=12964 on localhost:11384 at 12:35:33.412
+starting worker pid=1344 on localhost:11384 at 12:35:33.592
+starting worker pid=8408 on localhost:11384 at 12:35:33.771
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=5564 on localhost:11384 at 12:37:13.574
+starting worker pid=15752 on localhost:11384 at 12:37:13.749
+starting worker pid=2920 on localhost:11384 at 12:37:13.933
+starting worker pid=15484 on localhost:11384 at 12:37:14.133
+starting worker pid=6624 on localhost:11384 at 12:37:14.325
+starting worker pid=5736 on localhost:11384 at 12:37:14.502
+starting worker pid=14000 on localhost:11384 at 12:37:14.686
+starting worker pid=10312 on localhost:11384 at 12:37:14.863
+starting worker pid=10128 on localhost:11384 at 12:39:06.067
+starting worker pid=16940 on localhost:11384 at 12:39:06.247
+starting worker pid=1712 on localhost:11384 at 12:39:06.423
+starting worker pid=18364 on localhost:11384 at 12:39:06.622
+starting worker pid=16948 on localhost:11384 at 12:39:06.810
+starting worker pid=18924 on localhost:11384 at 12:39:06.990
+starting worker pid=14964 on localhost:11384 at 12:39:07.167
+starting worker pid=5712 on localhost:11384 at 12:39:07.345
+starting worker pid=10404 on localhost:11384 at 12:40:32.016
+starting worker pid=17220 on localhost:11384 at 12:40:32.193
+starting worker pid=10872 on localhost:11384 at 12:40:32.372
+starting worker pid=4276 on localhost:11384 at 12:40:32.548
+starting worker pid=17092 on localhost:11384 at 12:40:32.725
+starting worker pid=18168 on localhost:11384 at 12:40:32.909
+starting worker pid=1544 on localhost:11384 at 12:40:33.087
+starting worker pid=19344 on localhost:11384 at 12:40:33.260
+starting worker pid=15932 on localhost:11384 at 12:41:25.038
+starting worker pid=16060 on localhost:11384 at 12:41:25.220
+starting worker pid=15252 on localhost:11384 at 12:41:25.396
+starting worker pid=16752 on localhost:11384 at 12:41:25.591
+starting worker pid=16240 on localhost:11384 at 12:41:25.783
+starting worker pid=2092 on localhost:11384 at 12:41:25.964
+starting worker pid=17212 on localhost:11384 at 12:41:26.142
+starting worker pid=8652 on localhost:11384 at 12:41:26.323
+starting worker pid=4340 on localhost:11384 at 12:43:41.789
+starting worker pid=16044 on localhost:11384 at 12:43:41.976
+starting worker pid=13744 on localhost:11384 at 12:43:42.165
+starting worker pid=16028 on localhost:11384 at 12:43:42.364
+starting worker pid=9880 on localhost:11384 at 12:43:42.543
+starting worker pid=15496 on localhost:11384 at 12:43:42.722
+starting worker pid=17316 on localhost:11384 at 12:43:42.900
+starting worker pid=17544 on localhost:11384 at 12:43:43.076
+starting worker pid=9452 on localhost:11384 at 12:46:04.627
+starting worker pid=10588 on localhost:11384 at 12:46:04.804
+starting worker pid=2916 on localhost:11384 at 12:46:04.983
+starting worker pid=15036 on localhost:11384 at 12:46:05.180
+starting worker pid=16380 on localhost:11384 at 12:46:05.364
+starting worker pid=12728 on localhost:11384 at 12:46:05.544
+starting worker pid=8724 on localhost:11384 at 12:46:05.722
+starting worker pid=10708 on localhost:11384 at 12:46:05.900
+starting worker pid=15604 on localhost:11384 at 12:49:05.798
+starting worker pid=15504 on localhost:11384 at 12:49:05.974
+starting worker pid=14936 on localhost:11384 at 12:49:06.157
+starting worker pid=12828 on localhost:11384 at 12:49:06.354
+starting worker pid=16868 on localhost:11384 at 12:49:06.528
+starting worker pid=5528 on localhost:11384 at 12:49:06.708
+starting worker pid=10152 on localhost:11384 at 12:49:06.884
+starting worker pid=14620 on localhost:11384 at 12:49:07.062
+starting worker pid=8908 on localhost:11384 at 12:51:06.942
+starting worker pid=18864 on localhost:11384 at 12:51:07.125
+starting worker pid=16456 on localhost:11384 at 12:51:07.323
+starting worker pid=11744 on localhost:11384 at 12:51:07.523
+starting worker pid=16464 on localhost:11384 at 12:51:07.719
+starting worker pid=3744 on localhost:11384 at 12:51:07.896
+starting worker pid=15668 on localhost:11384 at 12:51:08.075
+starting worker pid=17732 on localhost:11384 at 12:51:08.249
+starting worker pid=5100 on localhost:11384 at 12:54:17.102
+starting worker pid=17412 on localhost:11384 at 12:54:17.283
+starting worker pid=9992 on localhost:11384 at 12:54:17.467
+starting worker pid=7028 on localhost:11384 at 12:54:17.670
+starting worker pid=9876 on localhost:11384 at 12:54:17.847
+starting worker pid=4340 on localhost:11384 at 12:54:18.024
+starting worker pid=15496 on localhost:11384 at 12:54:18.203
+starting worker pid=12084 on localhost:11384 at 12:54:18.379
+starting worker pid=14384 on localhost:11384 at 12:59:54.636
+starting worker pid=17460 on localhost:11384 at 12:59:54.823
+starting worker pid=11088 on localhost:11384 at 12:59:55.002
+starting worker pid=11704 on localhost:11384 at 12:59:55.180
+starting worker pid=7940 on localhost:11384 at 12:59:55.358
+starting worker pid=15968 on localhost:11384 at 12:59:55.536
+starting worker pid=10332 on localhost:11384 at 12:59:55.715
+starting worker pid=10748 on localhost:11384 at 12:59:55.893
+starting worker pid=10132 on localhost:11384 at 13:02:40.214
+starting worker pid=16788 on localhost:11384 at 13:02:40.392
+starting worker pid=17480 on localhost:11384 at 13:02:40.581
+starting worker pid=17656 on localhost:11384 at 13:02:40.789
+starting worker pid=8568 on localhost:11384 at 13:02:40.967
+starting worker pid=18484 on localhost:11384 at 13:02:41.143
+starting worker pid=17400 on localhost:11384 at 13:02:41.330
+starting worker pid=15120 on localhost:11384 at 13:02:41.508
+starting worker pid=18724 on localhost:11384 at 13:05:07.862
+starting worker pid=12784 on localhost:11384 at 13:05:08.039
+starting worker pid=16544 on localhost:11384 at 13:05:08.241
+starting worker pid=16852 on localhost:11384 at 13:05:08.435
+starting worker pid=17100 on localhost:11384 at 13:05:08.611
+starting worker pid=17852 on localhost:11384 at 13:05:08.793
+starting worker pid=14180 on localhost:11384 at 13:05:08.972
+starting worker pid=17824 on localhost:11384 at 13:05:09.148
+starting worker pid=16756 on localhost:11384 at 13:07:35.708
+starting worker pid=11556 on localhost:11384 at 13:07:35.884
+starting worker pid=18072 on localhost:11384 at 13:07:36.068
+starting worker pid=15828 on localhost:11384 at 13:07:36.264
+starting worker pid=3516 on localhost:11384 at 13:07:36.445
+starting worker pid=17488 on localhost:11384 at 13:07:36.622
+starting worker pid=13872 on localhost:11384 at 13:07:36.799
+starting worker pid=19352 on localhost:11384 at 13:07:36.975
+starting worker pid=19368 on localhost:11384 at 13:10:30.161
+starting worker pid=6668 on localhost:11384 at 13:10:30.347
+starting worker pid=6844 on localhost:11384 at 13:10:30.531
+starting worker pid=10872 on localhost:11384 at 13:10:30.733
+starting worker pid=17608 on localhost:11384 at 13:10:30.912
+starting worker pid=14384 on localhost:11384 at 13:10:31.091
+starting worker pid=10332 on localhost:11384 at 13:10:31.269
+starting worker pid=17460 on localhost:11384 at 13:10:31.447
+starting worker pid=2332 on localhost:11384 at 13:14:57.920
+starting worker pid=18708 on localhost:11384 at 13:14:58.113
+starting worker pid=3344 on localhost:11384 at 13:14:58.299
+starting worker pid=4368 on localhost:11384 at 13:14:58.478
+starting worker pid=18048 on localhost:11384 at 13:14:58.657
+starting worker pid=18448 on localhost:11384 at 13:14:58.837
+starting worker pid=17552 on localhost:11384 at 13:14:59.011
+starting worker pid=2992 on localhost:11384 at 13:14:59.189
+starting worker pid=13340 on localhost:11384 at 13:16:29.697
+starting worker pid=17316 on localhost:11384 at 13:16:29.894
+starting worker pid=16000 on localhost:11384 at 13:16:30.075
+starting worker pid=16940 on localhost:11384 at 13:16:30.252
+starting worker pid=4092 on localhost:11384 at 13:16:30.431
+starting worker pid=18648 on localhost:11384 at 13:16:30.609
+starting worker pid=17504 on localhost:11384 at 13:16:30.788
+starting worker pid=10008 on localhost:11384 at 13:16:30.967
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=18944 on localhost:11384 at 13:20:49.667
+starting worker pid=7900 on localhost:11384 at 13:20:49.847
+starting worker pid=3676 on localhost:11384 at 13:20:50.031
+starting worker pid=18380 on localhost:11384 at 13:20:50.226
+starting worker pid=4816 on localhost:11384 at 13:20:50.405
+starting worker pid=3560 on localhost:11384 at 13:20:50.583
+starting worker pid=7364 on localhost:11384 at 13:20:50.763
+starting worker pid=5056 on localhost:11384 at 13:20:50.941
+starting worker pid=9348 on localhost:11384 at 13:22:09.257
+starting worker pid=10872 on localhost:11384 at 13:22:09.435
+starting worker pid=6752 on localhost:11384 at 13:22:09.632
+starting worker pid=7532 on localhost:11384 at 13:22:09.831
+starting worker pid=10296 on localhost:11384 at 13:22:10.011
+starting worker pid=10380 on localhost:11384 at 13:22:10.185
+starting worker pid=15648 on localhost:11384 at 13:22:10.362
+starting worker pid=13532 on localhost:11384 at 13:22:10.541
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=13252 on localhost:11384 at 13:26:46.189
+starting worker pid=17972 on localhost:11384 at 13:26:46.371
+starting worker pid=11344 on localhost:11384 at 13:26:46.565
+starting worker pid=8236 on localhost:11384 at 13:26:46.773
+starting worker pid=5740 on localhost:11384 at 13:26:46.954
+starting worker pid=9992 on localhost:11384 at 13:26:47.135
+starting worker pid=16444 on localhost:11384 at 13:26:47.313
+starting worker pid=18876 on localhost:11384 at 13:26:47.496
+starting worker pid=4632 on localhost:11384 at 13:29:39.074
+starting worker pid=8140 on localhost:11384 at 13:29:39.257
+starting worker pid=1292 on localhost:11384 at 13:29:39.453
+starting worker pid=13512 on localhost:11384 at 13:29:39.665
+starting worker pid=308 on localhost:11384 at 13:29:39.848
+starting worker pid=18988 on localhost:11384 at 13:29:40.032
+starting worker pid=14000 on localhost:11384 at 13:29:40.221
+starting worker pid=18716 on localhost:11384 at 13:29:40.405
+starting worker pid=17248 on localhost:11384 at 13:31:37.567
+starting worker pid=2764 on localhost:11384 at 13:31:37.750
+starting worker pid=13160 on localhost:11384 at 13:31:37.945
+starting worker pid=18468 on localhost:11384 at 13:31:38.144
+starting worker pid=1808 on localhost:11384 at 13:31:38.324
+starting worker pid=7968 on localhost:11384 at 13:31:38.514
+starting worker pid=18076 on localhost:11384 at 13:31:38.703
+starting worker pid=14996 on localhost:11384 at 13:31:38.884
+starting worker pid=3520 on localhost:11384 at 13:53:09.066
+starting worker pid=16696 on localhost:11384 at 13:53:09.253
+starting worker pid=12760 on localhost:11384 at 13:53:09.445
+starting worker pid=9252 on localhost:11384 at 13:53:09.654
+starting worker pid=6240 on localhost:11384 at 13:53:09.844
+starting worker pid=16760 on localhost:11384 at 13:53:10.027
+starting worker pid=17992 on localhost:11384 at 13:53:10.212
+starting worker pid=4560 on localhost:11384 at 13:53:10.401
+starting worker pid=12760 on localhost:11384 at 14:03:34.555
+starting worker pid=3520 on localhost:11384 at 14:03:34.742
+starting worker pid=14812 on localhost:11384 at 14:03:34.936
+starting worker pid=18860 on localhost:11384 at 14:03:35.146
+starting worker pid=15676 on localhost:11384 at 14:03:35.331
+starting worker pid=9860 on localhost:11384 at 14:03:35.516
+starting worker pid=3744 on localhost:11384 at 14:03:35.702
+starting worker pid=15440 on localhost:11384 at 14:03:35.887
+starting worker pid=12300 on localhost:11384 at 14:06:14.727
+starting worker pid=2708 on localhost:11384 at 14:06:14.915
+starting worker pid=11056 on localhost:11384 at 14:06:15.109
+starting worker pid=3660 on localhost:11384 at 14:06:15.318
+starting worker pid=2132 on localhost:11384 at 14:06:15.500
+starting worker pid=16364 on localhost:11384 at 14:06:15.686
+starting worker pid=3940 on localhost:11384 at 14:06:15.877
+starting worker pid=11748 on localhost:11384 at 14:06:16.060
+starting worker pid=16672 on localhost:11384 at 14:07:36.021
+starting worker pid=7476 on localhost:11384 at 14:07:36.205
+starting worker pid=7504 on localhost:11384 at 14:07:36.396
+starting worker pid=10588 on localhost:11384 at 14:07:36.602
+starting worker pid=14988 on localhost:11384 at 14:07:36.788
+starting worker pid=16856 on localhost:11384 at 14:07:36.971
+starting worker pid=15920 on localhost:11384 at 14:07:37.156
+starting worker pid=13584 on localhost:11384 at 14:07:37.341
+starting worker pid=17576 on localhost:11384 at 14:09:00.863
+starting worker pid=16068 on localhost:11384 at 14:09:01.045
+starting worker pid=15316 on localhost:11384 at 14:09:01.237
+starting worker pid=9448 on localhost:11384 at 14:09:01.444
+starting worker pid=11812 on localhost:11384 at 14:09:01.628
+starting worker pid=14944 on localhost:11384 at 14:09:01.814
+starting worker pid=19332 on localhost:11384 at 14:09:01.996
+starting worker pid=15568 on localhost:11384 at 14:09:02.177
+starting worker pid=9248 on localhost:11384 at 14:10:32.570
+starting worker pid=4336 on localhost:11384 at 14:10:32.751
+starting worker pid=11964 on localhost:11384 at 14:10:32.933
+starting worker pid=4332 on localhost:11384 at 14:10:33.129
+starting worker pid=3952 on localhost:11384 at 14:10:33.317
+starting worker pid=7252 on localhost:11384 at 14:10:33.498
+starting worker pid=4592 on localhost:11384 at 14:10:33.684
+starting worker pid=2304 on localhost:11384 at 14:10:33.867
+starting worker pid=5592 on localhost:11384 at 14:11:48.277
+starting worker pid=11260 on localhost:11384 at 14:11:48.467
+starting worker pid=18748 on localhost:11384 at 14:11:48.667
+starting worker pid=15096 on localhost:11384 at 14:11:48.864
+starting worker pid=14168 on localhost:11384 at 14:11:49.047
+starting worker pid=4604 on localhost:11384 at 14:11:49.227
+starting worker pid=18788 on localhost:11384 at 14:11:49.411
+starting worker pid=14568 on localhost:11384 at 14:11:49.652
+starting worker pid=5568 on localhost:11384 at 14:31:08.908
+starting worker pid=14460 on localhost:11384 at 14:31:09.087
+starting worker pid=9072 on localhost:11384 at 14:31:09.273
+starting worker pid=17148 on localhost:11384 at 14:31:09.468
+starting worker pid=2992 on localhost:11384 at 14:31:09.645
+starting worker pid=15808 on localhost:11384 at 14:31:09.825
+starting worker pid=4120 on localhost:11384 at 14:31:10.002
+starting worker pid=10428 on localhost:11384 at 14:31:10.178
+starting worker pid=9732 on localhost:11384 at 14:33:25.567
+starting worker pid=10872 on localhost:11384 at 14:33:25.741
+starting worker pid=16928 on localhost:11384 at 14:33:25.920
+starting worker pid=976 on localhost:11384 at 14:33:26.115
+starting worker pid=15676 on localhost:11384 at 14:33:26.297
+starting worker pid=6252 on localhost:11384 at 14:33:26.479
+starting worker pid=15140 on localhost:11384 at 14:33:26.661
+starting worker pid=10328 on localhost:11384 at 14:33:26.839
+starting worker pid=10208 on localhost:11384 at 14:35:24.165
+starting worker pid=2912 on localhost:11384 at 14:35:24.341
+starting worker pid=13988 on localhost:11384 at 14:35:24.520
+starting worker pid=10292 on localhost:11384 at 14:35:24.720
+starting worker pid=13056 on localhost:11384 at 14:35:24.916
+starting worker pid=18288 on localhost:11384 at 14:35:25.093
+starting worker pid=2920 on localhost:11384 at 14:35:25.269
+starting worker pid=19288 on localhost:11384 at 14:35:25.447
+starting worker pid=3940 on localhost:11384 at 14:37:03.236
+starting worker pid=19060 on localhost:11384 at 14:37:03.415
+starting worker pid=10088 on localhost:11384 at 14:37:03.599
+starting worker pid=16976 on localhost:11384 at 14:37:03.802
+starting worker pid=16544 on localhost:11384 at 14:37:03.984
+starting worker pid=16232 on localhost:11384 at 14:37:04.160
+starting worker pid=8276 on localhost:11384 at 14:37:04.338
+starting worker pid=11396 on localhost:11384 at 14:37:04.517
+starting worker pid=7428 on localhost:11384 at 15:04:35.289
+starting worker pid=9900 on localhost:11384 at 15:04:35.472
+starting worker pid=6364 on localhost:11384 at 15:04:35.659
+starting worker pid=18352 on localhost:11384 at 15:04:35.869
+starting worker pid=4276 on localhost:11384 at 15:04:36.063
+starting worker pid=3152 on localhost:11384 at 15:04:36.246
+starting worker pid=10356 on localhost:11384 at 15:04:36.426
+starting worker pid=16320 on localhost:11384 at 15:04:36.608
+starting worker pid=14368 on localhost:11384 at 15:06:15.123
+starting worker pid=2312 on localhost:11384 at 15:06:15.311
+starting worker pid=9860 on localhost:11384 at 15:06:15.515
+starting worker pid=3832 on localhost:11384 at 15:06:15.715
+starting worker pid=16116 on localhost:11384 at 15:06:15.902
+starting worker pid=16852 on localhost:11384 at 15:06:16.088
+starting worker pid=9384 on localhost:11384 at 15:06:16.280
+starting worker pid=18400 on localhost:11384 at 15:06:16.468
+starting worker pid=19128 on localhost:11384 at 15:09:48.031
+starting worker pid=12136 on localhost:11384 at 15:09:48.220
+starting worker pid=9140 on localhost:11384 at 15:09:48.403
+starting worker pid=18660 on localhost:11384 at 15:09:48.606
+starting worker pid=11508 on localhost:11384 at 15:09:48.806
+starting worker pid=12736 on localhost:11384 at 15:09:48.989
+starting worker pid=1220 on localhost:11384 at 15:09:49.174
+starting worker pid=2452 on localhost:11384 at 15:09:49.361
+starting worker pid=19288 on localhost:11384 at 15:13:51.901
+starting worker pid=15496 on localhost:11384 at 15:13:52.095
+starting worker pid=12120 on localhost:11384 at 15:13:52.284
+starting worker pid=17980 on localhost:11384 at 15:13:52.498
+starting worker pid=3504 on localhost:11384 at 15:13:52.688
+starting worker pid=7676 on localhost:11384 at 15:13:52.875
+starting worker pid=15484 on localhost:11384 at 15:13:53.056
+starting worker pid=8044 on localhost:11384 at 15:13:53.237
+starting worker pid=19100 on localhost:11384 at 15:15:58.065
+starting worker pid=14988 on localhost:11384 at 15:15:58.249
+starting worker pid=18520 on localhost:11384 at 15:15:58.435
+starting worker pid=308 on localhost:11384 at 15:15:58.640
+starting worker pid=10312 on localhost:11384 at 15:15:58.823
+starting worker pid=7744 on localhost:11384 at 15:15:59.007
+starting worker pid=13220 on localhost:11384 at 15:15:59.190
+starting worker pid=14000 on localhost:11384 at 15:15:59.371
+starting worker pid=17080 on localhost:11384 at 15:20:19.487
+starting worker pid=16404 on localhost:11384 at 15:20:19.672
+starting worker pid=11936 on localhost:11384 at 15:20:19.851
+starting worker pid=6184 on localhost:11384 at 15:20:20.059
+starting worker pid=7984 on localhost:11384 at 15:20:20.246
+starting worker pid=5740 on localhost:11384 at 15:20:20.433
+starting worker pid=15536 on localhost:11384 at 15:20:20.613
+starting worker pid=16072 on localhost:11384 at 15:20:20.795
+starting worker pid=996 on localhost:11384 at 15:22:40.370
+starting worker pid=17576 on localhost:11384 at 15:22:40.547
+starting worker pid=17552 on localhost:11384 at 15:22:40.734
+starting worker pid=16724 on localhost:11384 at 15:22:40.942
+starting worker pid=9072 on localhost:11384 at 15:22:41.126
+starting worker pid=3140 on localhost:11384 at 15:22:41.310
+starting worker pid=13744 on localhost:11384 at 15:22:41.492
+starting worker pid=5336 on localhost:11384 at 15:22:41.677
+starting worker pid=7972 on localhost:11384 at 15:24:54.135
+starting worker pid=720 on localhost:11384 at 15:24:54.317
+starting worker pid=16476 on localhost:11384 at 15:24:54.513
+starting worker pid=8792 on localhost:11384 at 15:24:54.718
+starting worker pid=8632 on localhost:11384 at 15:24:54.913
+starting worker pid=2188 on localhost:11384 at 15:24:55.117
+starting worker pid=13472 on localhost:11384 at 15:24:55.336
+starting worker pid=17420 on localhost:11384 at 15:24:55.534
+starting worker pid=17148 on localhost:11384 at 15:27:26.682
+starting worker pid=9280 on localhost:11384 at 15:27:26.866
+starting worker pid=17736 on localhost:11384 at 15:27:27.063
+starting worker pid=15728 on localhost:11384 at 15:27:27.265
+starting worker pid=10760 on localhost:11384 at 15:27:27.461
+starting worker pid=14568 on localhost:11384 at 15:27:27.644
+starting worker pid=14720 on localhost:11384 at 15:27:27.832
+starting worker pid=16852 on localhost:11384 at 15:27:28.014
+starting worker pid=1768 on localhost:11384 at 15:30:18.280
+starting worker pid=8028 on localhost:11384 at 15:30:18.462
+starting worker pid=6980 on localhost:11384 at 15:30:18.652
+starting worker pid=17468 on localhost:11384 at 15:30:18.856
+starting worker pid=15320 on localhost:11384 at 15:30:19.040
+starting worker pid=5732 on localhost:11384 at 15:30:19.223
+starting worker pid=19336 on localhost:11384 at 15:30:19.403
+starting worker pid=976 on localhost:11384 at 15:30:19.586
+starting worker pid=10688 on localhost:11384 at 15:32:18.063
+starting worker pid=18948 on localhost:11384 at 15:32:18.245
+starting worker pid=17092 on localhost:11384 at 15:32:18.458
+starting worker pid=2332 on localhost:11384 at 15:32:18.648
+starting worker pid=15840 on localhost:11384 at 15:32:18.829
+starting worker pid=9080 on localhost:11384 at 15:32:19.009
+starting worker pid=10328 on localhost:11384 at 15:32:19.186
+starting worker pid=8724 on localhost:11384 at 15:32:19.369
+starting worker pid=11884 on localhost:11384 at 15:33:46.809
+starting worker pid=16160 on localhost:11384 at 15:33:46.995
+starting worker pid=16680 on localhost:11384 at 15:33:47.195
+starting worker pid=6384 on localhost:11384 at 15:33:47.392
+starting worker pid=11880 on localhost:11384 at 15:33:47.592
+starting worker pid=18172 on localhost:11384 at 15:33:47.784
+starting worker pid=4816 on localhost:11384 at 15:33:47.966
+starting worker pid=14192 on localhost:11384 at 15:33:48.151
+starting worker pid=8408 on localhost:11384 at 15:39:12.406
+starting worker pid=18168 on localhost:11384 at 15:39:12.587
+starting worker pid=19120 on localhost:11384 at 15:39:12.780
+starting worker pid=17284 on localhost:11384 at 15:39:12.978
+starting worker pid=17732 on localhost:11384 at 15:39:13.159
+starting worker pid=19016 on localhost:11384 at 15:39:13.339
+starting worker pid=12492 on localhost:11384 at 15:39:13.520
+starting worker pid=17048 on localhost:11384 at 15:39:13.705
+starting worker pid=10792 on localhost:11384 at 15:42:32.129
+starting worker pid=13372 on localhost:11384 at 15:42:32.309
+starting worker pid=5420 on localhost:11384 at 15:42:32.519
+starting worker pid=13860 on localhost:11384 at 15:42:32.727
+starting worker pid=10204 on localhost:11384 at 15:42:32.912
+starting worker pid=11292 on localhost:11384 at 15:42:33.095
+starting worker pid=13532 on localhost:11384 at 15:42:33.280
+starting worker pid=9252 on localhost:11384 at 15:42:33.463
+starting worker pid=18684 on localhost:11384 at 15:44:15.645
+starting worker pid=16828 on localhost:11384 at 15:44:15.828
+starting worker pid=15000 on localhost:11384 at 15:44:16.022
+starting worker pid=18468 on localhost:11384 at 15:44:16.222
+starting worker pid=15720 on localhost:11384 at 15:44:16.404
+starting worker pid=18944 on localhost:11384 at 15:44:16.595
+starting worker pid=12152 on localhost:11384 at 15:44:16.773
+starting worker pid=17956 on localhost:11384 at 15:44:16.959
+starting worker pid=9472 on localhost:11384 at 16:00:08.242
+starting worker pid=16560 on localhost:11384 at 16:00:08.444
+starting worker pid=12024 on localhost:11384 at 16:00:08.632
+starting worker pid=18940 on localhost:11384 at 16:00:08.837
+starting worker pid=19112 on localhost:11384 at 16:00:09.020
+starting worker pid=7476 on localhost:11384 at 16:00:09.201
+starting worker pid=4340 on localhost:11384 at 16:00:09.382
+starting worker pid=4844 on localhost:11384 at 16:00:09.569
+starting worker pid=10308 on localhost:11384 at 16:24:55.714
+starting worker pid=12180 on localhost:11384 at 16:24:55.892
+starting worker pid=1752 on localhost:11384 at 16:24:56.071
+starting worker pid=18944 on localhost:11384 at 16:24:56.270
+starting worker pid=4176 on localhost:11384 at 16:24:56.459
+starting worker pid=12992 on localhost:11384 at 16:24:56.639
+starting worker pid=17908 on localhost:11384 at 16:24:56.822
+starting worker pid=18744 on localhost:11384 at 16:24:56.997
+starting worker pid=12964 on localhost:11384 at 16:26:50.671
+starting worker pid=7140 on localhost:11384 at 16:26:50.876
+starting worker pid=1528 on localhost:11384 at 16:26:51.068
+starting worker pid=3560 on localhost:11384 at 16:26:51.272
+starting worker pid=13416 on localhost:11384 at 16:26:51.455
+starting worker pid=15488 on localhost:11384 at 16:26:51.661
+starting worker pid=16512 on localhost:11384 at 16:26:51.839
+starting worker pid=6268 on localhost:11384 at 16:26:52.039
+starting worker pid=17684 on localhost:11384 at 16:28:24.142
+starting worker pid=5408 on localhost:11384 at 16:28:24.320
+starting worker pid=9172 on localhost:11384 at 16:28:24.517
+starting worker pid=16416 on localhost:11384 at 16:28:24.718
+starting worker pid=19048 on localhost:11384 at 16:28:24.899
+starting worker pid=17304 on localhost:11384 at 16:28:25.076
+starting worker pid=13540 on localhost:11384 at 16:28:25.254
+starting worker pid=19072 on localhost:11384 at 16:28:25.434
+starting worker pid=3936 on localhost:11384 at 16:56:29.269
+starting worker pid=8700 on localhost:11384 at 16:56:29.455
+starting worker pid=18776 on localhost:11384 at 16:56:29.656
+starting worker pid=11316 on localhost:11384 at 16:56:29.871
+starting worker pid=18188 on localhost:11384 at 16:56:30.054
+starting worker pid=5416 on localhost:11384 at 16:56:30.230
+starting worker pid=18240 on localhost:11384 at 16:56:30.412
+starting worker pid=9896 on localhost:11384 at 16:56:30.594
+starting worker pid=14440 on localhost:11384 at 16:58:59.224
+starting worker pid=11260 on localhost:11384 at 16:58:59.410
+starting worker pid=14748 on localhost:11384 at 16:58:59.605
+starting worker pid=14620 on localhost:11384 at 16:58:59.813
+starting worker pid=8628 on localhost:11384 at 16:58:59.996
+starting worker pid=10364 on localhost:11384 at 16:59:00.181
+starting worker pid=18752 on localhost:11384 at 16:59:00.361
+starting worker pid=14660 on localhost:11384 at 16:59:00.541
+starting worker pid=17376 on localhost:11384 at 17:06:58.249
+starting worker pid=7504 on localhost:11384 at 17:06:58.429
+starting worker pid=3440 on localhost:11384 at 17:06:58.609
+starting worker pid=9632 on localhost:11384 at 17:06:58.810
+starting worker pid=19336 on localhost:11384 at 17:06:58.996
+starting worker pid=3900 on localhost:11384 at 17:06:59.180
+starting worker pid=10464 on localhost:11384 at 17:06:59.360
+starting worker pid=4092 on localhost:11384 at 17:06:59.540
+starting worker pid=17836 on localhost:11384 at 17:09:29.732
+starting worker pid=17344 on localhost:11384 at 17:09:29.909
+starting worker pid=7448 on localhost:11384 at 17:09:30.094
+starting worker pid=15764 on localhost:11384 at 17:09:30.287
+starting worker pid=15100 on localhost:11384 at 17:09:30.472
+starting worker pid=17212 on localhost:11384 at 17:09:30.650
+starting worker pid=9132 on localhost:11384 at 17:09:30.828
+starting worker pid=13860 on localhost:11384 at 17:09:31.005
+starting worker pid=3004 on localhost:11384 at 17:10:59.307
+starting worker pid=14600 on localhost:11384 at 17:10:59.486
+starting worker pid=18836 on localhost:11384 at 17:10:59.671
+starting worker pid=19256 on localhost:11384 at 17:10:59.870
+starting worker pid=5784 on localhost:11384 at 17:11:00.061
+starting worker pid=9376 on localhost:11384 at 17:11:00.234
+starting worker pid=412 on localhost:11384 at 17:11:00.415
+starting worker pid=13912 on localhost:11384 at 17:11:00.595
+starting worker pid=12816 on localhost:11384 at 17:12:20.775
+starting worker pid=17900 on localhost:11384 at 17:12:20.959
+starting worker pid=15720 on localhost:11384 at 17:12:21.154
+starting worker pid=16740 on localhost:11384 at 17:12:21.368
+starting worker pid=16240 on localhost:11384 at 17:12:21.549
+starting worker pid=13468 on localhost:11384 at 17:12:21.733
+starting worker pid=18876 on localhost:11384 at 17:12:21.923
+starting worker pid=17092 on localhost:11384 at 17:12:22.105
+starting worker pid=9172 on localhost:11384 at 17:15:45.149
+starting worker pid=16296 on localhost:11384 at 17:15:45.347
+starting worker pid=17992 on localhost:11384 at 17:15:45.538
+starting worker pid=11808 on localhost:11384 at 17:15:45.721
+starting worker pid=720 on localhost:11384 at 17:15:45.897
+starting worker pid=14516 on localhost:11384 at 17:15:46.077
+starting worker pid=9124 on localhost:11384 at 17:15:46.254
+starting worker pid=13416 on localhost:11384 at 17:15:46.433
+starting worker pid=6536 on localhost:11384 at 17:17:09.862
+starting worker pid=6684 on localhost:11384 at 17:17:10.037
+starting worker pid=10624 on localhost:11384 at 17:17:10.215
+starting worker pid=19372 on localhost:11384 at 17:17:10.412
+starting worker pid=19060 on localhost:11384 at 17:17:10.599
+starting worker pid=7628 on localhost:11384 at 17:17:10.780
+starting worker pid=16324 on localhost:11384 at 17:17:10.959
+starting worker pid=600 on localhost:11384 at 17:17:11.134
+starting worker pid=4556 on localhost:11384 at 17:19:12.559
+starting worker pid=6328 on localhost:11384 at 17:19:12.746
+starting worker pid=11104 on localhost:11384 at 17:19:12.942
+starting worker pid=13320 on localhost:11384 at 17:19:13.150
+starting worker pid=6740 on localhost:11384 at 17:19:13.340
+starting worker pid=18520 on localhost:11384 at 17:19:13.523
+starting worker pid=576 on localhost:11384 at 17:19:13.709
+starting worker pid=5736 on localhost:11384 at 17:19:13.891
+starting worker pid=12464 on localhost:11384 at 17:25:07.486
+starting worker pid=5056 on localhost:11384 at 17:25:07.665
+starting worker pid=17248 on localhost:11384 at 17:25:07.849
+starting worker pid=14352 on localhost:11384 at 17:25:08.043
+starting worker pid=11576 on localhost:11384 at 17:25:08.227
+starting worker pid=9172 on localhost:11384 at 17:25:08.410
+starting worker pid=7260 on localhost:11384 at 17:25:08.585
+starting worker pid=3444 on localhost:11384 at 17:25:08.765
+starting worker pid=15564 on localhost:11384 at 17:48:42.865
+starting worker pid=11028 on localhost:11384 at 17:48:43.042
+starting worker pid=11956 on localhost:11384 at 17:48:43.221
+starting worker pid=13504 on localhost:11384 at 17:48:43.421
+starting worker pid=18540 on localhost:11384 at 17:48:43.602
+starting worker pid=3536 on localhost:11384 at 17:48:43.780
+starting worker pid=10204 on localhost:11384 at 17:48:43.956
+starting worker pid=16928 on localhost:11384 at 17:48:44.132
+starting worker pid=19068 on localhost:11384 at 17:50:17.572
+starting worker pid=15928 on localhost:11384 at 17:50:17.750
+starting worker pid=16872 on localhost:11384 at 17:50:17.931
+starting worker pid=13836 on localhost:11384 at 17:50:18.128
+starting worker pid=11064 on localhost:11384 at 17:50:18.310
+starting worker pid=16208 on localhost:11384 at 17:50:18.486
+starting worker pid=18036 on localhost:11384 at 17:50:18.666
+starting worker pid=15652 on localhost:11384 at 17:50:18.842
+starting worker pid=9864 on localhost:11384 at 17:51:53.979
+starting worker pid=5408 on localhost:11384 at 17:51:54.155
+starting worker pid=13704 on localhost:11384 at 17:51:54.334
+starting worker pid=11912 on localhost:11384 at 17:51:54.532
+starting worker pid=8988 on localhost:11384 at 17:51:54.716
+starting worker pid=19344 on localhost:11384 at 17:51:54.896
+starting worker pid=18936 on localhost:11384 at 17:51:55.070
+starting worker pid=2680 on localhost:11384 at 17:51:55.244
+starting worker pid=11284 on localhost:11384 at 18:21:01.270
+starting worker pid=18684 on localhost:11384 at 18:21:01.447
+starting worker pid=12964 on localhost:11384 at 18:21:01.627
+starting worker pid=13560 on localhost:11384 at 18:21:01.828
+starting worker pid=19084 on localhost:11384 at 18:21:02.010
+starting worker pid=9348 on localhost:11384 at 18:21:02.181
+starting worker pid=4540 on localhost:11384 at 18:21:02.360
+starting worker pid=14836 on localhost:11384 at 18:21:02.537
+starting worker pid=2604 on localhost:11384 at 18:21:46.354
+starting worker pid=11384 on localhost:11384 at 18:21:46.559
+starting worker pid=16016 on localhost:11384 at 18:21:46.752
+starting worker pid=1488 on localhost:11384 at 18:21:46.943
+starting worker pid=17436 on localhost:11384 at 18:21:47.138
+starting worker pid=13036 on localhost:11384 at 18:21:47.318
+starting worker pid=5428 on localhost:11384 at 18:21:47.496
+starting worker pid=11992 on localhost:11384 at 18:21:47.677
+starting worker pid=17480 on localhost:11384 at 18:22:36.304
+starting worker pid=19344 on localhost:11384 at 18:22:36.485
+starting worker pid=2708 on localhost:11384 at 18:22:36.667
+starting worker pid=9988 on localhost:11384 at 18:22:36.864
+starting worker pid=14260 on localhost:11384 at 18:22:37.046
+starting worker pid=4548 on localhost:11384 at 18:22:37.265
+starting worker pid=10500 on localhost:11384 at 18:22:37.446
+starting worker pid=18944 on localhost:11384 at 18:22:37.623
+starting worker pid=11772 on localhost:11384 at 18:23:27.121
+starting worker pid=16212 on localhost:11384 at 18:23:27.303
+starting worker pid=16716 on localhost:11384 at 18:23:27.483
+starting worker pid=1716 on localhost:11384 at 18:23:27.683
+starting worker pid=17688 on localhost:11384 at 18:23:27.868
+starting worker pid=14524 on localhost:11384 at 18:23:28.045
+starting worker pid=18904 on localhost:11384 at 18:23:28.220
+starting worker pid=16664 on localhost:11384 at 18:23:28.399
+starting worker pid=12656 on localhost:11384 at 18:24:42.676
+starting worker pid=8756 on localhost:11384 at 18:24:42.854
+starting worker pid=3560 on localhost:11384 at 18:24:43.036
+starting worker pid=18860 on localhost:11384 at 18:24:43.230
+starting worker pid=8348 on localhost:11384 at 18:24:43.420
+starting worker pid=12312 on localhost:11384 at 18:24:43.600
+starting worker pid=7576 on localhost:11384 at 18:24:43.895
+starting worker pid=11120 on localhost:11384 at 18:24:44.072
+starting worker pid=10808 on localhost:11384 at 18:26:26.835
+starting worker pid=1788 on localhost:11384 at 18:26:27.011
+starting worker pid=18492 on localhost:11384 at 18:26:27.192
+starting worker pid=12152 on localhost:11384 at 18:26:27.393
+starting worker pid=6856 on localhost:11384 at 18:26:27.575
+starting worker pid=464 on localhost:11384 at 18:26:27.755
+starting worker pid=1328 on localhost:11384 at 18:26:27.937
+starting worker pid=16320 on localhost:11384 at 18:26:28.112
+starting worker pid=16296 on localhost:11384 at 18:26:53.531
+starting worker pid=16816 on localhost:11384 at 18:26:53.713
+starting worker pid=9536 on localhost:11384 at 18:26:53.898
+starting worker pid=18000 on localhost:11384 at 18:26:54.095
+starting worker pid=2328 on localhost:11384 at 18:26:54.274
+starting worker pid=17228 on localhost:11384 at 18:26:54.450
+starting worker pid=12100 on localhost:11384 at 18:26:54.628
+starting worker pid=14364 on localhost:11384 at 18:26:54.806
+starting worker pid=13040 on localhost:11384 at 20:58:16.015
+starting worker pid=18444 on localhost:11384 at 20:58:16.329
+starting worker pid=17176 on localhost:11384 at 20:58:16.637
+starting worker pid=18428 on localhost:11384 at 20:58:17.012
+starting worker pid=15656 on localhost:11384 at 20:58:17.324
+starting worker pid=3360 on localhost:11384 at 20:58:17.625
+starting worker pid=16244 on localhost:11384 at 20:58:17.919
+starting worker pid=11864 on localhost:11384 at 20:58:18.213
