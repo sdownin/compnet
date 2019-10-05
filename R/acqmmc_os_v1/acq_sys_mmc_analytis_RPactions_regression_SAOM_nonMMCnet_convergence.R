@@ -39,6 +39,7 @@ setwd(work_dir)
 
 ## LOAD DATA AND DEPENDENCIES
 cb     <- source(file.path(version_dir,'acq_cb_data_prep.R'))$value 
+acf    <- source(file.path(version_dir,'acq_compnet_functions.R'))$value 
 
 
 ###
@@ -78,6 +79,45 @@ checkSienaConv <- function(res, t.lim=0.1,max.lim=0.25) {
   cat(sprintf('\nCONVERGED:  %s\n  tconv.max (%.3f) < 0.25  %s\n  all t (max %.3f) < 0.10  %s\n\n',
               ck, tmax, ck.tmax, max(ts), ck.ts))
   return(ck)
+}
+
+
+###
+## CrunchBase category Cosine Similarity
+##
+cbCatCosSim <- function(df) 
+{
+  all_cat_vec <- sort(unique(unlist(strsplit(df$category_list, '[|]'))))
+  
+  ## CATEGORY-FIRM MATRIX  [M,N] : M cateories, N firms
+  firm_cats <- df$category_list
+  cfm <- unname(sapply(firm_cats, function(x){
+    as.integer(sapply(all_cat_vec,function(cat)grepl(cat,x)))
+  }))
+  ## FIRM-CATEGORY MATRIX [N,M] :  N firms, M categories
+  fcm <- t(cfm)
+  
+  ## COMPUTE Cosine Similarity:
+  ## =  u.v / |u||v|
+  ## Firm-Firm COVARIANCE MATRIX [[u1.v1],[u2.v2], ...]
+  X <- fcm %*% t(fcm)
+  ## Firm Norms  |u|;  and |v| = |u|
+  u <- apply(fcm, MARGIN = 1, FUN = function(x) sqrt(sum(x^2)) )
+  ## NORM-NORM MATRIX   [ [|u1||v1|, |u1||v2|, ...], [|u2||v1|, |u2||v2|, ...], ...]
+  UV <- outer(u, u, '*')
+  ## COSINE SIMILARITY MATRIX equals elementwise division of 
+  ##  covariance matrix by the norms matrix
+  ##  = X / UV
+  sim <- X / UV
+  
+  ## replace NULL, NA, NaN, diags with zero
+  sim[is.null(sim)] <- 0
+  sim[is.nan(sim)] <- 0
+  sim[is.na(sim)] <- 0
+  diag(sim) <- 0
+  
+  ## RETURN
+  return(sim)
 }
 
 ###
@@ -328,7 +368,7 @@ firm_i <- 'microsoft'
   ## Select Years
   ##---------------------------------------------
   ## Aggregate DV Acquisitions by period (2 years, 3 years)
-  agpdlist <- list(c('2011'),c('2012'),c('2013'),
+  agpdlist <- list(c('2010'),c('2011'),c('2012'),c('2013'),
                    c('2014'),c('2015'),c('2016'))
   npds <- length(agpdlist)
   ## number of years in each period to aggregate
@@ -540,32 +580,6 @@ firm_i <- 'microsoft'
   
   ##------------------
   
-  ## DYAD COVARIATES
-  arrMktOvr <- array(0, dim=c(nsub, nsub, nwaves))
-  for (t in 1:npds) {
-    for (i in 1:length(firmnamesub)) {
-      for (j in 1:length(firmnamesub)) {
-        if (i==j) {
-          
-        }
-        
-        if (nrow(sgti) > 0) {  ## if segments data update market growth avg
-          mkgvec <- c() ## get growth * proportion for each of firm's markets
-          for (j in 1:nrow(sgti)) {
-            sj <-  sgti$snms2[j] ## segment
-            rj <- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% yrs)] ) # total sales revenue  in sgement
-            rj1<- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% (yrs-1))] ) # total lagged sales revenue in sgement
-            gj <- ifelse( (is.na(rj)|is.na(rj1)|rj1==0),  1,  rj/rj1 ) # growth if exists
-            pj <- sgti$sales[j] / sum(sgti$sales, na.rm = T) ## proportion of portfolio
-            mkgvec <- c(mkgvec, pj * gj ) # weighted market growth 
-          }
-          mkgrowth <- sum(mkgvec, na.rm=T)
-        } 
-        
-      }
-    }
-  }
- 
   ## FIRM COVARIATES (Acquisitions)
   arrNetR <- array(0,dim=c(nsub,npds))
   arrNetI <- array(0,dim=c(nsub,npds))
@@ -574,6 +588,7 @@ firm_i <- 'microsoft'
   arrDegMmcSq <- array(0,dim=c(nsub,npds))
   arrEmploy <- array(0,dim=c(nsub,npds))
   arrSales <- array(0,dim=c(nsub,npds))
+  arrSlack <- array(0,dim=c(nsub,npds))
   arrAcqExper <- array(0,dim=c(nsub,npds))
   arrDumCris <- array(0,dim=c(nsub,npds)) 
   arrAcqSum <- array(0,dim=c(nsub,npds)) 
@@ -595,11 +610,11 @@ firm_i <- 'microsoft'
       min.r <- 1
       min.i <- 1
       ## RESTRUCT
-      xr <- dfla$rp_net_restruct[idx]
+      xr <- dfla$rp_net_restruct[idx] / dfla$cs_mkgrowth[idx]
       xr <- ceiling( log( 1 + xr ) )
       arrNetR[i,t] <-  ifelse( xr > cut.r, cut.r, ifelse(xr < min.r, min.r, xr))
       ## RESTRUCT
-      xi <- dfla$rp_net_invariant[idx]
+      xi <- dfla$rp_net_invariant[idx] / dfla$cs_mkgrowth[idx]
       xi <- ceiling( log( 1 + xi ) )
       arrNetI[i,t] <-  ifelse( xi > cut.i, cut.i, ifelse(xi < min.i, min.i, xi))
       ## Acquisitions
@@ -616,10 +631,11 @@ firm_i <- 'microsoft'
       arrWdegAcq[i,t] <- log(1 + dfla$wdeg_rp_Acquisitions[idx])
       arrWdegAll[i,t] <- log(1 + dfla$wdeg_rp_all[idx])
       #
-      arrEmploy[i,t]    <- dfla$employee_na_age[idx]/1e+03
-      arrSales[i,t]     <- dfla$sales_na_0_mn[idx]/1e+06
+      arrEmploy[i,t]    <- log(1 + dfla$cs_employee[idx])
+      arrSales[i,t]     <- dfla$cs_roa_1[idx]
+      arrSlack[i,t]     <- ifelse(is.na(dfla$cs_quick[idx]), 0, dfla$cs_quick[idx])
       # arrAcqExper[i,t]  <- log( 1 + dfla$acq_cnt_5[idx] )  # log(1 + dfl$acq_cnt_5[idx])
-      arrAcqExper[i,t]  <- log(1 + dfla$acq_cnt_5[idx])  # log(1 + dfl$acq_cnt_5[idx])
+      arrAcqExper[i,t]  <- log(1 + dfla$acq_exp_3[idx])  # log(1 + dfl$acq_cnt_5[idx])
       arrAcqSum[i,t]    <- dfla$acq_sum_1[idx]/1e+09
       arrNonAcqAct[i,t] <- log(1 + dfla$rp_NON_acquisitions[idx])
       #
@@ -636,7 +652,6 @@ firm_i <- 'microsoft'
   nmsale <- unique(dfla$name[which(dfla$sales_na_0_mn>0)])
   nm.ri <- unique(dfla$name[which(dfla$rp_net_restruct>0 |
                                     dfla$rp_net_invariant>0)])
-  nm.nk <- unique(dfla$name[which(dfla$name %in% namekey$name)])
   # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
   ##
   firmsubidx <- which(firmnamesub %in% intersect(nmsale,nm.ri)) ## ## FILTER ACQUISITIONS > 0
@@ -644,6 +659,7 @@ firm_i <- 'microsoft'
   # firmsubidx <- 1:length(firmnamesub)  ## KEEP ALL
   ##
   firmnamesub2 <- firmnamesub[firmsubidx]
+  nsub2 <- length(firmnamesub2)
   # nlyrs <- as.numeric(names(nl))
   # yrsubidx <- (length(nlyrs)-4):(length(nlyrs)-1)
   # yrsub <- nlyrs[yrsubidx]
@@ -672,6 +688,7 @@ firm_i <- 'microsoft'
   #
   arrEmploy2 <- arrEmploy[firmsubidx, yridx ]
   arrSales2 <- arrSales[firmsubidx, yridx ]
+  arrSlack2 <- arrSlack[firmsubidx, yridx ]
   arrAcqExper2 <- arrAcqExper[firmsubidx, yridx ]
   arrAcqSum2 <- arrAcqSum[firmsubidx, yridx ]
   arrNonAcqAct2 <- arrNonAcqAct[firmsubidx, yridx ]
@@ -680,6 +697,11 @@ firm_i <- 'microsoft'
   par(mfrow=c(1,2), mar=c(4.5,2,.3,2))
   hist(arrNetR2,main=''); hist(arrNetI2,main='')
   ##----------------------------
+  
+  # ## DYAD FIXED COVARIATES
+  arrMktOvr <- array(1, dim=c(nsub2, nsub2))
+  simdf <- cb$co[which(cb$co$company_name_unique %in% firmnamesub2), c('company_name_unique','category_list')]
+  arrMktOvr2 <- as.array(cbCatCosSim(simdf))
   
   ##-------------------
   ## SAOM INIT VARS
@@ -707,6 +729,7 @@ firm_i <- 'microsoft'
   covSales <- varCovar(arrSales2, nodeSet="FIRMS")
   covAcqExper <- varCovar(arrAcqExper2, nodeSet="FIRMS")
   covAcqSum <- varCovar(arrAcqSum2, nodeSet="FIRMS")
+  covSlack <- varCovar(arrSlack2, nodeSet="FIRMS")
   # covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
   covSmmc_covWdegAcq <- varCovar(arrSmmc_WdegAcq2, nodeSet="FIRMS")
   covSmmcSq_covWdegAcq <- varCovar(arrSmmcSq_WdegAcq2, nodeSet="FIRMS")
@@ -714,6 +737,8 @@ firm_i <- 'microsoft'
   covSmmcSq_covWdegAll <- varCovar(arrSmmcSq_WdegAll2, nodeSet="FIRMS")
   ## Constant covar
   covAge <- coCovar(arrAge2, nodeSet = "FIRMS")
+  ## Constant Dyadic covar
+  covCatSim <- coDyadCovar(arrMktOvr2, nodeSets = c("FIRMS","FIRMS"))
   #
   # NODES
   firms <- firmnamesub2
@@ -734,20 +759,19 @@ firm_i <- 'microsoft'
   ##--------------------------------------
   sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
                             covEmploy, covAcqExper, covAge, covSales,
+                            covCatSim, covSlack,
                             nodeSets=list(FIRMS) ) #,smoke1, alcohol
   ##
   sysEff <- getEffects(sysDat)
   # effectsDocumentation(sysEff)
   sysEff <- includeEffects(sysEff, gwesp,
                            name="depMMC")
+  sysEff <- includeEffects(sysEff, X,
+                           name="depMMC", interaction1 = 'covCatSim')
   sysEff <- includeEffects(sysEff, totDist2,
                            name="depMMC", type='creation', interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, altX,
-  #                          name="depMMC", interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, altX,
-  #                          name="depMMC", interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, totDist2,
-  #                          name="depMMC", interaction1 = 'depNetI')
+  # sysEff <- includeInteraction(sysEff, totDist2, totDist2,
+  #                             name="depMMC", type='creation', interaction1 = c('depNetR','depNetI'))
   ## CONTROL BEHVAIOR
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetI", interaction1 = 'covEmploy')
@@ -755,6 +779,8 @@ firm_i <- 'microsoft'
                            name="depNetI", interaction1 = 'covAge')
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetI", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSlack')
   #
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetR", interaction1 = 'covAcqExper')
@@ -764,20 +790,22 @@ firm_i <- 'microsoft'
                            name="depNetR", interaction1 = 'covAge')
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetR", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSlack')
   ## BEHAVIOR
   sysEff <- includeEffects(sysEff, outdeg,
                            name="depNetR", interaction1 = 'depMMC')
   sysEff <- includeEffects(sysEff, outdeg,
                            name="depNetI", interaction1 = 'depMMC')
   #
-  sysEff <- includeEffects(sysEff, avAlt,
+  sysEff <- includeEffects(sysEff, totAlt,
                            name="depNetI", interaction1 = 'depMMC')
-  sysEff <- includeEffects(sysEff, avAlt,
+  sysEff <- includeEffects(sysEff, totAlt,
                            name="depNetR", interaction1 = 'depMMC')
   #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-AMC-0', 
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-ctrl-0', 
                                  firstg = 0.05,  ## default: 0.2
-                                 n2start=100,    ## default: 2.52*(p+7)
+                                 n2start=120,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
                                  seed=135, maxlike=F)
   # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
@@ -1772,6 +1800,42 @@ firm_i <- 'microsoft'
 
 
 
-
-
+###Compustat Segments market overlap -- Shows no overlap between GOOGLE & MICROSOFT ?
+# for (t in 1:npds) {
+#   cat(sprintf('\n t=%s  %s\n  i = ', t,netwavepds[t]))
+#   for (i in 1:length(firmnamesub2)) {
+#     if (i %% 20 == 0) cat(sprintf('%s ', i))
+#     for (j in 1:length(firmnamesub2)) {
+#       if (i < j) ## only do upper triangle
+#         next
+#       wave <- netwavepds[t]
+#       waveyr <- as.integer(wave)
+#       gvi <- namekey$gvkey[which(namekey$name==firmnamesub2[i])]
+#       gvj <- namekey$gvkey[which(namekey$name==firmnamesub2[j])]
+#       sgi <- css2[which(css2$gvkey==gvi & css2$year==waveyr), ]
+#       sgj <- css2[which(css2$gvkey==gvj & css2$year==waveyr), ]
+#       # sgi$SICS1[is.na(sgi$SICS1)] <- sgi$sic[1]
+#       # sgj$SICS1[is.na(sgj$SICS1)] <- sgj$sic[1]
+#       sgi2 <- ddply(sgi, .(SICS1),summarize,sum=sum(sales, na.rm=T))
+#       sgj2 <- ddply(sgj, .(SICS1),summarize,sum=sum(sales, na.rm=T))
+#       seg.all <- unique(c(sgi2$SICS1, sgj2$SICS1))
+#       s.tot <- sum(c(sgi2$sum, sgj2$sum), na.rm = T)
+#       s.ovr <- 0
+#       for (seg in seg.all) {
+#         if (seg %in% sgi2$SICS1 & seg %in% sgj2$SICS1) {
+#           s.s.i <- sgi$sales[which(sgi$SICS1==seg)]
+#           s.s.j <- sgj$sales[which(sgj$SICS1==seg)]
+#           s.ovr <- s.ovr + sum(c(s.s.i, s.s.j), na.rm=T)
+#         }
+#       }
+#       arrMktOvr[i,j,t] <- ifelse(s.tot==0, 1, s.ovr / s.tot )
+#     }
+#   }
+#   ## symmetric covariates 
+#   ## replace lower triangle with upper trangle
+#   mat <- arrMktOvr[,,t]
+#   tmat <- t(mat)
+#   mat[lower.tri(mat, diag = F)] <- tmat[lower.tri(tmat, diag = F)]
+#   arrMktOvr[,,t] <- mat
+# }
 
