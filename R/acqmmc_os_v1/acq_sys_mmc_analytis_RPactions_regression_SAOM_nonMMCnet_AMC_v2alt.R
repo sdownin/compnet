@@ -22,7 +22,6 @@ library(tidyr)
 data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
 work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
 img_dir  <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
-cs_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2/compustat"
 version_dir <- file.path(work_dir,'R','acqmmc_os_v1')
 net_dir <- file.path(work_dir,'acqmmc_os_v1','data')
 result_dir <- file.path(work_dir,'acqmmc_os_v1','data')
@@ -56,7 +55,7 @@ checkSienaConv <- function(res, t.lim=0.1,max.lim=0.25) {
   tmax <- res$tconv.max
   ts <- res$tconv
   ck.tmax <- tmax < max.lim
-  ck.ts <- all(abs(ts) < t.lim)
+  ck.ts <- all(ts < t.lim)
   ck <- all(ck.tmax, ck.ts)
   cat(sprintf('\nCONVERGED:  %s\n  tconv.max (%.3f) < 0.25  %s\n  all t (max %.3f) < 0.10  %s\n\n',
               ck, tmax, ck.tmax, max(ts), ck.ts))
@@ -97,27 +96,6 @@ extract.pglm <- function (model, include.nobs = TRUE, include.loglik = TRUE, ...
 setMethod("extract", signature = className("maxLik", "maxLik"), 
           definition = extract.pglm)
 # ## set firms to create networks (focal firm or replication study focal firms)
-
-
-## Compustat Data
-css<- read.csv(file.path(cs_dir,'segments.csv'), nrows=50, stringsAsFactors = F)
-
-## Compustat annual fundamentals
-csa <- read.csv(file.path(cs_dir,'fundamentals-annual.csv'), nrows=50, stringsAsFactors = F)
-## SELECT COLUMNS FROM COMPUSTAT
-csa.cols <- c('conm','conml','gvkey','datadate','fyear','indfmt','consol','popsrc','tic','cusip',
-          'act', ## total assets  (ln for size proxy)
-          'che', ## cash and short term investments (scale by total assets for cash holdings)
-          'emp', ## employees (ln employee size proxy) 
-          'ebitda', ## ebidta (scale by total assets for ROA performance proxy)
-          'prcc_c', ## close market price at calendar year
-          # 'prccm', ## (monthly close price for december; use if prcc_c not available)
-          'csho', ## shares outstanding  (PRCC_C x CSHO = market value of equity)
-          'ceq' ## common/ordinary equity total
-)
-csa2 <- csa[,csa.cols]
-
-csa2$roa <- csa2$ebitda / csa2$act
 
 # head(cnt, 20)
 # # Top Acquirers:             x   freq
@@ -188,6 +166,25 @@ firm_i <- 'microsoft'
     netpdfile <- sprintf('acq_sys_mmc_panel_RPactions_NETLIST_ego-%s_d%s_%s-%s_t%s.rds', 
                          firm_i_ego, d, y1, y2, t)
     nl[[t]] <- readRDS(file.path(result_dir, netpdfile))
+    # gt <- nl[[t]]$gt
+    # #
+    # membership <- V(gt)$com_multilevel
+    # markets <- unique(membership)
+    # markets <- markets[order(markets)]
+    # adj <- igraph::as_adjacency_matrix(gt, sparse = F)
+    # df.ms <- ldply(1:nrow(adj), function(i){
+    #   i.nbr <- unname(which( adj[i, ] == 1 ))  ## rivals (neighbors in the network) ## i.nbr <- as.integer(igraph::neighbors(g, V(g)[i]))  
+    #   i.ms <- unique(membership[i.nbr])  ## markets of firm i (the markets of the rivals of firm i)
+    #   i.ms.row <- rep(0, length(markets)) ## dummy row for [Firm x Market] matrix
+    #   i.ms.row[ i.ms ] <- 1 ## assign [Firm x Market] matrix row value to 1
+    #   names(i.ms.row) <- sapply(1:length(markets),function(x)paste0('m',x))
+    #   return(i.ms.row)
+    # })
+    # ## convert df to matrix
+    # m.ms <- as.matrix(df.ms)
+    ## bipartite firm-market
+    # gb <- igraph::graph_from_incidence_matrix(as.matrix(df.ms), directed = F)
+    # bl[[t]] <- 
   }
   names(nl) <- ys[(length(ys)-10+1):length(ys)]
   npds <- length(nl)
@@ -197,6 +194,19 @@ firm_i <- 'microsoft'
   adj0 <- as_adj(nl$`2007`$gt, sparse = T)
   n0 <- length(firmnames0)
   
+  # firmnamesall <- unique(unlist(sapply(nl,function(x)V(x$gmmcsub)$vertex.names)))
+  # firmnames0 <- V(nl$`2007`$gmmcsub)$vertex.names
+  # adj0 <- as_adj(nl$`2007`$gmmcsub, sparse = F)
+  # n0 <- length(firmnames0)
+  # firmnames <- unique(unlist(sapply(nl,function(x)V(x$gmmcsub)$vertex.names)))
+  
+  # ## which names in all years
+  # fnidxl <- sapply(firmnamesall,function(x){
+  #     all(sapply(nl, function(z)x %in% V(z$gmmcsub)$vertex.names))
+  #   })
+  # fnidx <- which(fnidxl)
+  # firmnamesub <- firmnamesall[fnidx] ## firms in all yeras of gmmcsub MMC network
+  # nsub <- length(firmnamesub)
   ## which firm made at least 1 acquisitions
   firm.acq.1 <- unique(dfl$name[which(dfl$rp_Acquisitions > 0)])
   .filtername <- unique(dfl$name[which(
@@ -210,6 +220,13 @@ firm_i <- 'microsoft'
   #*********************88888888888
   
   ## Aggregate DV Acquisitions by period (2 years, 3 years)
+  # agpdlist <- list(c('2008','2009','2010'), 
+  #                   c('2011','2012','2013'), 
+  #                   c('2014','2015','2016'))
+  # agpdlist <- list(c('2009','2010'),
+  #                  c('2011','2012'),
+  #                  c('2013','2014'),
+  #                  c('2015','2016'))
   agpdlist <- list(c('2010'),c('2011'),c('2012'),c('2013'),
                    c('2014'),c('2015'),c('2016'))
   npds <- length(agpdlist)
@@ -262,12 +279,12 @@ firm_i <- 'microsoft'
         #
         rp_net_restruct =sum(c(xti$rp_Acquisitions, 
                                xti$rp_Market_expansions, 
-                               xti$rp_New_product), na.rm=T),
+                               xti$rp_New_product,
+                               xti$rp_Strategic_alliances), na.rm=T),
         rp_net_invariant=sum(c(xti$rp_Capacity, 
                                xti$rp_Legal, 
                                xti$rp_Marketing,
-                               xti$rp_Pricing,
-                               xti$rp_Strategic_alliances), na.rm=T),
+                               xti$rp_Pricing), na.rm=T),
         ## sum(t-1,t-2,t-3) previous 3yr acquisitions == Acq Experience
         acq_exp_3=sum(c(xtin1$rp_Acquisitions,
                         xtin2$rp_Acquisitions,
@@ -553,7 +570,7 @@ firm_i <- 'microsoft'
   ##--------------------------------------
   ##
   ##
-  ##   H1ab / H2
+  ##
   ##
   ##
   ##--------------------------------------
@@ -584,11 +601,11 @@ firm_i <- 'microsoft'
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetR", interaction1 = 'covAcqExper')
   sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetR", interaction1 = 'covEmploy')
+                           name="depNetI", interaction1 = 'covEmploy')
   sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetR", interaction1 = 'covAge')
+                           name="depNetI", interaction1 = 'covAge')
   sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetR", interaction1 = 'covSales')
+                           name="depNetI", interaction1 = 'covSales')
   ## BEHAVIOR
   sysEff <- includeEffects(sysEff, outdeg,
                            name="depNetR", interaction1 = 'depMMC')
@@ -600,7 +617,7 @@ firm_i <- 'microsoft'
   sysEff <- includeEffects(sysEff, avAlt,
                            name="depNetR", interaction1 = 'depMMC')
   #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-AMC-0', 
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-AMC-0a', 
                                  firstg = 0.05,  ## default: 0.2
                                  n2start=100,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
@@ -619,100 +636,13 @@ firm_i <- 'microsoft'
                                varName="depNetI"); plot(gfAMC0.bi)
   gfAMC0.od = RSiena::sienaGOF(sysResAMC0, OutdegreeDistribution,
                                varName="depMMC"); plot(gfAMC0.od)
-  gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
-                               varName="depMMC"); plot(gfAMC0.tc)
-
-  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2.html', type = 'html', sig = T, d = 3, vertLine = T)
-  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2.tex', type = 'tex', sig = T, d = 3, vertLine = T)
-  saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_support.rds')
-  
-  ###  
+###  
 ###  
 ###  
 ### 
   ###  
   ###  
   ###  
-  
-  
-  
-  ##--------------------------------------
-  ##
-  ##
-  ##   CONTROL
-  ##
-  ##
-  ##--------------------------------------
-  sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
-                            covEmploy, covAcqExper, covAge, covSales,
-                            nodeSets=list(FIRMS) ) #,smoke1, alcohol
-  ##
-  sysEff <- getEffects(sysDat)
-  # effectsDocumentation(sysEff)
-  sysEff <- includeEffects(sysEff, gwesp,
-                           name="depMMC")
-  # sysEff <- includeEffects(sysEff, totDist2,
-  #                          name="depMMC", type='creation', interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, altX,
-  #                          name="depMMC", interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, altX,
-  #                          name="depMMC", interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, totDist2,
-  #                          name="depMMC", interaction1 = 'depNetI')
-  ## CONTROL BEHVAIOR
-  sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covEmploy')
-  sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covAge')
-  sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covSales')
-  #
-  sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetR", interaction1 = 'covAcqExper')
-  sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covEmploy')
-  sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covAge')
-  sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covSales')
-  ## BEHAVIOR
-  # sysEff <- includeEffects(sysEff, outdeg,
-  #                          name="depNetR", interaction1 = 'depMMC')
-  # sysEff <- includeEffects(sysEff, outdeg,
-  #                          name="depNetI", interaction1 = 'depMMC')
-  #
-  sysEff <- includeEffects(sysEff, avAlt,
-                           name="depNetI", interaction1 = 'depMMC')
-  sysEff <- includeEffects(sysEff, avAlt,
-                           name="depNetR", interaction1 = 'depMMC')
-  #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-AMC-0c', 
-                                 firstg = 0.05,  ## default: 0.2
-                                 n2start=100,    ## default: 2.52*(p+7)
-                                 nsub = 4,       ## default: 4
-                                 seed=135, maxlike=F)
-  # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
-  sysResAMC0c <- siena07(sysMod, data=sysDat, effects=sysEff, 
-                        # prevAns = sysResAMC0c,
-                        batch = T,   returnDeps = T, ## necessary for GOF
-                        useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
-  conv <- checkSienaConv(sysResAMC0c)
-  # 
-  print(sysResAMC0c); screenreg(sysResAMC0c, digits = 4,single.row = T)
-  gfAMC0.br = RSiena::sienaGOF(sysResAMC0c, BehaviorDistribution,
-                               varName="depNetR"); plot(gfAMC0.br)
-  gfAMC0.bi = RSiena::sienaGOF(sysResAMC0c, BehaviorDistribution,
-                               varName="depNetI"); plot(gfAMC0.bi)
-  gfAMC0.od = RSiena::sienaGOF(sysResAMC0c, OutdegreeDistribution,
-                               varName="depMMC"); plot(gfAMC0.od)
-  gfAMC0.tc = RSiena::sienaGOF(sysResAMC0c, TriadCensus,
-                               varName="depMMC"); plot(gfAMC0.tc)
-  
-  
-  saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_support.rds')
-  
   
   
   

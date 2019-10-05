@@ -17,12 +17,17 @@ library(parallel)
 library(RSiena)
 library(ggplot2)
 library(tidyr)
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(lubridate)
 
 ## DIRECTORIES
 data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
 work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
 img_dir  <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/envelopment/img"
 cs_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2/compustat"
+rvn_dir <- 'C:/Data/RavenPack'
 version_dir <- file.path(work_dir,'R','acqmmc_os_v1')
 net_dir <- file.path(work_dir,'acqmmc_os_v1','data')
 result_dir <- file.path(work_dir,'acqmmc_os_v1','data')
@@ -31,6 +36,18 @@ sup_data_dir <- file.path(work_dir,'acqmmc_os_v1','sup_data')  ## supplmental da
 ## set woring dir
 setwd(work_dir)
 
+
+## LOAD DATA AND DEPENDENCIES
+cb     <- source(file.path(version_dir,'acq_cb_data_prep.R'))$value 
+
+
+###
+## Compute HHI 
+###
+hhi <- function(x){
+  z <- 100 * x / sum(x)
+  return(sum(z^2))
+}
 
 ###
 ## Complexity measure of actions 
@@ -98,25 +115,95 @@ setMethod("extract", signature = className("maxLik", "maxLik"),
           definition = extract.pglm)
 # ## set firms to create networks (focal firm or replication study focal firms)
 
+##===============================================
+## Load Ravenpack Data
+##-----------------------------------------------
+csvfile <- 'rp40_action_categories_2000_2018.csv'
+##convert
+rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
 
-## Compustat Data
-css<- read.csv(file.path(cs_dir,'segments.csv'), nrows=50, stringsAsFactors = F)
+
+##===============================================
+##  Financial controls
+##-----------------------------------------------
+# Size -- Ln employees, Firm age
+# Financials -- quick ratio (slack)
+# Performance -- lagged ROA
+# Org. learning -- Acquisition experience 
+# Market overlap -- lagged proportion of sales in overlapped segments (Compustat segments)
+
+## compustat - CrunchBase names for patching missing gvkey 
+## patch names with missing gvkey from crunchbase cb$co
+nkpatch <- data.frame(
+  company_name_unique=c('blackberry', 'broadsoft','cnova', 'compuware',
+                        'csc', 'digital-river','fujitsu','geeknet',
+                        'lg-display-co', 'looksmart', 'naspers', 'opera-software',
+                        'siemens','sony','sybase','syniverse-technologies',
+                        'telstra','velti','violin-memory','xerox'),
+  conm=c('BLACKBERRY LTD','BROADSOFT INC',  'CNOVA NV', 'COMPUWARE CORP',
+         'CSC HOLDINGS LLC', 'DIGITAL RIVER INC','FUJITSU LTD', 'GEEKNET INC',
+         'LG DISPLAY CO LTD', 'LOOKSMART GROUP INC', 'NASPERS LTD', 'OPERA LTD -ADR',
+         'SIEMENS AG', 'SONY CORP', 'SYBASE INC','SYNIVERSE HOLDINGS',
+         'TELSTRA CORP LTD', 'VELTI PLC', 'VIOLIN MEMORY INC','XEROX CORP'
+  ), stringsAsFactors=F)
+
+## Compustat SEGMENTS
+css<- read.csv(file.path(cs_dir,'segments.csv'), nrows=Inf, stringsAsFactors = F)
+css <- css[which(css$stype=='BUSSEG'),]
+css.cols <- c('gvkey','conm','sales',
+  "datadate", "curcds", "isosrc", "naicsh", 
+  "srcs",  "upds", "NAICSS1", "NAICSS2", "SICS1",   
+  "SICS2","geotp", "snms", "soptp1","soptp2",   
+  "tic", "cusip", "cik", "sic",      
+  "naics",'sales_dc','sales_fn','salexg','salexg_dc')
+css2 <- css[,css.cols]
+css2$year <- year(ymd(css2$datadate))
+css2 <- unique(css2)  ## remove duplicates from diff sourcedate (only using datadate)
+View(css2[sample(1:1e5,200,F),])
+
+## Compustat segments name gvkey 
+cssnm <- unique(css2[,c('conm','gvkey','tic','sic','cusip')])
+
+## segment totals
+css2$snms2 <- sapply(css2$snms,function(x) str_to_lower(trimws(x)) )
+SEGT <- ddply(css2,.(snms2,year),summarize,.progress = 'text',
+              sum=sum(sales),
+              sd=sd(sales),
+              min=min(sales),
+              avg=mean(sales),
+              max=max(sales),
+              hhi=hhi(sales),
+              n=length(sales),
+              sic=paste(unique(c(SICS1,SICS2,sic)),collapse = "|"),
+              conm=paste(unique(conm),collapse = "|"))
+# # View(segt)
+# css2[grepl('alphabet',css2$conm,T,T) & css2$year==2014, ]
+# segt[grepl('google',segt$snms2,T,T) & segt$year==2013, ]
+
 
 ## Compustat annual fundamentals
-csa <- read.csv(file.path(cs_dir,'fundamentals-annual.csv'), nrows=50, stringsAsFactors = F)
+csa <- read.csv(file.path(cs_dir,'fundamentals-annual.csv'), stringsAsFactors = F)
 ## SELECT COLUMNS FROM COMPUSTAT
 csa.cols <- c('conm','conml','gvkey','datadate','fyear','indfmt','consol','popsrc','tic','cusip',
           'act', ## total assets  (ln for size proxy)
           'che', ## cash and short term investments (scale by total assets for cash holdings)
           'emp', ## employees (ln employee size proxy) 
           'ebitda', ## ebidta (scale by total assets for ROA performance proxy)
-          'prcc_c', ## close market price at calendar year
-          # 'prccm', ## (monthly close price for december; use if prcc_c not available)
-          'csho', ## shares outstanding  (PRCC_C x CSHO = market value of equity)
-          'ceq' ## common/ordinary equity total
+          'rect', ##  receivables total
+          'lct', ## Current liabilities total
+          'act',  ## current assets
+          'invt'  ## inventories total
+          
 )
-csa2 <- csa[,csa.cols]
-
+csa <- csa[,csa.cols] ## replace in memory
+csa2 <- csa
+## coalese quick assets (else current assets)
+csa2$quick.a <- apply(csa2[,c('act','invt','che','rect')],1,function(x){
+  a <- x[1] - x[2]
+  b <- x[3] + x[4]
+  return(ifelse(!is.na(a), a, b))
+})
+csa2$quick <- csa2$quick.a / csa2$lct
 csa2$roa <- csa2$ebitda / csa2$act
 
 # head(cnt, 20)
@@ -207,10 +294,41 @@ firm_i <- 'microsoft'
   ## filter names in vertex order with MMC rivals (is IPO firm)
   firmnamesub <- V(nl$`2007`$gt)$vertex.names[which(V(nl$`2007`$gt)$vertex.names %in% .filtername)]
   nsub <- length(firmnamesub)
+  
+  ##----------------------------
+  ## NAMEKEY for compustat controls
+  ##_---------------------------
+  ## MAP names to COMPUSTAT 
+  namekey <- data.frame(name=firmnamesub, stringsAsFactors = F)
+  key.cols <- c('company_name','company_name_unique','cusip','tic','gvkey','conm','stock_symbol','stock_exchange_symbol')
+  namekey <- merge(namekey, cb$co[,key.cols], by.x='name', by.y='company_name_unique', all.x=T, all.y=F)
+  ## print missing firms to patch
+  for (i in which(is.na(namekey$gvkey))) {
+    idx <- grep(namekey$company_name[i],cssnm$conm,T,T)
+    if (length(idx)) {
+      cat(sprintf('\n\nidx=%s %s (%s)\n', paste(idx,collapse = '|'), namekey$company_name[i], namekey$name[i]))
+      print(cssnm[idx,])
+    }
+  }
+  nkpatch2 <- merge(nkpatch,cssnm[which(cssnm$conm%in%nkpatch$conm),],by='conm',all.x=T,all.y=F)
+  for (i in which(is.na(namekey$gvkey))) {
+    cat(sprintf('%s\n',i))
+    .nkid <- which( namekey$name[i] %in% nkpatch2$company_name_unique )
+    if (length(.nkid) & length(nkpatch2$cusip[.nkid])) {
+      namekey$cusip[i] <- nkpatch2$cusip[.nkid]
+      namekey$gvkey[i] <-  nkpatch2$gvkey[.nkid]
+      namekey$tic[i] <-  nkpatch2$tic[.nkid]  # namekey$sic[i] <-  nkpatch2$sic[.nkid]
+    }
+  }
+  #SYNIVERSE HOLDINGS INC-OLD	158473	SVR.1	7373
+  # write.csv(namekey, 'acq_sys_mmc_cs_name_key_patch.csv')
   #*********************88888888888
   
+  ##=============================================
+  ## Select Years
+  ##---------------------------------------------
   ## Aggregate DV Acquisitions by period (2 years, 3 years)
-  agpdlist <- list(c('2010'),c('2011'),c('2012'),c('2013'),
+  agpdlist <- list(c('2011'),c('2012'),c('2013'),
                    c('2014'),c('2015'),c('2016'))
   npds <- length(agpdlist)
   ## number of years in each period to aggregate
@@ -219,11 +337,39 @@ firm_i <- 'microsoft'
   netwavepds <- as.character(c(sapply(agpdlist, function(x)as.numeric(x[1]))))
   nwaves <- length(netwavepds)  ## number of network snapshots 
   
+  
+  ## FIRM-lEVEL PREDICTORS
   dfla <- data.frame()
   for (t in 1:npds) {
     t_yrs <- agpdlist[[t]]
+    yrs <- as.integer(t_yrs)
     cat(sprintf('t_yrs %s\n',paste(t_yrs, collapse = ',')))
     for (i in 1:length(firmnamesub)) {
+      gvi <- namekey$gvkey[which(namekey$name==firmnamesub[i])]
+      ## compustat segments for market growth ---------------
+      ## compute wieghted average market growth for firm by its segments sales
+      sgti <- css2[which(css2$gvkey==gvi & css2$year %in% yrs),]
+      sgti1 <- css2[which(css2$gvkey==gvi & css2$year %in% (yrs-1)),] ## lag 1 year
+      mkgrowth <- 1 ## default no change in markets ratio 1/1
+      if (nrow(sgti) > 0) {  ## if segments data update market growth avg
+        mkgvec <- c() ## get growth * proportion for each of firm's markets
+        for (j in 1:nrow(sgti)) {
+          sj <-  sgti$snms2[j] ## segment
+          rj <- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% yrs)] ) # total sales revenue  in sgement
+          rj1<- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% (yrs-1))] ) # total lagged sales revenue in sgement
+          gj <- ifelse( (is.na(rj)|is.na(rj1)|rj1==0),  1,  rj/rj1 ) # growth if exists
+          pj <- sgti$sales[j] / sum(sgti$sales, na.rm = T) ## proportion of portfolio
+          mkgvec <- c(mkgvec, pj * gj ) # weighted market growth 
+        }
+        mkgrowth <- sum(mkgvec, na.rm=T)
+      } 
+      ##compustat controls ---------------
+      csti <- csa2[which(csa2$gvkey==gvi & csa2$fyear %in% yrs),]
+      csti <- csti[order(csti$fyear, decreasing = F), ]
+      cs.exists <- nrow(csti) > 0
+      ## lagged 1 year
+      csti1 <-  csa2[which(csa2$gvkey==gvi & csa2$fyear %in% (yrs-1)),]
+      ## computed values from previous script  -------------------
       xti <- dfl[which(dfl$year %in% t_yrs & dfl$name==firmnamesub[i]), ]
       xti <- xti[order(xti$year, decreasing = F),]
       ## previous year
@@ -235,17 +381,19 @@ firm_i <- 'microsoft'
       ## lag 3 years
       yn3 <- as.integer(min(t_yrs)) - 3
       xtin3 <- dfl[which(dfl$year == yn3 & dfl$name==firmnamesub[i]), ]
-      #
+      # pd tmp df to rbind
       .tmp <- data.frame(
         i=i, name=firmnamesub[i],
         pd=t, y1=t_yrs[1], y2=t_yrs[length(t_yrs)],
         type=xti$type[1], 
-        # ## Mean of previous period years for covariates of state (size, position)
-        # employee_na_age=mean(xti$employee_na_age, na.rm=T),
-        # sales_na_0_mn=mean(xti$sales_na_0_mn, na.rm=T),
-        # acq_cnt_5=mean(xti$acq_cnt_5, na.rm=T),
-        # acq_sum_1=mean(xti$acq_sum_1, na.rm=T),
-        # cent_deg_mmc=mean(xti$cent_deg_mmc, na.rm=T),
+        # weighted average market growth
+        cs_mkgrowth=mkgrowth,
+        ## computstat controls
+        cs_employee= ifelse(cs.exists, csti$emp[1], 0),
+        cs_roa= ifelse(cs.exists, csti$roa[1], 0),
+        cs_roa_1= ifelse(cs.exists, csti1$roa[1], 0),
+        cs_quick= ifelse(cs.exists, csti$quick[1], 0),
+        cs_quick_1= ifelse(cs.exists, csti1$quick[1], 0),
         ## State (size, position) in peirod t is ending value from range in period (t-1)
         employee_na_age= xti$employee_na_age[1],
         sales_na_0_mn= xti$sales_na_0_mn[1],
@@ -261,10 +409,10 @@ firm_i <- 'microsoft'
         rp_NON_acquisitions=mean(xti$rp_NON_acquisitions, na.rm=T),
         #
         rp_net_restruct =sum(c(xti$rp_Acquisitions, 
-                               xti$rp_Market_expansions, 
                                xti$rp_New_product), na.rm=T),
         rp_net_invariant=sum(c(xti$rp_Capacity, 
                                xti$rp_Legal, 
+                               xti$rp_Market_expansions,
                                xti$rp_Marketing,
                                xti$rp_Pricing,
                                xti$rp_Strategic_alliances), na.rm=T),
@@ -391,8 +539,34 @@ firm_i <- 'microsoft'
   # screenreg(mract1, single.row = T, digits = 3)
   
   ##------------------
+  
+  ## DYAD COVARIATES
+  arrMktOvr <- array(0, dim=c(nsub, nsub, nwaves))
+  for (t in 1:npds) {
+    for (i in 1:length(firmnamesub)) {
+      for (j in 1:length(firmnamesub)) {
+        if (i==j) {
+          
+        }
+        
+        if (nrow(sgti) > 0) {  ## if segments data update market growth avg
+          mkgvec <- c() ## get growth * proportion for each of firm's markets
+          for (j in 1:nrow(sgti)) {
+            sj <-  sgti$snms2[j] ## segment
+            rj <- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% yrs)] ) # total sales revenue  in sgement
+            rj1<- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% (yrs-1))] ) # total lagged sales revenue in sgement
+            gj <- ifelse( (is.na(rj)|is.na(rj1)|rj1==0),  1,  rj/rj1 ) # growth if exists
+            pj <- sgti$sales[j] / sum(sgti$sales, na.rm = T) ## proportion of portfolio
+            mkgvec <- c(mkgvec, pj * gj ) # weighted market growth 
+          }
+          mkgrowth <- sum(mkgvec, na.rm=T)
+        } 
+        
+      }
+    }
+  }
  
-  ## COVARIATES (Acquisitions)
+  ## FIRM COVARIATES (Acquisitions)
   arrNetR <- array(0,dim=c(nsub,npds))
   arrNetI <- array(0,dim=c(nsub,npds))
   arrAcq <- array(0,dim=c(nsub,npds))
@@ -462,6 +636,7 @@ firm_i <- 'microsoft'
   nmsale <- unique(dfla$name[which(dfla$sales_na_0_mn>0)])
   nm.ri <- unique(dfla$name[which(dfla$rp_net_restruct>0 |
                                     dfla$rp_net_invariant>0)])
+  nm.nk <- unique(dfla$name[which(dfla$name %in% namekey$name)])
   # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
   ##
   firmsubidx <- which(firmnamesub %in% intersect(nmsale,nm.ri)) ## ## FILTER ACQUISITIONS > 0
@@ -504,7 +679,7 @@ firm_i <- 'microsoft'
   
   par(mfrow=c(1,2), mar=c(4.5,2,.3,2))
   hist(arrNetR2,main=''); hist(arrNetI2,main='')
-  
+  ##----------------------------
   
   ##-------------------
   ## SAOM INIT VARS

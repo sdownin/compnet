@@ -409,7 +409,6 @@ firm_i <- 'microsoft'
     stat_smooth(method = "lm",formula=y~x+I(x^2), se=T, size=1) +
     geom_point() + theme_bw() + facet_wrap(facets = .~year)
   ##------------------
-  
   mract1 <- pglm(rp_Acquisitions_ma ~  log(1+acq_cnt_5) + log(1+rp_NON_acquisitions) +
                    I(acq_sum_1/1e9)  + I(employee_na_age/1e3) +
                    I(sales_na_0_mn/1e6) +

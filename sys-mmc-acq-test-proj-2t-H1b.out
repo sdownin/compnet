@@ -1734,3 +1734,135 @@ covariance/correlation matrix of X can be found using
 summary(ans) within R, or by using the 'verbose' option in Siena07.
  
 Total computation time 17.24 seconds.
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 26/09/2019 03:28:10
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Estimation by stochastic approximation algorithm.
+=================================================
+
+Current random number seed is 135.
+Effects object used: sysEff 
+Behavioral Model Type:
+ 
+Estimation method: conditional moment estimation
+Conditioning variable is the total number of observed changes ("distance") 
+in behavioral variable  
+Distances for simulations are
+period   :   1   2   3   4   5   6
+distance :   24  22  33  31  22  38.
+Standard errors are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Initial value of gain parameter is  0.2828427.
+Reduction factor for gain parameter is  0.5000000.
+Number of subphases in Phase 2 is 4.
+
+Initial parameter values are 
+  0.1  Rate parameter                         0.5721
+  0.2  Rate parameter                         0.4464
+  0.3  Rate parameter                         0.5925
+  0.4  Rate parameter                         0.6495
+  0.5  Rate parameter                         0.4284
+  0.6  Rate parameter                         0.9082
+  1. eval:  depAcq linear shape                             0.1490
+  2. eval:  depAcq quadratic shape                          0.0000
+  3. eval:  depAcq: effect from covSmmc                     0.0000
+  4. eval:  depAcq: effect from covSmmcSq                   0.0000
+  5. eval:  depAcq: effect from covEmploy                   0.0000
+  6. eval:  depAcq: effect from covSales                    0.0000
+  7. eval:  depAcq: effect from covAcqExper                 0.0000
+
+
+Observed values of target statistics are
+  1. depAcq centered sum                                                 23.0000
+  2. depAcq sum of cent. squares                                        936.3433
+  3. depAcq x covSmmc                                                   390.0564
+  4. depAcq x covSmmcSq                                                1549.9441
+  5. depAcq x covEmploy                                                22253.8898
+  6. depAcq x covSales                                                   25.8048
+  7. depAcq x covAcqExper                                               505.5283
+
+ 7 parameters, 7 statistics
+
+Estimation of derivatives by the LR method (type 1).
+
+
+@2
+End of stochastic approximation algorithm, phase 3.
+---------------------------------------------------
+
+Total of 3909 iterations.
+Parameter estimates based on 2909 iterations,
+basic rate parameters as well as 
+convergence diagnostics, covariance and derivative matrices based on 1000 iterations.
+
+Information for convergence diagnosis.
+Averages, standard deviations, and t-ratios for deviations from targets:
+  1.  -0.3920  13.2359  -0.0296 
+  2.  -0.8144  25.8530  -0.0315 
+  3.  -0.1806  14.6721  -0.0123 
+  4.  -1.0480  44.1146  -0.0238 
+  5.   2.1476 898.4122   0.0024 
+  6.  -0.0029   1.1799  -0.0024 
+  7.  -0.7211  12.3205  -0.0585 
+
+Good convergence is indicated by the t-ratios being close to zero.
+
+Overall maximum convergence ratio =  0.0812 .
+
+
+
+@2
+Estimation Results.
+-------------------
+
+Regular end of estimation algorithm.
+Total of 3909 iteration steps.
+
+
+@3
+Estimates and standard errors
+                             
+Rate parameters:
+ 0.1  Rate parameter period 1     1.0075  (   0.2557)
+ 0.2  Rate parameter period 2     0.8557  (   0.2158)
+ 0.3  Rate parameter period 3     1.4622  (   0.3440)
+ 0.4  Rate parameter period 4     1.2859  (   0.2930)
+ 0.5  Rate parameter period 5     0.7922  (   0.2025)
+ 0.6  Rate parameter period 6     1.8071  (   0.4415)
+
+Other parameters:
+ 1. eval:  depAcq linear shape                                     0.2293  (   0.1037)
+ 2. eval:  depAcq quadratic shape                                  0.0247  (   0.0540)
+ 3. eval:  depAcq: effect from covSmmc                            -0.2943  (   0.2283)
+ 4. eval:  depAcq: effect from covSmmcSq                           0.2069  (   0.0868)
+ 5. eval:  depAcq: effect from covEmploy                          -0.0010  (   0.0020)
+ 6. eval:  depAcq: effect from covSales                            2.1875  (   2.4233)
+ 7. eval:  depAcq: effect from covAcqExper                         0.1150  (   0.1147)
+
+
+@3
+Covariance matrices
+                   
+Covariance matrix of estimates (correlations below diagonal):
+     0.011     -0.001     -0.007      0.003      0.000      0.078     -0.001
+    -0.166      0.003      0.001      0.000      0.000      0.012     -0.003
+    -0.295      0.042      0.052     -0.018      0.000      0.002      0.004
+     0.386     -0.042     -0.919      0.008      0.000     -0.005     -0.003
+    -0.171     -0.254      0.069     -0.087      0.000     -0.004      0.000
+     0.310      0.090      0.004     -0.025     -0.730      5.872     -0.056
+    -0.086     -0.460      0.147     -0.303      0.210     -0.200      0.013
+
+Derivative matrix of expected statistics X by parameters and
+covariance/correlation matrix of X can be found using
+summary(ans) within R, or by using the 'verbose' option in Siena07.
+ 
+Total computation time 20.75 seconds.

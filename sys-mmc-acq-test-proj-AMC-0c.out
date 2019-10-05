@@ -1,0 +1,224 @@
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 26/09/2019 07:10:48
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Estimation by stochastic approximation algorithm.
+=================================================
+
+Current random number seed is 135.
+Effects object used: sysEff 
+Model Type:
+ 
+Behavioral Model Type:
+Behavior 1 depNetR : 
+Behavior 2 depNetI : 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Standard errors are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Initial value of gain parameter is  0.1414214.
+Reduction factor for gain parameter is  0.5000000.
+Number of subphases in Phase 2 is 4.
+
+Initial parameter values are 
+  1. rate:  constant depMMC rate (period 1)                 0.5953
+  2. rate:  constant depMMC rate (period 2)                 0.9134
+  3. rate:  constant depMMC rate (period 3)                 0.6407
+  4. rate:  constant depMMC rate (period 4)                 0.5953
+  5. rate:  constant depMMC rate (period 5)                 1.5950
+  6. eval:  degree (density)                               -0.5582
+  7. eval:  transitive triads                               0.0000
+  8. eval:  GWESP (69)                                      0.0000
+  9. rate:  rate depNetR (period 1)                         0.4034
+ 10. rate:  rate depNetR (period 2)                         0.6828
+ 11. rate:  rate depNetR (period 3)                         0.7375
+ 12. rate:  rate depNetR (period 4)                         0.7459
+ 13. rate:  rate depNetR (period 5)                         0.6586
+ 14. eval:  depNetR linear shape                            0.0564
+ 15. eval:  depNetR quadratic shape                         0.0000
+ 16. eval:  depNetR average alter                           0.0000
+ 17. eval:  depNetR: effect from covAcqExper                0.0000
+ 18. rate:  rate depNetI (period 1)                         0.3921
+ 19. rate:  rate depNetI (period 2)                         0.3809
+ 20. rate:  rate depNetI (period 3)                         0.3697
+ 21. rate:  rate depNetI (period 4)                         0.3360
+ 22. rate:  rate depNetI (period 5)                         0.3135
+ 23. eval:  depNetI linear shape                           -0.0967
+ 24. eval:  depNetI quadratic shape                         0.0000
+ 25. eval:  depNetI average alter                           0.0000
+ 26. eval:  depNetI: effect from covAge                     0.0000
+ 27. eval:  depNetI: effect from covEmploy                  0.0000
+ 28. eval:  depNetI: effect from covSales                   0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                                26.0000
+  2. Amount of network change in period 2                                40.0000
+  3. Amount of network change in period 3                                28.0000
+  4. Amount of network change in period 4                                26.0000
+  5. Amount of network change in period 5                                70.0000
+  6. Number of edges                                                    539.0000
+  7. Number of transitive triads                                        294.0000
+  8. Numb. edgew. shrd prtns.(69)                                      1106.1357
+  9. Amount of behavioral change in period 1 on depNetR                  27.0000
+ 10. Amount of behavioral change in period 2 on depNetR                  45.0000
+ 11. Amount of behavioral change in period 3 on depNetR                  43.0000
+ 12. Amount of behavioral change in period 4 on depNetR                  53.0000
+ 13. Amount of behavioral change in period 5 on depNetR                  48.0000
+ 14. depNetR centered sum                                                 9.6667
+ 15. depNetR sum of cent. squares                                       848.8976
+ 16. depNetR average alters                                             164.3654
+ 17. depNetR x covAcqExper                                              451.4387
+ 18. Amount of behavioral change in period 1 on depNetI                  26.0000
+ 19. Amount of behavioral change in period 2 on depNetI                  25.0000
+ 20. Amount of behavioral change in period 3 on depNetI                  24.0000
+ 21. Amount of behavioral change in period 4 on depNetI                  21.0000
+ 22. Amount of behavioral change in period 5 on depNetI                  19.0000
+ 23. depNetI centered sum                                                -3.1667
+ 24. depNetI sum of cent. squares                                       289.4023
+ 25. depNetI average alters                                              51.4830
+ 26. depNetI x covAge                                                  3108.3371
+ 27. depNetI x covEmploy                                               14272.6481
+ 28. depNetI x covSales                                                  15.8880
+
+ 28 parameters, 28 statistics
+
+Estimation of derivatives by the LR method (type 1).
+
+
+@2
+End of stochastic approximation algorithm, phase 3.
+---------------------------------------------------
+
+Total of 4483 iterations.
+Parameter estimates based on 3483 iterations,
+convergence diagnostics, covariance and derivative matrices based on 1000 iterations.
+
+Information for convergence diagnosis.
+Averages, standard deviations, and t-ratios for deviations from targets:
+  1.  -0.2540    6.9440  -0.0366 
+  2.   0.2120    8.3580   0.0254 
+  3.  -0.2400    7.1773  -0.0334 
+  4.  -0.1720    7.0612  -0.0244 
+  5.   0.1120   11.3464   0.0099 
+  6.  -0.1830    9.7075  -0.0189 
+  7.  -0.0780   11.6127  -0.0067 
+  8.  -0.7829   31.4992  -0.0249 
+  9.  -0.1020    4.8476  -0.0210 
+ 10.   0.0780    6.0273   0.0129 
+ 11.  -0.0610    5.5523  -0.0110 
+ 12.   0.0520    6.1803   0.0084 
+ 13.  -0.0520    6.0314  -0.0086 
+ 14.   0.5090   15.9741   0.0319 
+ 15.  -0.8640   28.8701  -0.0299 
+ 16.   0.1150   25.9459   0.0044 
+ 17.  -0.5153   15.1983  -0.0339 
+ 18.  -0.0020    4.2026  -0.0005 
+ 19.   0.0260    4.0348   0.0064 
+ 20.   0.1430    4.0508   0.0353 
+ 21.  -0.0510    4.0058  -0.0127 
+ 22.  -0.0690    3.8069  -0.0181 
+ 23.   0.2570   10.6345   0.0242 
+ 24.   0.4803   19.4394   0.0247 
+ 25.  -0.0449   14.1011  -0.0032 
+ 26.  25.8919  362.7813   0.0714 
+ 27.  69.6525 1118.5833   0.0623 
+ 28.   0.0604    1.2660   0.0477 
+
+Good convergence is indicated by the t-ratios being close to zero.
+
+Overall maximum convergence ratio =  0.1458 .
+
+
+
+@2
+Estimation Results.
+-------------------
+
+Regular end of estimation algorithm.
+Total of 4483 iteration steps.
+
+
+@3
+Estimates and standard errors
+                             
+Network Dynamics
+ 1. rate:  constant depMMC rate (period 1)                         0.1777  (   0.0515)
+ 2. rate:  constant depMMC rate (period 2)                         0.2844  (   0.0739)
+ 3. rate:  constant depMMC rate (period 3)                         0.1855  (   0.0542)
+ 4. rate:  constant depMMC rate (period 4)                         0.1720  (   0.0495)
+ 5. rate:  constant depMMC rate (period 5)                         0.5095  (   0.1026)
+ 6. eval:  degree (density)                                       -3.0585  (   0.3155)
+ 7. eval:  transitive triads                                      -0.6011  (   0.5576)
+ 8. eval:  GWESP (69)                                              3.7280  (   1.0025)
+
+Behavior Dynamics
+ 9. rate:  <1> rate depNetR (period 1)                             0.6854  (   0.1465)
+10. rate:  <1> rate depNetR (period 2)                             1.4015  (   0.3039)
+11. rate:  <1> rate depNetR (period 3)                             1.3628  (   0.2838)
+12. rate:  <1> rate depNetR (period 4)                             1.8608  (   0.3844)
+13. rate:  <1> rate depNetR (period 5)                             1.4545  (   0.2912)
+14. eval:  <1> depNetR linear shape                               -0.1909  (   0.0888)
+15. eval:  <1> depNetR quadratic shape                            -0.0352  (   0.0499)
+16. eval:  <1> depNetR average alter                               0.1879  (   0.0832)
+17. eval:  <1> depNetR: effect from covAcqExper                    0.2822  (   0.0830)
+18. rate:  <2> rate depNetI (period 1)                             1.7786  (   0.7103)
+19. rate:  <2> rate depNetI (period 2)                             1.7566  (   0.5008)
+20. rate:  <2> rate depNetI (period 3)                             1.7498  (   0.6751)
+21. rate:  <2> rate depNetI (period 4)                             1.2292  (   0.3952)
+22. rate:  <2> rate depNetI (period 5)                             1.0452  (   0.3066)
+23. eval:  <2> depNetI linear shape                               -1.9585  (   0.1974)
+24. eval:  <2> depNetI quadratic shape                             0.3313  (   0.1097)
+25. eval:  <2> depNetI average alter                               0.4655  (   0.1843)
+26. eval:  <2> depNetI: effect from covAge                         0.0050  (   0.0038)
+27. eval:  <2> depNetI: effect from covEmploy                      0.0022  (   0.0015)
+28. eval:  <2> depNetI: effect from covSales                       1.3791  (   1.1883)
+
+
+@3
+Covariance matrices
+                   
+Covariance matrix of estimates (correlations below diagonal):
+     0.003      0.000      0.000      0.000      0.000     -0.001      0.000      0.002      0.000      0.000      0.000      0.000     -0.001      0.000      0.000      0.000      0.000     -0.001      0.002      0.000      0.001      0.000      0.000      0.000     -0.001      0.000      0.000      0.001
+     0.018      0.005      0.000      0.000      0.000     -0.001      0.000      0.001      0.000      0.002     -0.001      0.000      0.000      0.000      0.000      0.000      0.000     -0.001     -0.008      0.001      0.001     -0.001      0.001      0.000      0.000      0.000      0.000     -0.002
+    -0.026      0.034      0.003      0.000      0.000      0.000      0.001     -0.002      0.000      0.000     -0.001      0.000      0.000      0.000      0.000      0.000      0.000      0.003     -0.002     -0.005     -0.001      0.000      0.000      0.000      0.001      0.000      0.000     -0.001
+     0.011      0.021      0.002      0.002      0.000     -0.001     -0.001      0.003      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.000      0.001     -0.001      0.000      0.002      0.000      0.000      0.000      0.000      0.000      0.000      0.003
+     0.028      0.031     -0.002      0.017      0.011     -0.002      0.000     -0.003      0.000      0.001      0.000     -0.002     -0.006      0.000      0.000      0.000      0.000      0.001      0.001     -0.001     -0.001      0.005      0.000      0.000      0.000      0.000      0.000     -0.008
+    -0.075     -0.041      0.020     -0.073     -0.052      0.100      0.096     -0.234      0.001     -0.004     -0.005      0.006     -0.012      0.000      0.000      0.000      0.000     -0.022     -0.015     -0.010      0.001      0.001      0.002     -0.001      0.001      0.000      0.000     -0.009
+    -0.008      0.004      0.046     -0.045      0.008      0.545      0.311     -0.522      0.002      0.001     -0.015     -0.007     -0.007     -0.001     -0.002      0.000      0.001     -0.022     -0.006     -0.028      0.013     -0.006      0.004     -0.003      0.001      0.000      0.000     -0.011
+     0.038      0.007     -0.041      0.060     -0.033     -0.740     -0.934      1.005     -0.004      0.005      0.025      0.007      0.028      0.001      0.002      0.000     -0.001      0.050      0.029      0.060     -0.007      0.006     -0.006      0.005     -0.003      0.000      0.000      0.028
+    -0.034     -0.027     -0.052      0.053     -0.027      0.028      0.029     -0.028      0.021      0.000      0.002      0.004     -0.002      0.000      0.000     -0.001      0.001     -0.022      0.000     -0.004      0.000      0.002      0.000     -0.001      0.002      0.000      0.000      0.001
+    -0.026      0.098     -0.027     -0.004      0.032     -0.041      0.008      0.015     -0.002      0.092     -0.002      0.003     -0.002      0.001      0.001     -0.002      0.002      0.002      0.028     -0.007      0.000     -0.002     -0.001      0.000      0.002      0.000      0.000      0.003
+    -0.008     -0.030     -0.053     -0.029     -0.003     -0.058     -0.097      0.088      0.049     -0.022      0.081      0.005      0.000     -0.001      0.002     -0.001      0.001      0.001      0.009     -0.014     -0.001      0.000     -0.001      0.000      0.001      0.000      0.000      0.022
+    -0.023      0.003     -0.002     -0.005     -0.053      0.049     -0.035      0.018      0.064      0.026      0.045      0.148      0.000     -0.002      0.001     -0.002      0.002     -0.013     -0.002      0.002      0.028     -0.002      0.003      0.003     -0.002      0.000      0.000     -0.063
+    -0.040      0.006      0.006      0.004     -0.216     -0.132     -0.046      0.097     -0.048     -0.021      0.000     -0.001      0.085     -0.001     -0.001      0.000      0.002      0.012      0.009      0.001      0.000     -0.006     -0.001      0.000      0.000      0.000      0.000     -0.005
+     0.028     -0.054      0.035     -0.014      0.013     -0.010     -0.025      0.016      0.021      0.054     -0.025     -0.061     -0.057      0.008      0.000     -0.005      0.000      0.000      0.001      0.002     -0.001      0.000      0.000      0.000      0.000      0.000      0.000      0.002
+    -0.051     -0.055      0.020     -0.049      0.031     -0.007     -0.067      0.045      0.021      0.033      0.122      0.031     -0.053      0.067      0.002     -0.001     -0.002      0.005      0.002      0.002      0.000      0.001      0.000      0.000     -0.001      0.000      0.000     -0.002
+     0.033      0.058     -0.034      0.042     -0.039      0.012      0.000      0.003     -0.075     -0.070     -0.028     -0.051     -0.013     -0.612     -0.322      0.007      0.000     -0.002     -0.002      0.005      0.003     -0.001      0.000      0.000      0.000      0.000      0.000      0.002
+    -0.011      0.040     -0.075      0.037     -0.009     -0.009      0.026     -0.010      0.055      0.084      0.039      0.048      0.083      0.021     -0.519      0.047      0.007     -0.003      0.001     -0.005     -0.001     -0.001     -0.001      0.000      0.000      0.000      0.000      0.001
+    -0.015     -0.024      0.089      0.039      0.010     -0.098     -0.056      0.071     -0.208      0.011      0.007     -0.048      0.057     -0.002      0.143     -0.031     -0.045      0.505      0.014      0.004     -0.013      0.004     -0.006      0.008     -0.009      0.000      0.000      0.019
+     0.083     -0.208     -0.078     -0.037      0.025     -0.092     -0.021      0.059      0.006      0.186      0.065     -0.009      0.065      0.012      0.078     -0.042      0.027      0.040      0.251      0.007     -0.006     -0.002     -0.006      0.009     -0.004      0.000      0.000      0.040
+    -0.002      0.018     -0.150     -0.004     -0.012     -0.045     -0.073      0.088     -0.041     -0.032     -0.072      0.006      0.003      0.039      0.073      0.085     -0.083      0.007      0.021      0.456      0.011     -0.003     -0.009      0.012     -0.006      0.000      0.000      0.036
+     0.066      0.039     -0.023      0.104     -0.015      0.005      0.061     -0.017      0.001     -0.004     -0.008      0.187      0.000     -0.035     -0.022      0.082     -0.036     -0.047     -0.030      0.041      0.156      0.000      0.000      0.006     -0.012      0.000      0.000     -0.031
+     0.025     -0.027     -0.007      0.022      0.150      0.010     -0.038      0.021      0.040     -0.017     -0.003     -0.015     -0.070     -0.005      0.038     -0.043     -0.023      0.020     -0.010     -0.014     -0.001      0.094     -0.008      0.003     -0.002      0.000      0.000      0.002
+     0.002      0.042     -0.039      0.021     -0.004      0.029      0.039     -0.032     -0.015     -0.019     -0.018      0.033     -0.022      0.008     -0.028      0.028     -0.031     -0.042     -0.061     -0.066      0.000     -0.128      0.039     -0.010     -0.018      0.000      0.000     -0.006
+     0.009     -0.004     -0.068      0.016     -0.015     -0.034     -0.043      0.045     -0.045     -0.003     -0.016      0.080      0.015     -0.007      0.091      0.006      0.014      0.098      0.155      0.168      0.136      0.090     -0.455      0.012     -0.006      0.000      0.000     -0.020
+    -0.068     -0.014      0.079     -0.038     -0.003      0.011      0.014     -0.017      0.057      0.033      0.022     -0.024      0.009     -0.017     -0.065      0.005      0.027     -0.068     -0.044     -0.047     -0.163     -0.038     -0.485     -0.284      0.034      0.000      0.000      0.009
+     0.007     -0.014      0.080      0.022      0.008      0.038     -0.011     -0.010     -0.002      0.036     -0.019     -0.013     -0.127      0.066      0.029     -0.036     -0.002      0.035     -0.097      0.020     -0.008     -0.046     -0.077     -0.075      0.061      0.000      0.000      0.000
+    -0.016     -0.021      0.045     -0.083      0.062     -0.010      0.021     -0.012      0.000     -0.004     -0.034     -0.027      0.084     -0.031     -0.012     -0.003     -0.038     -0.053      0.001     -0.087     -0.043      0.008      0.067     -0.327      0.140     -0.466      0.000     -0.001
+     0.020     -0.018     -0.013      0.046     -0.066     -0.024     -0.016      0.024      0.003      0.009      0.066     -0.138     -0.013      0.019     -0.040      0.024      0.009      0.022      0.068      0.045     -0.065      0.005     -0.027     -0.155      0.040      0.081     -0.482      1.412
+
+Derivative matrix of expected statistics X by parameters and
+covariance/correlation matrix of X can be found using
+summary(ans) within R, or by using the 'verbose' option in Siena07.
+ 
+Total computation time 120.19 seconds.
