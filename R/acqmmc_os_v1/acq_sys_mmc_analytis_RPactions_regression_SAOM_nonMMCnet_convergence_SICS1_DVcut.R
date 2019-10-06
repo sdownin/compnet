@@ -84,6 +84,17 @@ checkSienaConv <- function(res, t.lim=0.1,max.lim=0.25) {
   return(ck)
 }
 
+##
+# Plot from adjacency matrix
+##
+arrPlot <- function(arr, t=1, min.deg=0)
+{
+  par(mar=c(.1,.1,.1,.1))
+  gx=graph.adjacency(arr[,,t])
+  plot(induced.subgraph(gx,which(igraph::degree(gx)>=min.deg)), 
+       edge.arrow.width=.2, edge.arrow.size=.1, 
+       vertex.label.cex=.5, vertex.size=5)
+}
 
 ###
 ## CrunchBase category Cosine Similarity
@@ -550,10 +561,10 @@ firm_i <- 'microsoft'
   #########################################
   ## Save / Load Workspace Image for firm_i
   ##----------------------------------------
-  workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
-                                    firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
-  #save.image(file = workspace_file)
-  load(file = workspace_file)
+  # workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
+  #                                   firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
+  # #save.image(file = workspace_file)
+  # load(file = workspace_file)
   #########################################
   
   ##------------------
@@ -640,12 +651,13 @@ firm_i <- 'microsoft'
   ## FILTER YEARS
   yridx <- 2:(length(netwavepds))#c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
   ## FILTER FIRMS
-  nmsale <- unique(dfla$name[which(dfla$sales_na_0_mn>0)])
-  nm.ri <- unique(dfla$name[which(dfla$rp_net_restruct>0 |
-                                    dfla$rp_net_invariant>0)])
+  # nmsale <- which(firmnamesub %in% unique(dfla$name[!is.na(dfla$cs_roa_1)]))
+  idxnm <- which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
+  idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
+  
   # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
   ##
-  firmsubidx <- which(firmnamesub %in% intersect(nmsale,nm.ri)) ## ## FILTER ACQUISITIONS > 0
+  firmsubidx <- intersect(idxnm,idxdeg) ## ## FILTER ACQUISITIONS > 0
   
   # firmsubidx <- 1:length(firmnamesub)  ## KEEP ALL
   ##
@@ -695,6 +707,7 @@ firm_i <- 'microsoft'
   behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restr'; MarketGrowthWeight<-T }))
   behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invar'; MarketGrowthWeight<-T }))
   matplot(t(arrNetRw2[c(30,45),]), type='b')
+  arrPlot(mmcarr2,5,0)
   ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowthWeight)) + 
     geom_bar(stat="identity", width=.5, position = "dodge") +
     facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + theme_bw()
@@ -771,7 +784,7 @@ firm_i <- 'microsoft'
   ##
   sysEff <- getEffects(sysDat)
   # effectsDocumentation(sysEff)
-  sysEff <- includeEffects(sysEff, gwesp, isolateNet,
+  sysEff <- includeEffects(sysEff, gwesp,
                            name="depMMC")
   sysEff <- includeEffects(sysEff, egoX,
                            name="depMMC", interaction1 = 'covAge')

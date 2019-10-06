@@ -552,7 +552,7 @@ firm_i <- 'microsoft'
   ##----------------------------------------
   workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
                                     firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
-  save.image(file = workspace_file)
+  # save.image(file = workspace_file)
   load(file = workspace_file)
   #########################################
   
@@ -586,8 +586,8 @@ firm_i <- 'microsoft'
       .namei <- firmnamesub[i]
       idx <- which(dfla$pd==t & dfla$name==.namei)
       # behavior cutoffs
-      cut.r <- 9
-      cut.i <- 9
+      cut.r <- Inf
+      cut.i <- Inf
       min.r <- 0
       min.i <- 0
       logXf <- log2
@@ -640,13 +640,14 @@ firm_i <- 'microsoft'
   
   ## FILTER YEARS
   yridx <- 2:(length(netwavepds))#c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
-  ## FILTER FIRMS
-  nmsale <- unique(dfla$name[which(dfla$sales_na_0_mn>0)])
-  nm.ri <- unique(dfla$name[which(dfla$rp_net_restruct>0 |
-                                    dfla$rp_net_invariant>0)])
+  ## FILTER FIRMS (nm=has actions; dex=has MMC relations)
+  # nmsale <- which(firmnamesub %in% unique(dfla$name[!is.na(dfla$cs_roa_1)]))
+  idxnm <- which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
+  idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
+  
   # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
   ##
-  firmsubidx <- which(firmnamesub %in% intersect(nmsale,nm.ri)) ## ## FILTER ACQUISITIONS > 0
+  firmsubidx <- intersect(idxnm,idxdeg) ## ## FILTER ACQUISITIONS > 0
   
   # firmsubidx <- 1:length(firmnamesub)  ## KEEP ALL
   ##
@@ -695,10 +696,10 @@ firm_i <- 'microsoft'
   behdf <- rbind(behdf, within(plyr::count(c(arrNetI2[])),{beh<-'Invar'; MarketGrowthWeight<-F }))
   behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restr'; MarketGrowthWeight<-T }))
   behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invar'; MarketGrowthWeight<-T }))
+  matplot(t(arrNetRw2[c(30,45),]), type='b')
   ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowthWeight)) + 
     geom_bar(stat="identity", width=.5, position = "dodge") +
     facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + theme_bw()
-  matplot(t(arrNetRw2[c(30,45),]), type='b')
   ##----------------------------
   
   # ## DYAD FIXED COVARIATES
@@ -765,7 +766,6 @@ firm_i <- 'microsoft'
   ##
   ##--------------------------------------
   sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
-                            # covNetRw, covMktGro,
                             covEmploy, covAcqExper, covAge, covSales,
                             covCatSim, covSlack,
                             nodeSets=list(FIRMS) ) #,smoke1, alcohol
@@ -774,13 +774,15 @@ firm_i <- 'microsoft'
   # effectsDocumentation(sysEff)
   sysEff <- includeEffects(sysEff, gwesp, isolateNet,
                            name="depMMC")
+  sysEff <- includeEffects(sysEff, outRateLog,
+                           name="depMMC", type='rate')
   sysEff <- includeEffects(sysEff, egoX,
                            name="depMMC", interaction1 = 'covAge')
   sysEff <- includeEffects(sysEff, X,
                            name="depMMC", interaction1 = 'covCatSim')
   # sysEff <- includeEffects(sysEff, totDist2,
   #                          name="depMMC", type='creation', interaction1 = 'covNetRw')
-  sysEff <- includeInteraction(sysEff, totDist2, 
+  sysEff <- includeEffects(sysEff, totDist2, 
                               name="depMMC", type='creation', interaction1 = 'depNetR')
   ## CONTROL BEHVAIOR
   sysEff <- includeEffects(sysEff, isolate,
@@ -807,24 +809,30 @@ firm_i <- 'microsoft'
   # sysEff <- includeEffects(sysEff, effFrom,
   #                          name="depNetR", interaction1 = 'covMktGro')
   ## BEHAVIOR
+  # control rivals' pressure
+  sysEff <- includeEffects(sysEff, avSim,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, avSim,
+                           name="depNetR", interaction1 = 'depMMC')
+  # H1a H2a (degree effect on behavior level)
   sysEff <- includeEffects(sysEff, outdeg,
                            name="depNetR", interaction1 = 'depMMC')
   sysEff <- includeEffects(sysEff, outdeg,
                            name="depNetI", interaction1 = 'depMMC')
+  # H1b H2b  (degree effect on rate of behavior change)
+  sysEff <- includeEffects(sysEff, outRate,
+                           name="depNetR", type='rate', interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, outRate,
+                           name="depNetI", type='rate', interaction1 = 'depMMC')
   #
-  sysEff <- includeEffects(sysEff, totAlt,
-                           name="depNetI", interaction1 = 'depMMC')
-  sysEff <- includeEffects(sysEff, totAlt,
-                           name="depNetR", interaction1 = 'depMMC')
-  #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-ctrl-0', 
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-DVorig-0', 
                                  firstg = 0.05,  ## default: 0.2
                                  n2start=120,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
                                  seed=135, maxlike=F)
   # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
   sysResAMC0 <- siena07(sysMod, data=sysDat, effects=sysEff, 
-                       prevAns = sysResAMC0,
+                       # prevAns = sysResAMC0,
                        batch = T,   returnDeps = T, ## necessary for GOF
                        useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
   conv <- checkSienaConv(sysResAMC0)
@@ -840,10 +848,10 @@ firm_i <- 'microsoft'
                                varName="depMMC"); plot(gfAMC0.tc)
 
   print01report(sysResAMC0)
-  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2.html', type = 'html', sig = T, d = 3, vertLine = T)
-  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2.tex', type = 'tex', sig = T, d = 3, vertLine = T)
+  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVorig.html', type = 'html', sig = T, d = 3, vertLine = T)
+  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVorig.tex', type = 'tex', sig = T, d = 3, vertLine = T)
   saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_mkt_gro_indirect.rds')
+          file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVorig.rds')
   
   ###  
 ###  
