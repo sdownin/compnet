@@ -58,7 +58,7 @@ hhi <- function(x, na.rm=FALSE){
 ##
 arrPlot <- function(arr, t=1, min.deg=0, ...)
 {
-  top <- ifelse(is.null(main)|is.na(main), .1, 2)
+  top <- ifelse('main' %in% names(list(...)), 2, .1)
   par(mar=c(.1,.1,top,.1))
   gx=graph.adjacency(arr[,,t])
   plot(induced.subgraph(gx,which(igraph::degree(gx)>=min.deg)), 
@@ -136,6 +136,162 @@ cbCatCosSim <- function(df)
   ## RETURN
   return(sim)
 }
+
+
+##
+#
+##
+saomResDf <- function(res, digits=3) 
+{
+  df <- data.frame(
+    DV=res$effects$name,
+    Effect=res$effects$effectName,
+    Est=round(res$theta, digits = digits),
+    se=round(res$se, digits = digits),
+    t=round(res$theta/res$se, digits = digits),
+    p=round(pt(abs(res$theta/res$se), df=Inf, lower.tail = F) * 2, digits = digits),
+    stringsAsFactors = F
+  )
+  df$sig <- sapply(df$p,function(x){
+    if (x < 0.001) return('***')
+    if (x < 0.01) return('** ')
+    if (x < 0.05) return('*  ')
+    return('   ')
+  })
+  idx.rate <- grep('rate',df$Effect,T,T)
+  df$t[idx.rate] <- NA
+  df$p[idx.rate] <- NA
+  df$sig[idx.rate] <- '   '
+  return(df)
+}
+
+##
+#
+##
+cbindDfList <- function(dfList) {
+  df <- dfList[[1]]
+  for (i in 2:length(dfList)) {
+    df <- cbind(df, dfList[[i]])
+  }
+  return(df)
+}
+
+
+##
+#  Create SAOM regression comparison Table
+##
+saomTable <- function(resList, file=NA, nameMap=NA, digits=3, drop.dv.col=TRUE)
+{
+  
+  dvNames <- c()
+  for (res in resList) {
+    dvNames <- unique(c(dvNames, res$effects$name))
+  }
+  
+  nameList <- list()
+  for (res in resList) {
+    for (dv in dvNames) {
+      effNames <- res$effects$effectName[grep(dv,res$effects$name,T,T)]
+      nameList[[dv]] <- unique(c(nameList[[dv]], effNames))
+    }
+  }
+  
+  dfl <- list()
+  for (res in resList) {
+    for (dv in dvNames) {
+      if (dv %in% res$effects$name) {
+        .df <- saomResDf(res, digits=digits)
+        dfl[[dv]][[ length(dfl[[dv]]) + 1 ]] <- .df[which(.df$DV==dv),]
+      }
+    }
+  }
+  
+  mod.cols <- c('Est','se','p','sig')
+  
+  tdf <- data.frame(stringsAsFactors = F)
+  for (dv in names(nameList)) {
+    hasRowname <- FALSE
+    for (eff in nameList[[dv]]) { ## effect row
+      effRow <- list()
+      for (modDf in dfl[[dv]] ) { ## model dataframe in DV group
+        effId <- which(modDf$Effect == eff)
+        if (length(effId) > 0) {
+          effRow[[length(effRow)+1]] <- modDf[effId,mod.cols]
+        } else {
+          .nadf <- data.frame()
+          for (col in mod.cols) .nadf[1,col] <- NA
+          effRow[[length(effRow)+1]] <- .nadf
+        }
+      }
+      effRowDf <- cbind(data.frame(DV=dv,Effect=eff, stringsAsFactors = F), cbindDfList(effRow))
+      if (!hasRowname) {
+        effRowDf <- rbind(effRowDf, effRowDf)
+        effRowDf[1,]  <- c('', sprintf('Dynamics: %s', dv), rep(NA, ncol(effRowDf)-2))
+        hasRowname <- TRUE
+      }
+      tdf <- rbind(tdf, effRowDf)
+    }
+  }
+  
+  obs <- c()
+  ns <- c()
+  conv <- c()
+  iter <- c()
+  for (res in resList) {
+    obs <-c(obs, res$observations)
+    ns <- c(ns, attributes(res$f$Data1$nets[[1]][[1]][[1]])$nActors)
+    conv <- c(conv, res$tconv.max)
+    iter <- c(iter, res$n)
+  }  
+  
+  # est idx
+  idx.est <- which(names(tdf)%in% 'Est')
+  idx.sig <- grep('sig',names(tdf),T,T)
+  #
+  tdf[nrow(tdf)+1, ] <- NA
+  tdf[nrow(tdf), 'Effect'] <- 'Time Periods'
+  tdf[nrow(tdf), idx.sig] <- '   '
+  tdf[nrow(tdf), idx.est] <-  obs
+  #
+  tdf[nrow(tdf)+1, ] <- NA
+  tdf[nrow(tdf), 'Effect'] <- 'Num. Firms'
+  tdf[nrow(tdf), idx.sig] <- '   '
+  tdf[nrow(tdf), idx.est] <-  ns
+  #
+  tdf[nrow(tdf)+1, ] <- NA
+  tdf[nrow(tdf), 'Effect'] <- 'Max. Convergence Ratio'
+  tdf[nrow(tdf), idx.sig] <- '   '
+  tdf[nrow(tdf), idx.est] <-  round(conv, digits = digits)
+  #
+  tdf[nrow(tdf)+1, ] <- NA
+  tdf[nrow(tdf), 'Effect'] <- 'Iterations'
+  tdf[nrow(tdf), idx.sig] <- '   '
+  tdf[nrow(tdf), idx.est] <-  iter
+  
+  names(tdf)[idx.sig] <- '   '
+  
+  if (!any(is.na(nameMap))) {
+    for (eff in names(nameMap)) {
+      idx.nm <- which(tdf$Effect == eff)
+      if (length(idx.nm) > 0) {
+        tdf$Effect[idx.nm] <- nameMap[[eff]]
+      }
+    }
+  }
+  
+  if (drop.dv.col) {
+    tdf <- tdf[,-1]
+  }
+  
+  if (!is.na(file)) {
+    write.csv(tdf, file = file, na = "", row.names = F)
+  }
+  
+  return(tdf)
+  
+}
+
+
 
 ###
 ## PGLM FUNCTION FOR TEXREG TABLE
@@ -774,13 +930,13 @@ firm_i <- 'microsoft'
   # pharmaEffects <- includeTimeDummy(pharmaEffects, outdeg, name="depActiv", interaction1 = 'depMMC', timeDummy = '5,6,7,8')
 
   
-  ##--------------------------------------
+  ##=======================================================================
   ##
   ##
   ##   H1ab / H2
   ##
   ##
-  ##--------------------------------------
+  ##-----------------------------------------------------------------------
   sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
                             # covNetRw, covMktGro,
                             covEmploy, covAcqExper, covAge, covSales,
@@ -795,8 +951,6 @@ firm_i <- 'microsoft'
                            name="depMMC", interaction1 = 'covAge')
   sysEff <- includeEffects(sysEff, X,
                            name="depMMC", interaction1 = 'covCatSim')
-  # sysEff <- includeEffects(sysEff, totDist2,
-  #                          name="depMMC", type='creation', interaction1 = 'covNetRw')
   sysEff <- includeEffects(sysEff, totDist2, 
                               name="depMMC", type='creation', interaction1 = 'depNetR')
   ## CONTROL BEHVAIOR
@@ -856,11 +1010,9 @@ firm_i <- 'microsoft'
   gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
                                varName="depMMC"); plot(gfAMC0.tc)
 
-  print01Report(data = sysDat, modelname = 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut')
-  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut.html', type = 'html', sig = T, d = 3, vertLine = T)
-  siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut.tex', type = 'tex', sig = T, d = 3, vertLine = T)
   saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
           file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut.rds')
+  
   
   ###  
 ###  
@@ -871,82 +1023,416 @@ firm_i <- 'microsoft'
   ###  
   
   
-  
-  ##--------------------------------------
+  ##=======================================================================
   ##
   ##
-  ##   CONTROL
+  ##   H1ab
   ##
   ##
-  ##--------------------------------------
+  ##-----------------------------------------------------------------------
   sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
+                            # covNetRw, covMktGro,
                             covEmploy, covAcqExper, covAge, covSales,
+                            covCatSim, covSlack,
                             nodeSets=list(FIRMS) ) #,smoke1, alcohol
   ##
   sysEff <- getEffects(sysDat)
   # effectsDocumentation(sysEff)
   sysEff <- includeEffects(sysEff, gwesp,
                            name="depMMC")
-  # sysEff <- includeEffects(sysEff, totDist2,
-  #                          name="depMMC", type='creation', interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, altX,
-  #                          name="depMMC", interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, altX,
-  #                          name="depMMC", interaction1 = 'depNetR')
-  # sysEff <- includeEffects(sysEff, totDist2,
-  #                          name="depMMC", interaction1 = 'depNetI')
+  sysEff <- includeEffects(sysEff, egoX,
+                           name="depMMC", interaction1 = 'covAge')
+  sysEff <- includeEffects(sysEff, X,
+                           name="depMMC", interaction1 = 'covCatSim')
+  ## CONTROL BEHVAIOR
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSlack')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depNetI", interaction1 = 'covMktGro')
+  #
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covAcqExper')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSlack')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depNetR", interaction1 = 'covMktGro')
+  ## BEHAVIOR
+  sysEff <- includeEffects(sysEff, outdeg,
+                           name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, outdeg,
+                           name="depNetI", interaction1 = 'depMMC')
+  #
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetR", interaction1 = 'depMMC')
+  #
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-H1ab-0', 
+                                 firstg = 0.1,  ## default: 0.2
+                                 n2start=130,    ## default: 2.52*(p+7)
+                                 nsub = 4,       ## default: 4
+                                 seed=137, maxlike=F)
+  # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
+  sysResH1ab <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                        # prevAns = sysResAMC0,
+                        batch = T,   returnDeps = T, ## necessary for GOF
+                        useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResH1ab)
+  # 
+  print(sysResH1ab); screenreg(sysResH1ab, digits = 4,single.row = T)
+  gfH1.br = RSiena::sienaGOF(sysResH1ab, BehaviorDistribution,
+                               varName="depNetR"); plot(gfH1.br)
+  gfH1.bi = RSiena::sienaGOF(sysResH1ab, BehaviorDistribution,
+                               varName="depNetI"); plot(gfH1.bi)
+  gfH1.od = RSiena::sienaGOF(sysResH1ab, OutdegreeDistribution,
+                               varName="depMMC"); plot(gfH1.od)
+  gfH1.tc = RSiena::sienaGOF(sysResH1ab, TriadCensus,
+                               varName="depMMC"); plot(gfH1.tc)
+  
+  saveRDS(list(res=sysResH1ab, mod=sysMod, dat=sysDat, eff=sysEff),
+          file = 'acq_sys_mmc_sysResAMC0_H1ab_converg_DVcut.rds')
+  
+  
+  
+  
+  
+  ##=======================================================================
+  ##
+  ##
+  ##   H2 only
+  ##
+  ##
+  ##-----------------------------------------------------------------------
+  sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
+                            # covNetRw, covMktGro,
+                            covEmploy, covAcqExper, covAge, covSales,
+                            covCatSim, covSlack,
+                            nodeSets=list(FIRMS) ) #,smoke1, alcohol
+  ##
+  sysEff <- getEffects(sysDat)
+  # effectsDocumentation(sysEff)
+  sysEff <- includeEffects(sysEff, gwesp,
+                           name="depMMC")
+  sysEff <- includeEffects(sysEff, egoX,
+                           name="depMMC", interaction1 = 'covAge')
+  sysEff <- includeEffects(sysEff, X,
+                           name="depMMC", interaction1 = 'covCatSim')
+  sysEff <- includeEffects(sysEff, totDist2, 
+                           name="depMMC", type='creation', interaction1 = 'depNetR')
+  ## CONTROL BEHVAIOR
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSlack')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depNetI", interaction1 = 'covMktGro')
+  #
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covAcqExper')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSlack')
+  # sysEff <- includeEffects(sysEff, effFrom,
+  #                          name="depNetR", interaction1 = 'covMktGro')
+  ## BEHAVIOR
+  #
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetR", interaction1 = 'depMMC')
+  #
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-H2-0', 
+                                 firstg = 0.1,  ## default: 0.2
+                                 n2start=130,    ## default: 2.52*(p+7)
+                                 nsub = 4,       ## default: 4
+                                 seed=137, maxlike=F)
+  # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
+  sysResH2 <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                        # prevAns = sysResAMC0,
+                        batch = T,   returnDeps = T, ## necessary for GOF
+                        useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResH2)
+  # 
+  print(sysResH2); screenreg(sysResH2, digits = 4,single.row = T)
+  gfH2.br = RSiena::sienaGOF(sysResH2, BehaviorDistribution,
+                             varName="depNetR"); plot(gfH2.br)
+  gfH2.bi = RSiena::sienaGOF(sysResH2, BehaviorDistribution,
+                             varName="depNetI"); plot(gfH2.bi)
+  gfH2.od = RSiena::sienaGOF(sysResH2, OutdegreeDistribution,
+                             varName="depMMC"); plot(gfH2.od)
+  gfH2.tc = RSiena::sienaGOF(sysResH2, TriadCensus,
+                             varName="depMMC"); plot(gfH2.tc)
+  
+  saveRDS(list(res=sysResH2, mod=sysMod, dat=sysDat, eff=sysEff),
+          file = 'acq_sys_mmc_sysResAMC0_H2_converg_DVcut.rds')
+  
+  
+  
+  
+  ##=======================================================================
+  ##
+  ##
+  ##   CONTROL
+  ##
+  ##
+  ##-----------------------------------------------------------------------
+  sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
+                            # covNetRw, covMktGro,
+                            covEmploy, covAcqExper, covAge, covSales,
+                            covCatSim, covSlack,
+                            nodeSets=list(FIRMS) ) #,smoke1, alcohol
+  ##
+  sysEff <- getEffects(sysDat)
+  # effectsDocumentation(sysEff)
+  sysEff <- includeEffects(sysEff, gwesp,
+                           name="depMMC")
+  sysEff <- includeEffects(sysEff, egoX,
+                           name="depMMC", interaction1 = 'covAge')
+  sysEff <- includeEffects(sysEff, X,
+                           name="depMMC", interaction1 = 'covCatSim')
   ## CONTROL BEHVAIOR
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetI", interaction1 = 'covEmploy')
   sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covAge')
-  sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetI", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSlack')
   #
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetR", interaction1 = 'covAcqExper')
   sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covEmploy')
+                           name="depNetR", interaction1 = 'covEmploy')
   sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covAge')
+                           name="depNetR", interaction1 = 'covSales')
   sysEff <- includeEffects(sysEff, effFrom,
-                           name="depNetI", interaction1 = 'covSales')
-  ## BEHAVIOR
-  # sysEff <- includeEffects(sysEff, outdeg,
-  #                          name="depNetR", interaction1 = 'depMMC')
-  # sysEff <- includeEffects(sysEff, outdeg,
-  #                          name="depNetI", interaction1 = 'depMMC')
+                           name="depNetR", interaction1 = 'covSlack')
   #
-  sysEff <- includeEffects(sysEff, avAlt,
-                           name="depNetI", interaction1 = 'depMMC')
-  sysEff <- includeEffects(sysEff, avAlt,
-                           name="depNetR", interaction1 = 'depMMC')
-  #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-AMC-0c', 
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-ctrl-0', 
                                  firstg = 0.05,  ## default: 0.2
-                                 n2start=100,    ## default: 2.52*(p+7)
+                                 n2start=120,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
                                  seed=135, maxlike=F)
   # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
-  sysResAMC0c <- siena07(sysMod, data=sysDat, effects=sysEff, 
-                        # prevAns = sysResAMC0c,
+  sysResAMC0ctrl <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                        # prevAns = sysResAMC0,
                         batch = T,   returnDeps = T, ## necessary for GOF
                         useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
-  conv <- checkSienaConv(sysResAMC0c)
+  conv <- checkSienaConv(sysResAMC0ctrl)
   # 
-  print(sysResAMC0c); screenreg(sysResAMC0c, digits = 4,single.row = T)
-  gfAMC0.br = RSiena::sienaGOF(sysResAMC0c, BehaviorDistribution,
-                               varName="depNetR"); plot(gfAMC0.br)
-  gfAMC0.bi = RSiena::sienaGOF(sysResAMC0c, BehaviorDistribution,
-                               varName="depNetI"); plot(gfAMC0.bi)
-  gfAMC0.od = RSiena::sienaGOF(sysResAMC0c, OutdegreeDistribution,
-                               varName="depMMC"); plot(gfAMC0.od)
-  gfAMC0.tc = RSiena::sienaGOF(sysResAMC0c, TriadCensus,
-                               varName="depMMC"); plot(gfAMC0.tc)
+  print(sysResAMC0ctrl); screenreg(sysResAMC0ctrl, digits = 4,single.row = T)
+  gfAMC0ctrl.br = RSiena::sienaGOF(sysResAMC0ctrl, BehaviorDistribution,
+                               varName="depNetR"); plot(gfAMC0ctrl.br)
+  gfAMC0ctrl.bi = RSiena::sienaGOF(sysResAMC0ctrl, BehaviorDistribution,
+                               varName="depNetI"); plot(gfAMC0ctrl.bi)
+  gfAMC0ctrl.od = RSiena::sienaGOF(sysResAMC0ctrl, OutdegreeDistribution,
+                               varName="depMMC"); plot(gfAMC0ctrl.od)
+  gfAMC0ctrl.tc = RSiena::sienaGOF(sysResAMC0ctrl, TriadCensus,
+                               varName="depMMC"); plot(gfAMC0ctrl.tc)
+  
+  saveRDS(list(res=sysResAMC0ctrl, mod=sysMod, dat=sysDat, eff=sysEff),
+          file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut_ctrl.rds')
   
   
-  saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_support.rds')
+  
+  
+  
+  
+  
+  
+  
+  
+  ##=======================================================================
+  ##
+  ##
+  ##   CONTROL   2 ----------------------(with some coevolution controls)
+  ##
+  ##
+  ##-----------------------------------------------------------------------
+  sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
+                            # covNetRw, covMktGro,
+                            covEmploy, covAcqExper, covAge, covSales,
+                            covCatSim, covSlack,
+                            nodeSets=list(FIRMS) ) #,smoke1, alcohol
+  ##
+  sysEff <- getEffects(sysDat)
+  # effectsDocumentation(sysEff)
+  sysEff <- includeEffects(sysEff, gwesp,
+                           name="depMMC")
+  sysEff <- includeEffects(sysEff, egoX,
+                           name="depMMC", interaction1 = 'covAge')
+  sysEff <- includeEffects(sysEff, X,
+                           name="depMMC", interaction1 = 'covCatSim')
+  ## CONTROL BEHVAIOR
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSlack')
+  #
+  ## CONTROL BEHVAIOR
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covAcqExper')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSlack')
+  #
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetR", interaction1 = 'depMMC')
+  #
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-ctrl2-0', 
+                                 firstg = 0.05,  ## default: 0.2
+                                 n2start=120,    ## default: 2.52*(p+7)
+                                 nsub = 4,       ## default: 4
+                                 seed=135, maxlike=F)
+  # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
+  sysResAMC0ctrl2 <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                            # prevAns = sysResAMC0,
+                            batch = T,   returnDeps = T, ## necessary for GOF
+                            useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResAMC0ctrl2)
+  # 
+  print(sysResAMC0ctrl2); screenreg(sysResAMC0ctrl2, digits = 4,single.row = T)
+  gfAMC0ctrl2.br = RSiena::sienaGOF(sysResAMC0ctrl2, BehaviorDistribution,
+                                   varName="depNetR"); plot(gfAMC0ctrl2.br)
+  gfAMC0ctrl2.bi = RSiena::sienaGOF(sysResAMC0ctrl2, BehaviorDistribution,
+                                   varName="depNetI"); plot(gfAMC0ctrl2.bi)
+  gfAMC0ctrl2.od = RSiena::sienaGOF(sysResAMC0ctrl2, OutdegreeDistribution,
+                                   varName="depMMC"); plot(gfAMC0ctrl2.od)
+  gfAMC0ctrl2.tc = RSiena::sienaGOF(sysResAMC0ctrl2, TriadCensus,
+                                   varName="depMMC"); plot(gfAMC0ctrl2.tc)
+  
+  saveRDS(list(res=sysResAMC0ctrl2, mod=sysMod, dat=sysDat, eff=sysEff),
+          file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut_ctrl2.rds')
+  
+  # meta0 <- siena08(sysResAMC0,
+  #                  sysResAMC0ctrl, 
+  #                  projname = 'sysMeta')
+  # 
+  
+  
+  
+  
+  
+  ##================================================================
+  ##
+  ## print SAOM Regression table compariosn 
+  ##
+  ##---------------------------------------------------------------- 
+  sysResList <- list(sysResAMC0ctrl, sysResAMC0ctrl2, sysResH1ab, sysResH2, sysResAMC0)
+  saomTable(sysResList, digits = 3,
+            file="sys_MMC_SAOM_res_table_microsoft_DVcut_1-4_2011-2016.csv")
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+#######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   
