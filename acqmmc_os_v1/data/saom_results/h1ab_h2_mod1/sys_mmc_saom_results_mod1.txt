@@ -1,0 +1,175 @@
+Estimates, standard errors and convergence t-ratios
+
+                                                 Estimate   Standard   Convergence 
+                                                              Error      t-ratio   
+Network Dynamics 
+   1. rate  constant depMMC rate (period 1)       0.2114  ( 0.0694   )    0.0348   
+   2. rate  constant depMMC rate (period 2)       0.3225  ( 0.0764   )   -0.0156   
+   3. rate  constant depMMC rate (period 3)       0.2006  ( 0.0599   )    0.0158   
+   4. rate  constant depMMC rate (period 4)       0.1937  ( 0.0584   )   -0.0226   
+   5. rate  constant depMMC rate (period 5)       0.5417  ( 0.1067   )   -0.0170   
+   6. eval  degree (density)                     -2.9214  ( 0.3939   )    0.0752   
+   7. eval  transitive triads                    -0.5282  ( 0.4727   )    0.0335   
+   8. eval  GWESP (69)                            2.6769  ( 0.9644   )    0.0364   
+   9. eval  network-isolate                       2.2630  ( 1.0817   )   -0.0703   
+  10. eval  covCatSim                             0.9099  ( 0.6893   )   -0.0034   
+  11. eval  covAge ego                            0.0109  ( 0.0100   )    0.0342   
+  12. creat covNetRw tot alter at dist 2 (1)      0.1952  ( 0.0542   )    0.0267   
+
+Behavior Dynamics
+  13. rate  <1> rate depNetR (period 1)           0.9236  ( 0.2035   )    0.0320   
+  14. rate  <1> rate depNetR (period 2)           1.7342  ( 0.4039   )   -0.0228   
+  15. rate  <1> rate depNetR (period 3)           1.4721  ( 0.4736   )    0.0033   
+  16. rate  <1> rate depNetR (period 4)           1.5209  ( 0.3403   )    0.0038   
+  17. rate  <1> rate depNetR (period 5)           1.4532  ( 0.3745   )   -0.0393   
+  18. eval  <1> depNetR linear shape             -0.2217  ( 0.2145   )   -0.0135   
+  19. eval  <1> depNetR quadratic shape          -0.0970  ( 0.0787   )   -0.0282   
+  20. eval  <1> depNetR degree                    0.1731  ( 0.0822   )    0.0156   
+  21. eval  <1> depNetR isolate                  -0.0993  ( 0.2711   )   -0.0050   
+  22. eval  <1> depNetR total alter               0.0166  ( 0.0688   )   -0.0110   
+  23. eval  <1> depNetR: effect from covEmploy    0.0076  ( 0.0026   )    0.0153   
+  24. eval  <1> depNetR: effect from covAcqExper  0.0684  ( 0.0772   )    0.0238   
+  25. eval  <1> depNetR: effect from covSales     0.5088  ( 0.2735   )   -0.0502   
+  26. eval  <1> depNetR: effect from covSlack     0.0832  ( 0.0407   )    0.0079   
+  27. rate  <2> rate depNetI (period 1)           1.2562  ( 0.2962   )    0.0448   
+  28. rate  <2> rate depNetI (period 2)           1.6834  ( 0.4075   )   -0.0363   
+  29. rate  <2> rate depNetI (period 3)           2.3454  ( 0.7045   )   -0.0111   
+  30. rate  <2> rate depNetI (period 4)           2.5859  ( 0.8215   )   -0.0323   
+  31. rate  <2> rate depNetI (period 5)           1.6044  ( 0.3527   )   -0.0383   
+  32. eval  <2> depNetI linear shape             -0.5387  ( 0.1587   )    0.0069   
+  33. eval  <2> depNetI quadratic shape          -0.1401  ( 0.0941   )    0.0403   
+  34. eval  <2> depNetI degree                    0.0847  ( 0.0455   )    0.0280   
+  35. eval  <2> depNetI isolate                  -0.2388  ( 0.2396   )   -0.0209   
+  36. eval  <2> depNetI total alter               0.0465  ( 0.0447   )    0.0364   
+  37. eval  <2> depNetI: effect from covEmploy    0.0061  ( 0.0018   )    0.0112   
+  38. eval  <2> depNetI: effect from covSales     0.5620  ( 0.2433   )    0.0137   
+  39. eval  <2> depNetI: effect from covSlack     0.1184  ( 0.0399   )    0.0469   
+
+Overall maximum convergence ratio:    0.1920 
+
+
+Total of 5028 iteration steps.
+
+
+========================================================
+                                  Model 1               
+--------------------------------------------------------
+constant depMMC rate (period 1)      0.2114 (0.0694) ** 
+constant depMMC rate (period 2)      0.3225 (0.0764) ***
+constant depMMC rate (period 3)      0.2006 (0.0599) ***
+constant depMMC rate (period 4)      0.1937 (0.0584) ***
+constant depMMC rate (period 5)      0.5417 (0.1067) ***
+degree (density)                    -2.9214 (0.3939) ***
+transitive triads                   -0.5282 (0.4727)    
+GWESP (69)                           2.6769 (0.9644) ** 
+network-isolate                      2.2630 (1.0817) *  
+covCatSim                            0.9099 (0.6893)    
+covAge ego                           0.0109 (0.0100)    
+covNetRw tot alter at dist 2 (1)     0.1952 (0.0542) ***
+rate depNetR (period 1)              0.9236 (0.2035) ***
+rate depNetR (period 2)              1.7342 (0.4039) ***
+rate depNetR (period 3)              1.4721 (0.4736) ** 
+rate depNetR (period 4)              1.5209 (0.3403) ***
+rate depNetR (period 5)              1.4532 (0.3745) ***
+depNetR linear shape                -0.2217 (0.2145)    
+depNetR quadratic shape             -0.0970 (0.0787)    
+depNetR degree                       0.1731 (0.0822) *  
+depNetR isolate                     -0.0993 (0.2711)    
+depNetR total alter                  0.0166 (0.0688)    
+depNetR: effect from covEmploy       0.0076 (0.0026) ** 
+depNetR: effect from covAcqExper     0.0684 (0.0772)    
+depNetR: effect from covSales        0.5088 (0.2735)    
+depNetR: effect from covSlack        0.0832 (0.0407) *  
+rate depNetI (period 1)              1.2562 (0.2962) ***
+rate depNetI (period 2)              1.6834 (0.4075) ***
+rate depNetI (period 3)              2.3454 (0.7045) ***
+rate depNetI (period 4)              2.5859 (0.8215) ** 
+rate depNetI (period 5)              1.6044 (0.3527) ***
+depNetI linear shape                -0.5387 (0.1587) ***
+depNetI quadratic shape             -0.1401 (0.0941)    
+depNetI degree                       0.0847 (0.0455)    
+depNetI isolate                     -0.2388 (0.2396)    
+depNetI total alter                  0.0465 (0.0447)    
+depNetI: effect from covEmploy       0.0061 (0.0018) ***
+depNetI: effect from covSales        0.5620 (0.2433) *  
+depNetI: effect from covSlack        0.1184 (0.0399) ** 
+--------------------------------------------------------
+Iterations                        5028                  
+========================================================
+*** p < 0.001; ** p < 0.01; * p < 0.05
+
+
+CONVERGED:  TRUE
+  tconv.max (0.192) < 0.25  TRUE
+  all t (max 0.075) < 0.10  TRUE
+
+
+
+  sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
+                            covNetRw, covMktGro,
+                            covEmploy, covAcqExper, covAge, covSales,
+                            covCatSim, covSlack,
+                            nodeSets=list(FIRMS) ) #,smoke1, alcohol
+  ##
+  sysEff <- getEffects(sysDat)
+  # effectsDocumentation(sysEff)
+  sysEff <- includeEffects(sysEff, gwesp, isolateNet,
+                           name="depMMC")
+  sysEff <- includeEffects(sysEff, egoX,
+                           name="depMMC", interaction1 = 'covAge')
+  sysEff <- includeEffects(sysEff, X,
+                           name="depMMC", interaction1 = 'covCatSim')
+  sysEff <- includeEffects(sysEff, totDist2,
+                           name="depMMC", type='creation', interaction1 = 'covNetRw')
+  ## CONTROL BEHVAIOR
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetI", interaction1 = 'covSlack')
+  #
+  sysEff <- includeEffects(sysEff, isolate,
+                           name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covAcqExper')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covEmploy')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSales')
+  sysEff <- includeEffects(sysEff, effFrom,
+                           name="depNetR", interaction1 = 'covSlack')
+  ## BEHAVIOR
+  sysEff <- includeEffects(sysEff, outdeg,
+                           name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, outdeg,
+                           name="depNetI", interaction1 = 'depMMC')
+  #
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetI", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetR", interaction1 = 'depMMC')
+  #
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-ctrl-0', 
+                                 firstg = 0.05,  ## default: 0.2
+                                 n2start=120,    ## default: 2.52*(p+7)
+                                 nsub = 4,       ## default: 4
+                                 seed=135, maxlike=F)
+  # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
+  sysResAMC0 <- siena07(sysMod, data=sysDat, effects=sysEff, 
+                       # prevAns = sysResAMC0,
+                       batch = T,   returnDeps = T, ## necessary for GOF
+                       useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  conv <- checkSienaConv(sysResAMC0)
+  # 
+  print(sysResAMC0); screenreg(sysResAMC0, digits = 4,single.row = T)
+  gfAMC0.br = RSiena::sienaGOF(sysResAMC0, BehaviorDistribution,
+                              varName="depNetR"); plot(gfAMC0.br)
+  gfAMC0.bi = RSiena::sienaGOF(sysResAMC0, BehaviorDistribution,
+                               varName="depNetI"); plot(gfAMC0.bi)
+  gfAMC0.od = RSiena::sienaGOF(sysResAMC0, OutdegreeDistribution,
+                               varName="depMMC"); plot(gfAMC0.od)
+  gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
+                               varName="depMMC"); plot(gfAMC0.tc)

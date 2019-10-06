@@ -45,7 +45,10 @@ acf    <- source(file.path(version_dir,'acq_compnet_functions.R'))$value
 ###
 ## Compute HHI 
 ###
-hhi <- function(x){
+hhi <- function(x, na.rm=FALSE){
+  if (na.rm) {
+    x <- x[ which(!is.nan(x) & !is.na(x)) ]
+  }
   z <- 100 * x / sum(x)
   return(sum(z^2))
 }
@@ -206,14 +209,15 @@ cssnm <- unique(css2[,c('conm','gvkey','tic','sic','cusip')])
 
 ## segment totals
 css2$snms2 <- sapply(css2$snms,function(x) str_to_lower(trimws(x)) )
-SEGT <- ddply(css2,.(snms2,year),summarize,.progress = 'text',
-              sum=sum(sales),
-              sd=sd(sales),
-              min=min(sales),
-              avg=mean(sales),
-              max=max(sales),
-              hhi=hhi(sales),
-              n=length(sales),
+SEGT <- ddply(css2,.(SICS1,year),summarize,.progress = 'text',
+              sum=sum(sales, na.rm = T),
+              sd=sd(sales, na.rm = T),
+              min=min(sales, na.rm = T),
+              avg=mean(sales, na.rm = T),
+              max=max(sales, na.rm = T),
+              hhi=hhi(sales, na.rm = T),
+              n=length(which(!is.na(sales))),
+              snms=paste(unique(snms),collapse = "|"),
               sic=paste(unique(c(SICS1,SICS2,sic)),collapse = "|"),
               conm=paste(unique(conm),collapse = "|"))
 # # View(segt)
@@ -386,7 +390,8 @@ firm_i <- 'microsoft'
     cat(sprintf('t_yrs %s\n',paste(t_yrs, collapse = ',')))
     for (i in 1:length(firmnamesub)) {
       gvi <- namekey$gvkey[which(namekey$name==firmnamesub[i])]
-      ## compustat segments for market growth ---------------
+      ##-----------------------------------------------------
+      ## compustat segments for market growth
       ## compute wieghted average market growth for firm by its segments sales
       sgti <- css2[which(css2$gvkey==gvi & css2$year %in% yrs),]
       sgti1 <- css2[which(css2$gvkey==gvi & css2$year %in% (yrs-1)),] ## lag 1 year
@@ -394,9 +399,9 @@ firm_i <- 'microsoft'
       if (nrow(sgti) > 0) {  ## if segments data update market growth avg
         mkgvec <- c() ## get growth * proportion for each of firm's markets
         for (j in 1:nrow(sgti)) {
-          sj <-  sgti$snms2[j] ## segment
-          rj <- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% yrs)] ) # total sales revenue  in sgement
-          rj1<- sum( SEGT$sum[which(SEGT$snms2==sj & SEGT$year %in% (yrs-1))] ) # total lagged sales revenue in sgement
+          sj <-  sgti$SICS1[j] ## segment
+          rj <- sum( SEGT$sum[which(SEGT$SICS1==sj & SEGT$year %in% yrs)] ) # total sales revenue  in sgement
+          rj1<- sum( SEGT$sum[which(SEGT$SICS1==sj & SEGT$year %in% (yrs-1))] ) # total lagged sales revenue in sgement
           gj <- ifelse( (is.na(rj)|is.na(rj1)|rj1==0),  1,  rj/rj1 ) # growth if exists
           pj <- sgti$sales[j] / sum(sgti$sales, na.rm = T) ## proportion of portfolio
           mkgvec <- c(mkgvec, pj * gj ) # weighted market growth 
@@ -542,44 +547,17 @@ firm_i <- 'microsoft'
     arrSmmcSq[,t] <- arrSmmc[,t]^2
   }
   
-  # ##-------Plot-------
-  # dfla$smmc <- NA
-  # dfla$smmcSq <- NA
-  # for (t in 1:npds) {
-  #   for (i in 1:length(firmnamesub)) {
-  #     idx <- which(dfla$pd==t & dfla$name==firmnamesub[i])
-  #     dfla$smmc[idx] <- arrSmmc[i,t]
-  #   }
-  # }
-  # dfplot <- dfla
-  # dfplot$year <- apply(dfplot[,c('y1','y2')],1,function(x)x[1])
-  # dfplot$log_acq <- log2(1+dfla$rp_Acquisitions) 
-  # # dfplot$smmc <-  log(1 + dfla$cent_deg_mmc)
-  # dfplot$sales_high <- as.factor(dfla$sales_na_0_mn > quantile(dfla$sales_na_0_mn, probs = .35, na.rm = T))
-  # # dfplot$sales_high <- as.factor(dfla$rp_Acquisitions > 0)
-  # # dfplot <- dfplot[which(dfplot$rp_Acquisitions>0),]
-  # ggplot(dfplot, aes(x=smmc, y=log_acq, colour=sales_high)) +
-  #   stat_smooth(method = "lm",formula=y~x+I(x^2), se=T, size=1) +
-  #   geom_point() + theme_bw() + facet_wrap(facets = .~year)
-  # ##------------------
-  #-##-------------------------
-  # mract1 <- pglm(round(rp_Acquisitions) ~  log(1+acq_cnt_5) + log(1+rp_NON_acquisitions) +
-  #                  I(acq_sum_1/1e9)  + I(employee_na_age/1e3) +
-  #                  I(sales_na_0_mn/1e6) +
-  #                  log(1+wdeg_rp_Acquisitions) +
-  #                  smmc +
-  #                  smmc:log(1+wdeg_rp_Acquisitions) +
-  #                  I(smmc^2) +
-  #                  I(smmc^2):log(1+wdeg_rp_Acquisitions)
-  #                ,
-  #                data=dfplot, family = poisson,
-  #                model = 'within', effect = 'twoways',
-  #                R = 100, method='nr',
-  #                index=c('i','year'))
-  # screenreg(mract1, single.row = T, digits = 3)
+  # #########################################
+  ## Save / Load Workspace Image for firm_i
+  ##----------------------------------------
+  workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
+                                    firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
+  save.image(file = workspace_file)
+  load(file = workspace_file)
+  #########################################
   
-  ##------------------
   
+  ##---------------------------------------
   ## FIRM COVARIATES (Acquisitions)
   arrNetR <- array(0,dim=c(nsub,npds))
   arrNetI <- array(0,dim=c(nsub,npds))
@@ -608,32 +586,33 @@ firm_i <- 'microsoft'
       .namei <- firmnamesub[i]
       idx <- which(dfla$pd==t & dfla$name==.namei)
       # behavior cutoffs
-      cut.r <- 4
-      cut.i <- 4
-      min.r <- 1
-      min.i <- 1
+      cut.r <- 9
+      cut.i <- 9
+      min.r <- 0
+      min.i <- 0
+      logXf <- log2
       ## RESTRUCT--------
       xr <- dfla$rp_net_restruct[idx] 
-      xr <- ceiling( log( 1 + xr ) )
+      xr <- ceiling( logXf( 1 + xr ) )
       arrNetR[i,t] <-  ifelse( xr > cut.r, cut.r, ifelse(xr < min.r, min.r, xr))
       #
       xrw <- dfla$rp_net_restruct[idx] / dfla$cs_mkgrowth[idx]
-      xrw <- ceiling( log( 1 + xrw ) )
+      xrw <- ceiling( logXf( 1 + xrw ) )
       arrNetRw[i,t] <-  ifelse( xrw > cut.r, cut.r, ifelse(xrw < min.r, min.r, xrw))
       ## INVARIANT -------
       xi <- dfla$rp_net_invariant[idx] 
-      xi <- ceiling( log( 1 + xi ) )
+      xi <- ceiling( logXf( 1 + xi ) )
       arrNetI[i,t] <-  ifelse( xi > cut.i, cut.i, ifelse(xi < min.i, min.i, xi))
       #
       xiw <- dfla$rp_net_invariant[idx] / dfla$cs_mkgrowth[idx]
-      xiw <- ceiling( log( 1 + xiw ) )
+      xiw <- ceiling( logXf( 1 + xiw ) )
       arrNetIw[i,t] <-  ifelse( xiw > cut.i, cut.i, ifelse(xiw < min.i, min.i, xiw))
       ## market growth
       arrMktGro[i,t] <- dfla$cs_mkgrowth[idx]
       ## Acquisitions
       x <- dfla$rp_Acquisitions_ma[idx]  ## Acq MOVING AVERAGE
       # x <- dfla$rp_Acquisitions[idx]   ## Acq
-      z <- ceiling( log2( 1 + x ) )
+      z <- ceiling( logXf( 1 + x ) )
       thresh <- 4
       arrAcq[i,t] <-  ifelse(z > thresh, thresh, z)
       #
@@ -712,13 +691,14 @@ firm_i <- 'microsoft'
   
   # par(mfrow=c(2,2), mar=c(4.5,2,.3,2))
   par(mfrow=c(1,1))
-  behdf <-              within(plyr::count(c(arrNetR2)),{beh<-'Restr'; MarketGrowthWeight<-F })
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetI2)),{beh<-'Invar'; MarketGrowthWeight<-F }))
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2)),{beh<-'Restr'; MarketGrowthWeight<-T }))
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2)),{beh<-'Invar'; MarketGrowthWeight<-T }))
+  behdf <-              within(plyr::count(c(arrNetR2[])),{beh<-'Restr'; MarketGrowthWeight<-F })
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetI2[])),{beh<-'Invar'; MarketGrowthWeight<-F }))
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restr'; MarketGrowthWeight<-T }))
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invar'; MarketGrowthWeight<-T }))
   ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowthWeight)) + 
     geom_bar(stat="identity", width=.5, position = "dodge") +
-    facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + 
+    facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + theme_bw()
+  matplot(t(arrNetRw2[c(30,45),]), type='b')
   ##----------------------------
   
   # ## DYAD FIXED COVARIATES
@@ -736,9 +716,9 @@ firm_i <- 'microsoft'
   # TREATMENT
   depAcq <- sienaDependent(arrAcq2, type="behavior", nodeSet=c('FIRMS'), 
                              sparse = FALSE, allowOnly = FALSE)
-  depNetR <- sienaDependent(arrNetR2, type="behavior", nodeSet=c('FIRMS'), 
+  depNetR <- sienaDependent(arrNetRw2, type="behavior", nodeSet=c('FIRMS'), 
                               sparse = FALSE, allowOnly = FALSE)
-  depNetI <- sienaDependent(arrNetI2, type="behavior", nodeSet=c('FIRMS'), 
+  depNetI <- sienaDependent(arrNetIw2, type="behavior", nodeSet=c('FIRMS'), 
                               sparse = FALSE, allowOnly = FALSE)
   depNonAcq <- sienaDependent(arrNonAcqAct2, type="behavior", nodeSet=c('FIRMS'), 
                            sparse = FALSE, allowOnly = FALSE)
@@ -785,7 +765,7 @@ firm_i <- 'microsoft'
   ##
   ##--------------------------------------
   sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
-                            covNetRw, covMktGro,
+                            # covNetRw, covMktGro,
                             covEmploy, covAcqExper, covAge, covSales,
                             covCatSim, covSlack,
                             nodeSets=list(FIRMS) ) #,smoke1, alcohol
@@ -798,10 +778,10 @@ firm_i <- 'microsoft'
                            name="depMMC", interaction1 = 'covAge')
   sysEff <- includeEffects(sysEff, X,
                            name="depMMC", interaction1 = 'covCatSim')
-  sysEff <- includeEffects(sysEff, totDist2,
-                           name="depMMC", type='creation', interaction1 = 'covNetRw')
-  # sysEff <- includeInteraction(sysEff, totDist2, totDist2,
-  #                             name="depMMC", type='creation', interaction1 = c('depNetR','depNetI'))
+  # sysEff <- includeEffects(sysEff, totDist2,
+  #                          name="depMMC", type='creation', interaction1 = 'covNetRw')
+  sysEff <- includeInteraction(sysEff, totDist2, 
+                              name="depMMC", type='creation', interaction1 = 'depNetR')
   ## CONTROL BEHVAIOR
   sysEff <- includeEffects(sysEff, isolate,
                            name="depNetI", interaction1 = 'depMMC')
@@ -859,6 +839,7 @@ firm_i <- 'microsoft'
   gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
                                varName="depMMC"); plot(gfAMC0.tc)
 
+  print01report(sysResAMC0)
   siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2.html', type = 'html', sig = T, d = 3, vertLine = T)
   siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2.tex', type = 'tex', sig = T, d = 3, vertLine = T)
   saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
