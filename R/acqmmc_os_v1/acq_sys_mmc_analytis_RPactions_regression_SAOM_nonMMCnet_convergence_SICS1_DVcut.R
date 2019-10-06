@@ -53,6 +53,20 @@ hhi <- function(x, na.rm=FALSE){
   return(sum(z^2))
 }
 
+##
+# Plot from adjacency matrix
+##
+arrPlot <- function(arr, t=1, min.deg=0, ...)
+{
+  top <- ifelse(is.null(main)|is.na(main), .1, 2)
+  par(mar=c(.1,.1,top,.1))
+  gx=graph.adjacency(arr[,,t])
+  plot(induced.subgraph(gx,which(igraph::degree(gx)>=min.deg)), 
+       edge.arrow.width=.2, edge.arrow.size=.1, 
+       vertex.label.cex=.5, vertex.size=5, 
+       ...)
+}
+
 ###
 ## Complexity measure of actions 
 ##  @see Yu, Subramaniam, & Cannella, 2009
@@ -84,17 +98,6 @@ checkSienaConv <- function(res, t.lim=0.1,max.lim=0.25) {
   return(ck)
 }
 
-##
-# Plot from adjacency matrix
-##
-arrPlot <- function(arr, t=1, min.deg=0)
-{
-  par(mar=c(.1,.1,.1,.1))
-  gx=graph.adjacency(arr[,,t])
-  plot(induced.subgraph(gx,which(igraph::degree(gx)>=min.deg)), 
-       edge.arrow.width=.2, edge.arrow.size=.1, 
-       vertex.label.cex=.5, vertex.size=5)
-}
 
 ###
 ## CrunchBase category Cosine Similarity
@@ -702,15 +705,17 @@ firm_i <- 'microsoft'
   
   # par(mfrow=c(2,2), mar=c(4.5,2,.3,2))
   par(mfrow=c(1,1))
-  behdf <-              within(plyr::count(c(arrNetR2[])),{beh<-'Restr'; MarketGrowthWeight<-F })
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetI2[])),{beh<-'Invar'; MarketGrowthWeight<-F }))
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restr'; MarketGrowthWeight<-T }))
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invar'; MarketGrowthWeight<-T }))
+  behdf <-              within(plyr::count(c(arrNetR2[])),{beh<-'Restructuring'; MarketGrowth<-F })
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetI2[])),{beh<-'Invariant'; MarketGrowth<-F }))
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restructuring'; MarketGrowth<-T }))
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invariant'; MarketGrowth<-T }))
   matplot(t(arrNetRw2[c(30,45),]), type='b')
-  arrPlot(mmcarr2,5,0)
-  ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowthWeight)) + 
+  for (t in yridx) arrPlot(mmcarr2,t,0, main=sprintf('Year %s',netwavepds[t]))
+  ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowth)) + 
     geom_bar(stat="identity", width=.5, position = "dodge") +
-    facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + theme_bw()
+    facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + 
+    xlab(NULL) + ylab('Frequency') +
+    theme_bw() + theme(legend.position='bottom')
   ##----------------------------
   
   # ## DYAD FIXED COVARIATES
@@ -851,7 +856,7 @@ firm_i <- 'microsoft'
   gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
                                varName="depMMC"); plot(gfAMC0.tc)
 
-  print01report(sysResAMC0)
+  print01Report(data = sysDat, modelname = 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut')
   siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut.html', type = 'html', sig = T, d = 3, vertLine = T)
   siena.table(sysResAMC0, 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVcut.tex', type = 'tex', sig = T, d = 3, vertLine = T)
   saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),

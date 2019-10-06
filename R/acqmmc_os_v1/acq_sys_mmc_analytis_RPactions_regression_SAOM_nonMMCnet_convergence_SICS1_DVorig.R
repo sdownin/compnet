@@ -53,6 +53,20 @@ hhi <- function(x, na.rm=FALSE){
   return(sum(z^2))
 }
 
+##
+# Plot from array of adjacency matrices
+##
+arrPlot <- function(arr, t=1, min.deg=0, ...)
+{
+  top <- ifelse('main' %in% names(list(...)), 2, .1)
+  par(mar=c(.1,.1,top,.1))
+  gx=graph.adjacency(arr[,,t])
+  plot(induced.subgraph(gx,which(igraph::degree(gx)>=min.deg)), 
+       edge.arrow.width=.2, edge.arrow.size=.1, 
+       vertex.label.cex=.5, vertex.size=5, 
+       ...)
+}
+
 ###
 ## Complexity measure of actions 
 ##  @see Yu, Subramaniam, & Cannella, 2009
@@ -588,8 +602,8 @@ firm_i <- 'microsoft'
       # behavior cutoffs
       cut.r <- Inf
       cut.i <- Inf
-      min.r <- 0
-      min.i <- 0
+      min.r <- 1
+      min.i <- 1
       logXf <- log2
       ## RESTRUCT--------
       xr <- dfla$rp_net_restruct[idx] 
@@ -692,14 +706,17 @@ firm_i <- 'microsoft'
   
   # par(mfrow=c(2,2), mar=c(4.5,2,.3,2))
   par(mfrow=c(1,1))
-  behdf <-              within(plyr::count(c(arrNetR2[])),{beh<-'Restr'; MarketGrowthWeight<-F })
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetI2[])),{beh<-'Invar'; MarketGrowthWeight<-F }))
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restr'; MarketGrowthWeight<-T }))
-  behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invar'; MarketGrowthWeight<-T }))
+  behdf <-              within(plyr::count(c(arrNetR2[])),{beh<-'Restructuring'; MarketGrowth<-F })
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetI2[])),{beh<-'Invariant'; MarketGrowth<-F }))
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restructuring'; MarketGrowth<-T }))
+  behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invariant'; MarketGrowth<-T }))
   matplot(t(arrNetRw2[c(30,45),]), type='b')
-  ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowthWeight)) + 
+  arrPlot(mmcarr2,5,0)
+  ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowth)) + 
     geom_bar(stat="identity", width=.5, position = "dodge") +
-    facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + theme_bw()
+    facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + 
+    xlab(NULL) + ylab('Frequency') +
+    theme_bw() + theme(legend.position='bottom')
   ##----------------------------
   
   # ## DYAD FIXED COVARIATES
@@ -772,7 +789,7 @@ firm_i <- 'microsoft'
   ##
   sysEff <- getEffects(sysDat)
   # effectsDocumentation(sysEff)
-  sysEff <- includeEffects(sysEff, gwesp, isolateNet,
+  sysEff <- includeEffects(sysEff, gwesp,
                            name="depMMC")
   sysEff <- includeEffects(sysEff, outRateLog,
                            name="depMMC", type='rate')
@@ -810,9 +827,9 @@ firm_i <- 'microsoft'
   #                          name="depNetR", interaction1 = 'covMktGro')
   ## BEHAVIOR
   # control rivals' pressure
-  sysEff <- includeEffects(sysEff, avSim,
+  sysEff <- includeEffects(sysEff, totAlt,
                            name="depNetI", interaction1 = 'depMMC')
-  sysEff <- includeEffects(sysEff, avSim,
+  sysEff <- includeEffects(sysEff, totAlt,
                            name="depNetR", interaction1 = 'depMMC')
   # H1a H2a (degree effect on behavior level)
   sysEff <- includeEffects(sysEff, outdeg,
