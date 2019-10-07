@@ -1475,7 +1475,8 @@ firm_i <- 'microsoft'
   ##
   ##-------------------------------------------------------
   firmnamesub2
-  gt <- nl[[ netwavepds[yridx[1]] ]]$gt
+  yr1 <- netwavepds[yridx[1]]
+  gt <- nl[[ yr1 ]]$gt
   
   
   
@@ -1484,49 +1485,68 @@ firm_i <- 'microsoft'
   
   
   ##
-  plotCohortColorMMC <- function(gs, firms, 
-                                 filename = NA,
-                                  layout.algo=layout.fruchterman.reingold, 
-                                  seed=1111,  ...) 
+  plotCohortNetColorMMC <- function(gs, firms, 
+                                    filename = NA,
+                                    fileprefix = 'sys_mmc_cohort_net',
+                                    filetime = TRUE,
+                                    min.degree = 1,
+                                    coord=NA, seed=1111,  ...) 
   {
-    gs <- igraph::induced.subgraph(gs, vids = which(igraph::degree(gs)>0) )
+    gs <- igraph::induced.subgraph(gs, vids = which(igraph::degree(gs)>=min.degree) )
     #
     idx.firms <- which(V(gs)$vertex.names %in% firms)
     ## color
-    V(gs)$color <- 'white'
+    V(gs)$color <- rgb(.1,.1,.9,.18)  ## light translucent blue
     V(gs)$color[idx.firms] <- 'red'
     
     V(gs)$size <- 3
-    V(gs)$size[idx.firms] <- 6
+    V(gs)$size[idx.firms] <- 3
     ##label
     vertex.label <- ''
     ##
-    if (is.na(filename)) {
-      filename <- sprintf('sys_mmc_cohort_net_%s.png', as.integer(Sys.time()))
+    file.parts <- c(filename, fileprefix)
+    if (filetime)
+      file.parts <- c(file.parts, as.integer(Sys.time()))
+    file.full <- sprintf('%s.png', paste(file.parts[!is.na(file.parts)], collapse = '_'))
+    
+    if (all(is.na(coord))) {
+      set.seed(seed)
+      minC <- rep(-Inf, vcount(gs))
+      maxC <- rep(Inf, vcount(gs))
+      minC[1] <- maxC[1] <- 0
+      coord <- layout_with_fr(gs, minx=minC, maxx=maxC,
+                              miny=minC, maxy=maxC, 
+                              grid='nogrid') ## defaults to grid layout for >= 1000 nodes
     }
-    png(filename = filename, width = 8, height = 8, res = 400, units = 'in')
+    
+    png(filename = file.full, width = 8, height = 8, res = 400, units = 'in')
       par(mar=c(.1,.1,.1,.1))
       set.seed(seed)
-      plot(gs 
-                  , layout=layout_with_fr(gs)
-                  , vertex.size=V(gs)$size
-                  , vertex.color=V(gs)$color
-                  , vertex.label=vertex.label
-                  , vertex.label.cex=.01
-                  , vertex.label.color=NA
-                  , vertex.label.font = 2
-                  , vertex.label.family = 'sans'
-                  , vertex.shape = 'circle'
-                  , edge.arrow.width = .3
-                  , edge.arrow.size = .3
-                  , edge.width = .5)
+      plot(gs, layout=coord
+          , vertex.size=V(gs)$size
+          , vertex.color=V(gs)$color
+          , vertex.label=vertex.label
+          , vertex.label.cex=.01
+          , vertex.label.color=NA
+          , vertex.label.font = 2
+          , vertex.label.family = 'sans'
+          , vertex.shape = 'circle'
+          , vertex.frame.color = NA
+          , edge.arrow.width = .1
+          , edge.arrow.size = .1
+          , edge.width = .3
+          , edge.color = gray(.2, alpha = .4)
+          , rescale = TRUE
+          , ...)
+      legend('topright', legend=filename, bty = "n")
     dev.off()
+    return(coord)
   }
   
   
   
-  
-  
+  coord <- plotCohortNetColorMMC(gt, firmnamesub2, yr1)
+  coord <-  plotCohortNetColorMMC(gt, firmnamesub2, yr1, coord=coord)
   
   
  ######################################################################
