@@ -1470,22 +1470,21 @@ firm_i <- 'microsoft'
   ##=======================================================
   ##
   ##
-  ##    PLOT 
+  ##    PLOT  NETWORKS
   ##
   ##
   ##-------------------------------------------------------
   firmnamesub2
   yr1 <- netwavepds[yridx[1]]
-  gt <- nl[[ yr1 ]]$gt
-  
-  
-  
+  gt1 <- nl[[ yr1 ]]$gt
+  yr2 <- netwavepds[yridx[length(yridx)]]
+  gt2 <- nl[[ yr2 ]]$gt
   
   
   
   
   ##
-  plotCohortNetColorMMC <- function(gs, firms, 
+  plotCohortNetColorMmc <- function(gs, firms, 
                                     filename = NA,
                                     fileprefix = 'sys_mmc_cohort_net',
                                     filetime = TRUE,
@@ -1495,16 +1494,27 @@ firm_i <- 'microsoft'
     gs <- igraph::induced.subgraph(gs, vids = which(igraph::degree(gs)>=min.degree) )
     #
     idx.firms <- which(V(gs)$vertex.names %in% firms)
-    ## color
-    V(gs)$color <- rgb(.1,.1,.9,.18)  ## light translucent blue
-    V(gs)$color[idx.firms] <- 'red'
+    # ## color ------------------------------
+    # V(gs)$color <- rgb(.1,.1,.9,.05)  ## light translucent blue
+    # V(gs)$color[idx.firms] <- 'red'
+    # V(gs)$color.frame <- rgb(.1,.1,.9,.45) 
+    # V(gs)$color.frame[idx.firms] <- 'red'
+    # ## color CLUSTER ----------------------
+    V(gs)$cluster <- igraph::multilevel.community(gs)$membership
+    ncl <- length(unique(V(gs)$cluster))
+    rbvertcolors <- rainbow(ncl, s = 1, v = 1, alpha = .35)
+    rbframecolors <- rainbow(ncl, s = 1, v = 1, alpha = .45)
+    V(gs)$color <- rbvertcolors[ V(gs)$cluster  ]
+    V(gs)$color[idx.firms] <- 'black'
+    V(gs)$color.frame <- rbframecolors[ V(gs)$cluster  ]
+    V(gs)$color.frame[idx.firms] <- 'black'
     
-    V(gs)$size <- 3
+    V(gs)$size <- 2
     V(gs)$size[idx.firms] <- 3
     ##label
     vertex.label <- ''
     ##
-    file.parts <- c(filename, fileprefix)
+    file.parts <- c(fileprefix, filename)
     if (filetime)
       file.parts <- c(file.parts, as.integer(Sys.time()))
     file.full <- sprintf('%s.png', paste(file.parts[!is.na(file.parts)], collapse = '_'))
@@ -1515,9 +1525,10 @@ firm_i <- 'microsoft'
       maxC <- rep(Inf, vcount(gs))
       minC[1] <- maxC[1] <- 0
       coord <- layout_with_fr(gs, minx=minC, maxx=maxC,
-                              miny=minC, maxy=maxC, 
+                              miny=minC, maxy=maxC,
                               grid='nogrid') ## defaults to grid layout for >= 1000 nodes
     }
+    # coord <- layout_with_kk(gs)
     
     png(filename = file.full, width = 8, height = 8, res = 400, units = 'in')
       par(mar=c(.1,.1,.1,.1))
@@ -1525,17 +1536,17 @@ firm_i <- 'microsoft'
       plot(gs, layout=coord
           , vertex.size=V(gs)$size
           , vertex.color=V(gs)$color
+          , vertex.frame.color = V(gs)$color.frame
           , vertex.label=vertex.label
           , vertex.label.cex=.01
           , vertex.label.color=NA
           , vertex.label.font = 2
           , vertex.label.family = 'sans'
           , vertex.shape = 'circle'
-          , vertex.frame.color = NA
           , edge.arrow.width = .1
           , edge.arrow.size = .1
           , edge.width = .3
-          , edge.color = gray(.2, alpha = .4)
+          , edge.color = 'darkgray'
           , rescale = TRUE
           , ...)
       legend('topright', legend=filename, bty = "n")
@@ -1545,8 +1556,100 @@ firm_i <- 'microsoft'
   
   
   
-  coord <- plotCohortNetColorMMC(gt, firmnamesub2, yr1)
-  coord <-  plotCohortNetColorMMC(gt, firmnamesub2, yr1, coord=coord)
+  # coord1 <- plotCohortNetColorMmc(gt1, firmnamesub2, yr1)
+  coord1 <- plotCohortNetColorMmc(gt1, firmnamesub2, yr1, coord=coord1)
+  
+  # coord2 <- plotCohortNetColorMmc(gt2, firmnamesub2, yr2)
+  coord2 <- plotCohortNetColorMmc(gt2, firmnamesub2, yr2, coord=coord2)
+  
+  
+
+  
+  
+  
+  plotMmcNetColorBeh <- function(mat, beh,
+                                  filename = NA,
+                                  fileprefix = 'sys_mmc_net_beh',
+                                  legend.title = 'Aggressiv.',
+                                  filetime = TRUE,
+                                  min.degree = 1,
+                                  coord=NA, seed=111,  ...) 
+  {
+    gs <- igraph::graph.adjacency(mat, diag = F)
+    #
+    # ## color ------------------------------
+    # V(gs)$color <- rgb(.1,.1,.9,.05)  ## light translucent blue
+    # V(gs)$color[idx.firms] <- 'red'
+    # V(gs)$color.frame <- rgb(.1,.1,.9,.45) 
+    # V(gs)$color.frame[idx.firms] <- 'red'
+    # ## color CLUSTER ----------------------
+    ncl <- length(unique(beh))
+    rbvertcolors <- heat.colors(ncl, alpha = .75, rev = T)
+    V(gs)$color <- rbvertcolors[ beh  ]
+    V(gs)$color.frame <- 'black'
+    
+    V(gs)$size <- 9
+
+    ##label
+    vertex.label <- ''
+    ##
+    file.parts <- c(fileprefix, filename)
+    if (filetime)
+      file.parts <- c(file.parts, as.integer(Sys.time()))
+    file.full <- sprintf('%s.png', paste(file.parts[!is.na(file.parts)], collapse = '_'))
+    
+    png(filename = file.full, width = 8, height = 8, res = 400, units = 'in')
+    par(mar=c(.1,.1,.1,.1))
+    set.seed(seed)
+    plot(gs, layout=layout.fruchterman.reingold
+         , vertex.size=V(gs)$size
+         , vertex.color=V(gs)$color
+         , vertex.frame.color = V(gs)$color.frame
+         , vertex.label=vertex.label
+         , vertex.label.cex=.01
+         , vertex.label.color=NA
+         , vertex.label.font = 2
+         , vertex.label.family = 'sans'
+         , vertex.shape = 'circle'
+         , edge.arrow.width = .1
+         , edge.arrow.size = .1
+         , edge.width = 2
+         , edge.color = 'darkgray'
+         , rescale = TRUE
+         , ...)
+    legend('topright', title = legend.title, legend=sort(unique(beh)), 
+           col=rbvertcolors, pch=rep(19, ncl), cex=1.6, pt.cex = 2.5)
+    dev.off()
+  }
+  
+  ## RESTRUCTURING AGGRESSIVENSS
+  yrsubidx.1 <- 1
+  yridx.1 <- yridx[yrsubidx.1]
+  mat1 <- mmcarr2[,,yrsubidx.1]
+  beh1 <- arrNetRw2[,yrsubidx.1]
+    
+  yrsubidx.2 <- length(yridx)
+  yridx.2 <- yridx[yrsubidx.2]
+  mat2 <- mmcarr2[,,yrsubidx.2]
+  beh2 <- arrNetRw2[,yrsubidx.2]
+  
+  plotMmcNetColorBeh(mat1, beh1, netwavepds[yridx.1], legend.title = 'Restruct.', seed=1357)
+  plotMmcNetColorBeh(mat2, beh2, netwavepds[yridx.2], legend.title = 'Restruct.', seed=13579)
+    
+  ## INVARIANT AGGRESSIVENSS
+  yrsubidx.1 <- 1
+  yridx.1 <- yridx[yrsubidx.1]
+  mat1 <- mmcarr2[,,yrsubidx.1]
+  beh1 <- arrNetIw2[,yrsubidx.1]
+  
+  yrsubidx.2 <- length(yridx)
+  yridx.2 <- yridx[yrsubidx.2]
+  mat2 <- mmcarr2[,,yrsubidx.2]
+  beh2 <- arrNetIw2[,yrsubidx.2]
+  
+  plotMmcNetColorBeh(mat1, beh1, netwavepds[yridx.1], legend.title = 'Invariant', seed=1357)
+  plotMmcNetColorBeh(mat2, beh2, netwavepds[yridx.2], legend.title = 'Invariant', seed=13579)
+  
   
   
  ######################################################################

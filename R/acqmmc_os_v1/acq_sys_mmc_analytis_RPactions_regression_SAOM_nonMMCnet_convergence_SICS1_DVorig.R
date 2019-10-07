@@ -738,7 +738,7 @@ firm_i <- 'microsoft'
       .namei <- firmnamesub[i]
       idx <- which(dfla$pd==t & dfla$name==.namei)
       # behavior cutoffs
-      cut.r <- 5
+      cut.r <- 4
       cut.i <- 4
       min.r <- 1
       min.i <- 1
@@ -794,7 +794,7 @@ firm_i <- 'microsoft'
   yridx <- 2:(length(netwavepds))#c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
   ## FILTER FIRMS (nm=has actions; dex=has MMC relations)
   # nmsale <- which(firmnamesub %in% unique(dfla$name[!is.na(dfla$cs_roa_1)]))
-  idxnm <- which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
+  idxnm <- 1:length(firmnamesub) # which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
   idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
   
   # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
