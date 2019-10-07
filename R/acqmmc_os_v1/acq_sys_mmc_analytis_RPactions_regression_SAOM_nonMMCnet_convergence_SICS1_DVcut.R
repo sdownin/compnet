@@ -268,6 +268,14 @@ saomTable <- function(resList, file=NA, nameMap=NA, digits=3, drop.dv.col=TRUE)
   tdf[nrow(tdf), idx.sig] <- '   '
   tdf[nrow(tdf), idx.est] <-  iter
   
+  idx.se  <- grep('^se',names(tdf),T,T)
+  for (i in idx.se) {
+    tdf[,i] <- sapply(tdf[,i],function(x) {
+      spfstr <- sprintf('(%s%s.%sf)','%',digits+3,digits)
+      ifelse(is.na(x)|x=='NA','',sprintf(spfstr,as.numeric(x)))
+      })
+  }
+  
   names(tdf)[idx.sig] <- '   '
   
   if (!any(is.na(nameMap))) {
@@ -860,6 +868,14 @@ firm_i <- 'microsoft'
   arrAge2 <- arrAge[ firmsubidx ]
   
   # par(mfrow=c(2,2), mar=c(4.5,2,.3,2))
+  ####
+  idf <-  plyr::count(c(arrNetIw2[]))
+  idf$pct <-  round(100 * idf$freq / sum(idf$freq), 1)
+  print(idf)
+  rdf <- plyr::count(c(arrNetRw2[]))
+  rdf$pct <- round(100 * rdf$freq / sum(rdf$freq), 1)
+  print(rdf)
+  ######
   par(mfrow=c(1,1))
   behdf <-              within(plyr::count(c(arrNetR2[])),{beh<-'Restructuring'; MarketGrowth<-F })
   behdf <- rbind(behdf, within(plyr::count(c(arrNetI2[])),{beh<-'Invariant'; MarketGrowth<-F }))
@@ -867,11 +883,22 @@ firm_i <- 'microsoft'
   behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invariant'; MarketGrowth<-T }))
   matplot(t(arrNetRw2[c(30,45),]), type='b')
   for (t in yridx) arrPlot(mmcarr2,t,0, main=sprintf('Year %s',netwavepds[t]))
+  ## PLOT BEHAVIOR (all years) by Market Growth - FACET BY AGGRESSIVENESS (RESTRUCT vs INVARIANT
   ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowth)) + 
     geom_bar(stat="identity", width=.5, position = "dodge") +
-    facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + 
-    xlab(NULL) + ylab('Frequency') +
-    theme_bw() + theme(legend.position='bottom')
+    facet_wrap(.~beh) + xlab('Competitive Aggressiveness') + ylab('Frequency') +
+    theme_bw() + theme(legend.position='top') + scale_fill_manual(values = c('darkgrey','steelblue'))
+  ## PLOT BEHAVIOR BY YEAR - FACET BY AGGRESSIVENESS (RESTRUCT vs INVARIANT)
+  behyrdf <- within(plyr::count(c(arrNetRw2[,1])),{beh<-'Restructuring'; year<-netwavepds[yridx[1]] })
+  for (tt in 2:length(yridx)) 
+    behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetRw2[,tt])),{beh<-'Restructuring'; year<-netwavepds[yridx[tt]] }) )
+  behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetIw2[,1])),{beh<-'Invariant'; year<-netwavepds[yridx[1]] }) )
+  for (tt in 2:length(yridx)) 
+    behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetIw2[,tt])),{beh<-'Invariant'; year<-netwavepds[yridx[tt]] }) )
+  ggplot(behyrdf, aes(x=x, y=freq, fill=year)) + 
+    geom_bar(stat="identity", width=.82, position = "dodge") +
+    facet_wrap(.~beh) + xlab('Competitive Aggressiveness') + ylab('Frequency') +
+    theme_bw() + theme(legend.position='top') + scale_fill_brewer(palette="Paired")
   ##----------------------------
   
   # ## DYAD FIXED COVARIATES
@@ -1349,10 +1376,106 @@ firm_i <- 'microsoft'
   ## print SAOM Regression table compariosn 
   ##
   ##---------------------------------------------------------------- 
-  sysResList <- list(sysResAMC0ctrl, sysResAMC0ctrl2, sysResH1ab, sysResH2, sysResAMC0)
-  saomTable(sysResList, digits = 3,
+  sysNameMap <- list(
+    `rate depNetR (period 1)`='Rate 2011-2012',
+    `rate depNetR (period 2)`='Rate 2012-2013',
+    `rate depNetR (period 3)`='Rate 2013-2014',
+    `rate depNetR (period 4)`='Rate 2014-2015',
+    `rate depNetR (period 5)`='Rate 2015-2016',
+    `depNetR linear shape`='Behavior Linear Shape',
+    `depNetR quadratic shape`='Behavior Quadratic Shape',
+    `depNetR: effect from covEmploy`='Employees (Thousands)',
+    `depNetR: effect from covAcqExper`='Acquisition Experience',
+    `depNetR: effect from covSales`='ROA',
+    `depNetR: effect from covSlack`='Quick Ratio',
+    `depNetR isolate`='Network Isolate Effect',
+    `depNetR total alter`='Direct Competitors\' Pressure',
+    `depNetR degree`='System MMC',
+    #
+    `rate depNetI (period 1)`='Rate 2011-2012',
+    `rate depNetI (period 2)`='Rate 2012-2013',
+    `rate depNetI (period 3)`='Rate 2013-2014',
+    `rate depNetI (period 4)`='Rate 2014-2015',
+    `rate depNetI (period 5)`='Rate 2015-2016',
+    `depNetI linear shape`='Behavior Linear Shape',
+    `depNetI quadratic shape`='Behavior Quadratic Shape',
+    `depNetI: effect from covEmploy`='Employees (Thousands)',
+    `depNetI: effect from covSales`='ROA',
+    `depNetI: effect from covSlack`='Quick Ratio',
+    `depNetI isolate`='Network Isolate Effect',
+    `depNetI total alter`='Direct Competitors\' Pressure',
+    `depNetI degree`='System MMC',
+    #
+    `constant depMMC rate (period 1)`='Rate 2011-2012',
+    `constant depMMC rate (period 2)`='Rate 2012-2013',
+    `constant depMMC rate (period 3)`='Rate 2013-2014',
+    `constant depMMC rate (period 4)`='Rate 2014-2015',
+    `constant depMMC rate (period 5)`='Rate 2015-2016',
+    `degree (density)`='Network Density',
+    `transitive triads`='Transitive Triads',
+    `GWESP (69)`='GWESC',
+    `covCatSim`='Category Similarity',
+    `covAge ego`='Firm Age',
+    `depNetR tot alter at dist 2 (1)`='Indirect Competitors\' Pressure',
+    #
+    `Dynamics: depNetR`='Restructuring Aggressiveness',
+    `Dynamics: depNetI`='Invariant Aggressiveness',
+    `Dynamics: depMMC`='Network Dynamics'
+  )
+  
+  sysResList <- list(sysResAMC0ctrl, sysResAMC0ctrl2, 
+                     sysResH1ab, sysResH2, sysResAMC0)
+  saveRDS(sysResList, file="sys_MMC_SAOM_res_list_microsoft_DVcut_1-4_2011-2016.rds")
+  saomTable(sysResList, digits = 3, nameMap = sysNameMap,
             file="sys_MMC_SAOM_res_table_microsoft_DVcut_1-4_2011-2016.csv")
   
+  ## multiparameter Wald tests
+  mc0 <- c('depNetR isolate','depNetR total alter','depNetI isolate','depNetI total alter')
+  mc1 <- c('depNetR degree', 'depNetI degree')
+  mc2 <- c('depNetR tot alter at dist 2')
+  # TEST ALL COEVOLUTION
+  ## check param IDs
+  sort(sapply(mc0,function(x)grep(x,sysResAMC0ctrl2$effects$effectName,T,T)))
+  sort(sapply(unique(c(mc0,mc1)),function(x)grep(x,sysResH1ab$effects$effectName,T,T)))
+  sort(sapply(unique(c(mc0,mc2)),function(x)grep(x,sysResH2$effects$effectName,T,T)))
+  sort(sapply(unique(c(mc0,mc1,mc2)),function(x)grep(x,sysResAMC0$effects$effectName,T,T)))
+  # TEST ALL COEVOLUTION
+  mtf <- ldply(list(
+   Multipar.RSiena(sysResAMC0ctrl2, 18,19,31,32),
+   Multipar.RSiena(sysResH1ab, 18,19,20,32,33,34),
+   Multipar.RSiena(sysResH2, 11, 19, 20, 32, 33),
+   Multipar.RSiena(sysResAMC0, 11,19,20,21, 33,34,35) 
+  ), data.frame)
+  mtf$pvalue <- as.numeric( round(mtf$pvalue, 4) )
+  print(mtf)
+
+  ## HYPOTHESIZED ONLY
+  sort(sapply(unique(c(mc1)),function(x)grep(x,sysResH1ab$effects$effectName,T,T)))
+  sort(sapply(unique(c(mc2)),function(x)grep(x,sysResH2$effects$effectName,T,T)))
+  sort(sapply(unique(c(mc1,mc2)),function(x)grep(x,sysResAMC0$effects$effectName,T,T)))
+  ##
+  mth <- ldply(list(
+    Multipar.RSiena(sysResH1ab, 18,32),
+    Multipar.RSiena(sysResH2, 11),
+    Multipar.RSiena(sysResAMC0, 11,19,33)
+  ), data.frame)
+  mth$pvalue <- as.numeric( round(mth$pvalue, 4) )
+  print(mth)
+
+  
+  
+  
+  
+  
+  ##=======================================================
+  ##
+  ##
+  ##    PLOT 
+  ##
+  ##
+  ##-------------------------------------------------------
+  firmnamesub2
+  gt <- nl[[ netwavepds[yridx[1]] ]]$gt
   
   
   
@@ -1360,12 +1483,53 @@ firm_i <- 'microsoft'
   
   
   
+  ##
+  plotCohortColorMMC <- function(gs, firms, 
+                                 filename = NA,
+                                  layout.algo=layout.fruchterman.reingold, 
+                                  seed=1111,  ...) 
+  {
+    gs <- igraph::induced.subgraph(gs, vids = which(igraph::degree(gs)>0) )
+    #
+    idx.firms <- which(V(gs)$vertex.names %in% firms)
+    ## color
+    V(gs)$color <- 'white'
+    V(gs)$color[idx.firms] <- 'red'
+    
+    V(gs)$size <- 3
+    V(gs)$size[idx.firms] <- 6
+    ##label
+    vertex.label <- ''
+    ##
+    if (is.na(filename)) {
+      filename <- sprintf('sys_mmc_cohort_net_%s.png', as.integer(Sys.time()))
+    }
+    png(filename = filename, width = 8, height = 8, res = 400, units = 'in')
+      par(mar=c(.1,.1,.1,.1))
+      set.seed(seed)
+      plot(gs 
+                  , layout=layout_with_fr(gs)
+                  , vertex.size=V(gs)$size
+                  , vertex.color=V(gs)$color
+                  , vertex.label=vertex.label
+                  , vertex.label.cex=.01
+                  , vertex.label.color=NA
+                  , vertex.label.font = 2
+                  , vertex.label.family = 'sans'
+                  , vertex.shape = 'circle'
+                  , edge.arrow.width = .3
+                  , edge.arrow.size = .3
+                  , edge.width = .5)
+    dev.off()
+  }
   
   
   
   
   
-#######################################################################
+  
+  
+ ######################################################################
   #######################################################################
   #######################################################################
   #######################################################################
@@ -1384,6 +1548,62 @@ firm_i <- 'microsoft'
   #######################################################################
   #######################################################################
   #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  #######################################################################
+  
+  # 
+  # 
+  # ## NETWORK AUTOCORRELATION
+  # MoranGeary <- function(i, data, sims, wave, groupName, varName, levls=1:2){
+  #   #unloadNamespace("igraph") # to avoid package clashes
+  #   require(sna)
+  #   require(network)
+  # 
+  #   x <- as.sociomatrix(networkExtraction(i, data, sims, wave, groupName, varName[1]))
+  #   z <- behaviorExtraction(i,data,sims,wave,groupName,varName[2])
+  #   n <- length(z)
+  #   z.ave <- mean(z,na.rm=TRUE)
+  #   numerator <- n*sum(x*outer(z-z.ave,z-z.ave),na.rm=TRUE)
+  #   denominator <- sum(x,na.rm=TRUE)*sum((z-z.ave)^2,na.rm=TRUE)
+  #   res <- numerator/denominator
+  #   numerator <- (n-1)*sum(x*(outer(z,z,FUN='-')^2),na.rm=TRUE)
+  #   denominator <- 2*sum(x,na.rm=TRUE)*sum((z-z.ave)^2,na.rm=TRUE)
+  #   res[2] <- numerator/denominator
+  #   names(res) <- c("Moran","Geary")
+  #   return(res)
+  # }
+  # 
+  # sysResAMC0$a
+  # 
+  # sims[[i]][[groupName]][[varName[1]]][[period]][, 1]
+  # , 
+  # sims[[i]][[groupName]][[varName]][[period]][, 2], x = sims[[i]][[groupName]][[varName]][[period]][,3], dims = dimsOfDepVar[1:2]) 
+  # 
+  #   
+  # simMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-sims-0', simOnly = T, 
+  #                                cond = FALSE, useStdInits = FALSE, nsub = 0 ,
+  #                                seed=135)
+  # 
+  # sims  <- siena07(simMod, data=sysDat, effects=sysEff, 
+  #                 useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
+  # 
+  # i <- 1
+  # wave <- 1
+  # groupName <- 'Data1'
+  # varName <- c('depMMC','depNetR')
+  # data <- sysDat
+  # mc <- MoranGeary(i, sysResAMC0$f, sims, wave, groupName, varName)
+  # 
+  #
   #######################################################################
   #######################################################################
   #######################################################################

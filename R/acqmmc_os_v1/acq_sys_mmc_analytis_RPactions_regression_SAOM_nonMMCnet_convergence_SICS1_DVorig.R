@@ -739,10 +739,10 @@ firm_i <- 'microsoft'
       idx <- which(dfla$pd==t & dfla$name==.namei)
       # behavior cutoffs
       cut.r <- 5
-      cut.i <- 5
+      cut.i <- 4
       min.r <- 1
       min.i <- 1
-      logXf <- log10
+      logXf <- log
       ## RESTRUCT--------
       xr <- dfla$rp_net_restruct[idx] 
       xr <- ceiling( logXf( 1 + xr ) )
@@ -855,6 +855,18 @@ firm_i <- 'microsoft'
     facet_wrap(.~beh) + ggtitle('Competitive Aggressiveness') + 
     xlab(NULL) + ylab('Frequency') +
     theme_bw() + theme(legend.position='bottom')
+  
+  behyrdf <- within(plyr::count(c(arrNetRw2[,1])),{beh<-'Restructuring'; year<-netwavepds[yridx[1]] })
+  for (tt in 2:length(yridx)) 
+    behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetRw2[,tt])),{beh<-'Restructuring'; year<-netwavepds[yridx[tt]] }) )
+  behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetIw2[,1])),{beh<-'Invariant'; year<-netwavepds[yridx[1]] }) )
+  for (tt in 2:length(yridx)) 
+    behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetIw2[,tt])),{beh<-'Invariant'; year<-netwavepds[yridx[tt]] }) )
+  ggplot(behyrdf, aes(x=x, y=freq, fill=year)) + 
+    geom_bar(stat="identity", width=.82, position = "dodge") +
+    facet_wrap(.~beh) + xlab('Competitive Aggressiveness') + ylab('Frequency') +
+    theme_bw() + theme(legend.position='top') + scale_fill_brewer(palette="Paired")
+  
   ##----------------------------
   
   # ## DYAD FIXED COVARIATES
