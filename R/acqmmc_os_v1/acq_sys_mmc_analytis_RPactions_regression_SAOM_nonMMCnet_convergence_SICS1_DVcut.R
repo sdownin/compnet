@@ -1625,13 +1625,13 @@ firm_i <- 'microsoft'
   ## RESTRUCTURING AGGRESSIVENSS
   yrsubidx.1 <- 1
   yridx.1 <- yridx[yrsubidx.1]
-  mat1 <- mmcarr2[,,yrsubidx.1]
-  beh1 <- arrNetRw2[,yrsubidx.1]
+  mat1 <- mmcarr[,,yrsubidx.1]
+  beh1 <- arrNetRw[,yrsubidx.1]
     
   yrsubidx.2 <- length(yridx)
   yridx.2 <- yridx[yrsubidx.2]
-  mat2 <- mmcarr2[,,yrsubidx.2]
-  beh2 <- arrNetRw2[,yrsubidx.2]
+  mat2 <- mmcarr[,,yrsubidx.2]
+  beh2 <- arrNetRw[,yrsubidx.2]
   
   plotMmcNetColorBeh(mat1, beh1, netwavepds[yridx.1], legend.title = 'Restruct.', seed=1357)
   plotMmcNetColorBeh(mat2, beh2, netwavepds[yridx.2], legend.title = 'Restruct.', seed=13579)

@@ -21,6 +21,7 @@ library(reshape2)
 library(plyr)
 library(dplyr)
 library(lubridate)
+library(RColorBrewer)
 
 ## DIRECTORIES
 data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
@@ -89,9 +90,9 @@ complexity <- function(x, scale=FALSE) {
 ##
 checkSienaConv <- function(res, t.lim=0.1,max.lim=0.25) {
   tmax <- res$tconv.max
-  ts <- res$tconv
+  ts <- abs(res$tconv)
   ck.tmax <- tmax < max.lim
-  ck.ts <- all(abs(ts) < t.lim)
+  ck.ts <- all(ts < t.lim)
   ck <- all(ck.tmax, ck.ts)
   cat(sprintf('\nCONVERGED:  %s\n  tconv.max (%.3f) < 0.25  %s\n  all t (max %.3f) < 0.10  %s\n\n',
               ck, tmax, ck.tmax, max(ts), ck.ts))
@@ -738,11 +739,11 @@ firm_i <- 'microsoft'
       .namei <- firmnamesub[i]
       idx <- which(dfla$pd==t & dfla$name==.namei)
       # behavior cutoffs
-      cut.r <- 4
-      cut.i <- 4
+      cut.r <- 5
+      cut.i <- 5
       min.r <- 1
       min.i <- 1
-      logXf <- log
+      logXf <- function(x)log(x, base=exp(1))
       ## RESTRUCT--------
       xr <- dfla$rp_net_restruct[idx] 
       xr <- ceiling( logXf( 1 + xr ) )
@@ -791,10 +792,10 @@ firm_i <- 'microsoft'
   }
   
   ## FILTER YEARS
-  yridx <- 2:(length(netwavepds))#c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
+  yridx <- 1:(length(netwavepds))#c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
   ## FILTER FIRMS (nm=has actions; dex=has MMC relations)
   # nmsale <- which(firmnamesub %in% unique(dfla$name[!is.na(dfla$cs_roa_1)]))
-  idxnm <- 1:length(firmnamesub) # which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
+  idxnm <-  which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
   idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
   
   # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
@@ -865,7 +866,7 @@ firm_i <- 'microsoft'
   ggplot(behyrdf, aes(x=x, y=freq, fill=year)) + 
     geom_bar(stat="identity", width=.82, position = "dodge") +
     facet_wrap(.~beh) + xlab('Competitive Aggressiveness') + ylab('Frequency') +
-    theme_bw() + theme(legend.position='top') + scale_fill_brewer(palette="Paired")
+    theme_bw() + theme(legend.position='top') + scale_fill_manual(values=brewer.pal(9,"PuBu")[(9-length(yridx)+1):9])
   
   ##----------------------------
   
@@ -940,7 +941,7 @@ firm_i <- 'microsoft'
   ##
   sysEff <- getEffects(sysDat)
   # effectsDocumentation(sysEff)
-  sysEff <- includeEffects(sysEff, gwesp,
+  sysEff <- includeEffects(sysEff, gwesp, #balance,
                            name="depMMC")
   sysEff <- includeEffects(sysEff, egoX,
                            name="depMMC", interaction1 = 'covAge')
@@ -979,18 +980,24 @@ firm_i <- 'microsoft'
                            name="depNetI", interaction1 = 'depMMC')
   #
   sysEff <- includeEffects(sysEff, totAlt,
-                           name="depNetI", interaction1 = 'depMMC')
-  sysEff <- includeEffects(sysEff, totAlt,
                            name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, totAlt,
+                           name="depNetI", interaction1 = 'depMMC')
+  ## CHECK
+
+  sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
+                           name="depNetR", interaction1 = 'depMMC')
+  sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
+                           name="depNetI", interaction1 = 'depMMC')
   #
   sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDorig-0', 
-                                 firstg = 0.05,  ## default: 0.2
-                                 n2start=140,    ## default: 2.52*(p+7)
+                                 firstg = 0.07,  ## default: 0.2
+                                 n2start=110,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
                                  seed=135, maxlike=F)
   # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
   sysResAMC0 <- siena07(sysMod, data=sysDat, effects=sysEff, 
-                        # prevAns = sysResAMC0,
+                        #prevAns = sysResAMC0,
                         batch = T,   returnDeps = T, ## necessary for GOF
                         useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
   conv <- checkSienaConv(sysResAMC0)
@@ -1004,7 +1011,6 @@ firm_i <- 'microsoft'
                                varName="depMMC"); plot(gfAMC0.od)
   gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
                                varName="depMMC"); plot(gfAMC0.tc)
-
   saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
           file = 'acq_sys_mmc_sysResAMC0_H1ab_H2_converg_DVorig.rds')
   

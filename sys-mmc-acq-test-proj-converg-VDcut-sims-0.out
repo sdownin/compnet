@@ -1,0 +1,219 @@
+
+
+-----------------------------------
+New Analysis started.
+Date and time: 06/10/2019 23:07:05
+New results follow.
+-----------------------------------
+
+RSiena version 1.2-12 (12 May 18)
+
+
+@1
+Simulations.
+============
+
+Current random number seed is 135.
+Effects object used: sysEff 
+Model Type:
+ 
+Behavioral Model Type:
+Behavior 1 depNetR : 
+Behavior 2 depNetI : 
+Estimation method: unconditional moment estimation.
+
+Time duration for simulations in each period is 1.0.
+Derivatives are estimated with the likelihood ratio method.
+Dolby method (regression on scores) is used.
+Parameter values are 
+  1. rate:  constant depMMC rate (period 1)                 0.7175
+  2. rate:  constant depMMC rate (period 2)                 1.1010
+  3. rate:  constant depMMC rate (period 3)                 0.7723
+  4. rate:  constant depMMC rate (period 4)                 0.7175
+  5. rate:  constant depMMC rate (period 5)                 1.9226
+  6. eval:  degree (density)                               -0.5582
+  7. eval:  transitive triads                               0.0000
+  8. eval:  GWESP (69)                                      0.0000
+  9. eval:  covCatSim                                       0.0000
+ 10. eval:  covAge ego                                      0.0000
+ 11. creation:  depNetR tot alter at dist 2 (1)             0.0000
+ 12. rate:  rate depNetR (period 1)                         0.3973
+ 13. rate:  rate depNetR (period 2)                         0.5553
+ 14. rate:  rate depNetR (period 3)                         0.8700
+ 15. rate:  rate depNetR (period 4)                         0.6940
+ 16. rate:  rate depNetR (period 5)                         0.6135
+ 17. eval:  depNetR linear shape                            0.1181
+ 18. eval:  depNetR quadratic shape                         0.0000
+ 19. eval:  depNetR degree                                  0.0000
+ 20. eval:  depNetR isolate                                 0.0000
+ 21. eval:  depNetR total alter                             0.0000
+ 22. eval:  depNetR: effect from covEmploy                  0.0000
+ 23. eval:  depNetR: effect from covAcqExper                0.0000
+ 24. eval:  depNetR: effect from covSales                   0.0000
+ 25. eval:  depNetR: effect from covSlack                   0.0000
+ 26. rate:  rate depNetI (period 1)                         0.5022
+ 27. rate:  rate depNetI (period 2)                         0.5844
+ 28. rate:  rate depNetI (period 3)                         0.8849
+ 29. rate:  rate depNetI (period 4)                         0.6940
+ 30. rate:  rate depNetI (period 5)                         0.6970
+ 31. eval:  depNetI linear shape                            0.0716
+ 32. eval:  depNetI quadratic shape                         0.0000
+ 33. eval:  depNetI degree                                  0.0000
+ 34. eval:  depNetI isolate                                 0.0000
+ 35. eval:  depNetI total alter                             0.0000
+ 36. eval:  depNetI: effect from covEmploy                  0.0000
+ 37. eval:  depNetI: effect from covSales                   0.0000
+ 38. eval:  depNetI: effect from covSlack                   0.0000
+
+
+Observed values of target statistics are
+  1. Amount of network change in period 1                                26.0000
+  2. Amount of network change in period 2                                40.0000
+  3. Amount of network change in period 3                                28.0000
+  4. Amount of network change in period 4                                26.0000
+  5. Amount of network change in period 5                                70.0000
+  6. Number of edges                                                    539.0000
+  7. Number of transitive triads                                        294.0000
+  8. Numb. edgew. shrd prtns.(69)                                      1106.1357
+  9. Sum of ties x covCatSim                                             51.3523
+ 10. Sum of degrees x covAge                                           8286.3514
+ 11. New ties: depNetR tot alter at dist 2 (1)                          510.2027
+ 12. Amount of behavioral change in period 1 on depNetR                  22.0000
+ 13. Amount of behavioral change in period 2 on depNetR                  32.0000
+ 14. Amount of behavioral change in period 3 on depNetR                  42.0000
+ 15. Amount of behavioral change in period 4 on depNetR                  43.0000
+ 16. Amount of behavioral change in period 5 on depNetR                  38.0000
+ 17. depNetR centered sum                                                15.0000
+ 18. depNetR sum of cent. squares                                       493.0405
+ 19. depNetR outdegrees                                                 769.0541
+ 20. depNetR isolate                                                    -54.5811
+ 21. depNetR total alters                                               567.2191
+ 22. depNetR x covEmploy                                               16471.9217
+ 23. depNetR x covAcqExper                                              436.2251
+ 24. depNetR x covSales                                                  58.7671
+ 25. depNetR x covSlack                                                  82.2851
+ 26. Amount of behavioral change in period 1 on depNetI                  29.0000
+ 27. Amount of behavioral change in period 2 on depNetI                  33.0000
+ 28. Amount of behavioral change in period 3 on depNetI                  50.0000
+ 29. Amount of behavioral change in period 4 on depNetI                  43.0000
+ 30. Amount of behavioral change in period 5 on depNetI                  41.0000
+ 31. depNetI centered sum                                                 8.0000
+ 32. depNetI sum of cent. squares                                       419.7432
+ 33. depNetI outdegrees                                                 744.4595
+ 34. depNetI isolate                                                    -53.6892
+ 35. depNetI total alters                                               533.9949
+ 36. depNetI x covEmploy                                               17809.5583
+ 37. depNetI x covSales                                                  49.8779
+ 38. depNetI x covSlack                                                 120.9389
+
+ 38 parameters, 38 statistics
+
+Number of subphases is specified as 0.
+Therefore the estimation phase is skipped
+ and the program passes on immediately to phase 3
+ for checking the current parameter values and calculating standard errors.
+Estimation of derivatives by the LR method (type 1).
+
+
+
+
+@2
+Simulation Results.
+-------------------
+
+Regular end of simulation algorithm.
+Total of 1000 iteration steps.
+
+
+@3
+Parameter values
+                
+Network Dynamics
+ 1. rate:  constant depMMC rate (period 1)                         0.7175  
+ 2. rate:  constant depMMC rate (period 2)                         1.1010  
+ 3. rate:  constant depMMC rate (period 3)                         0.7723  
+ 4. rate:  constant depMMC rate (period 4)                         0.7175  
+ 5. rate:  constant depMMC rate (period 5)                         1.9226  
+ 6. eval:  degree (density)                                       -0.5582  
+ 7. eval:  transitive triads                                       0.0000  
+ 8. eval:  GWESP (69)                                              0.0000  
+ 9. eval:  covCatSim                                               0.0000  
+10. eval:  covAge ego                                              0.0000  
+11. creat: depNetR tot alter at dist 2 (1)                         0.0000  
+Behavior Dynamics
+
+12. rate:  <1> rate depNetR (period 1)                             0.3973  
+13. rate:  <1> rate depNetR (period 2)                             0.5553  
+14. rate:  <1> rate depNetR (period 3)                             0.8700  
+15. rate:  <1> rate depNetR (period 4)                             0.6940  
+16. rate:  <1> rate depNetR (period 5)                             0.6135  
+17. eval:  <1> depNetR linear shape                                0.1181  
+18. eval:  <1> depNetR quadratic shape                             0.0000  
+19. eval:  <1> depNetR degree                                      0.0000  
+20. eval:  <1> depNetR isolate                                     0.0000  
+21. eval:  <1> depNetR total alter                                 0.0000  
+22. eval:  <1> depNetR: effect from covEmploy                      0.0000  
+23. eval:  <1> depNetR: effect from covAcqExper                    0.0000  
+24. eval:  <1> depNetR: effect from covSales                       0.0000  
+25. eval:  <1> depNetR: effect from covSlack                       0.0000  
+26. rate:  <2> rate depNetI (period 1)                             0.5022  
+27. rate:  <2> rate depNetI (period 2)                             0.5844  
+28. rate:  <2> rate depNetI (period 3)                             0.8849  
+29. rate:  <2> rate depNetI (period 4)                             0.6940  
+30. rate:  <2> rate depNetI (period 5)                             0.6970  
+31. eval:  <2> depNetI linear shape                                0.0716  
+32. eval:  <2> depNetI quadratic shape                             0.0000  
+33. eval:  <2> depNetI degree                                      0.0000  
+34. eval:  <2> depNetI isolate                                     0.0000  
+35. eval:  <2> depNetI total alter                                 0.0000  
+36. eval:  <2> depNetI: effect from covEmploy                      0.0000  
+37. eval:  <2> depNetI: effect from covSales                       0.0000  
+38. eval:  <2> depNetI: effect from covSlack                       0.0000  
+
+
+@3
+Simulated statistics
+                    
+Estimated means and standard deviations, standard errors of the mean 
+  1. Amount of network change in period 1                       98.773   13.914   0.1519
+  2. Amount of network change in period 2                      147.772   16.677   0.2147
+  3. Amount of network change in period 3                      106.280   13.759   0.1499
+  4. Amount of network change in period 4                       99.010   14.064   0.1442
+  5. Amount of network change in period 5                      245.741   21.500   0.3168
+  6. Number of edges                                           780.341   17.785   0.4444
+  7. Number of transitive triads                               267.582   15.454   0.1393
+  8. Numb. edgew. shrd prtns.(69)                             1096.798   51.096   0.6430
+  9. Sum of ties x covCatSim                                    41.359    5.995   0.0632
+ 10. Sum of degrees x covAge                                  7026.780  687.211  18.3644
+ 11. New ties: depNetR tot alter at dist 2 (1)                 979.538  130.530   3.6155
+ 12. Amount of behavioral change in period 1 on depNetR         14.662    3.503   0.0867
+ 13. Amount of behavioral change in period 2 on depNetR         19.424    4.080   0.1043
+ 14. Amount of behavioral change in period 3 on depNetR         28.170    4.669   0.1234
+ 15. Amount of behavioral change in period 4 on depNetR         23.751    4.619   0.1169
+ 16. Amount of behavioral change in period 5 on depNetR         21.811    4.439   0.1096
+ 17. depNetR centered sum                                        2.829   10.325   0.1623
+ 18. depNetR sum of cent. squares                              468.129   16.326   0.3309
+ 19. depNetR outdegrees                                        634.487   41.981   0.8448
+ 20. depNetR isolate                                           -44.797    5.141   0.1347
+ 21. depNetR total alters                                      380.646   55.867   1.1461
+ 22. depNetR x covEmploy                                     14439.853  758.664  13.6712
+ 23. depNetR x covAcqExper                                     426.343   15.704   0.2632
+ 24. depNetR x covSales                                         52.961    3.929   0.0688
+ 25. depNetR x covSlack                                         59.723   22.289   0.3009
+ 26. Amount of behavioral change in period 1 on depNetI         17.974    4.080   0.1002
+ 27. Amount of behavioral change in period 2 on depNetI         20.212    4.133   0.1052
+ 28. Amount of behavioral change in period 3 on depNetI         28.845    4.839   0.1274
+ 29. Amount of behavioral change in period 4 on depNetI         24.137    4.510   0.1199
+ 30. Amount of behavioral change in period 5 on depNetI         24.212    4.460   0.1125
+ 31. depNetI centered sum                                       29.452   10.519   0.1577
+ 32. depNetI sum of cent. squares                              403.754   16.572   0.3243
+ 33. depNetI outdegrees                                        700.892   45.645   0.8419
+ 34. depNetI isolate                                           -36.693    5.081   0.1322
+ 35. depNetI total alters                                      451.799   66.526   1.2102
+ 36. depNetI x covEmploy                                     14588.832  856.916  13.1200
+ 37. depNetI x covSales                                         43.467    4.236   0.0645
+ 38. depNetI x covSlack                                         76.261   23.074   0.3281
+
+Standard errors of the mean are less than s.d./sqrt(n) 
+because of regression on scores (Dolby option). 
+Total computation time 30.79 seconds.
