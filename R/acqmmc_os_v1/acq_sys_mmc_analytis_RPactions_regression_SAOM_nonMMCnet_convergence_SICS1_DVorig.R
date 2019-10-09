@@ -745,19 +745,21 @@ firm_i <- 'microsoft'
       min.i <- 1
       logXf <- function(x)log(x, base=exp(1))
       ## RESTRUCT--------
-      xr <- dfla$rp_net_restruct[idx] 
+      ##888888888888888888888888888888888888888888888888888
+      xr <- dfla$rp_Acquisitions[idx] 
       xr <- ceiling( logXf( 1 + xr ) )
       arrNetR[i,t] <-  ifelse( xr > cut.r, cut.r, ifelse(xr < min.r, min.r, xr))
       #
-      xrw <- dfla$rp_net_restruct[idx] / dfla$cs_mkgrowth[idx]
+      xrw <- dfla$rp_Acquisitions[idx] / dfla$cs_mkgrowth[idx]
       xrw <- ceiling( logXf( 1 + xrw ) )
       arrNetRw[i,t] <-  ifelse( xrw > cut.r, cut.r, ifelse(xrw < min.r, min.r, xrw))
+      ##888888888888888888888888888888888888888888888888888
       ## INVARIANT -------
-      xi <- dfla$rp_net_invariant[idx] 
+      xi <- dfla$rp_NON_acquisitions[idx] 
       xi <- ceiling( logXf( 1 + xi ) )
       arrNetI[i,t] <-  ifelse( xi > cut.i, cut.i, ifelse(xi < min.i, min.i, xi))
       #
-      xiw <- dfla$rp_net_invariant[idx] / dfla$cs_mkgrowth[idx]
+      xiw <- dfla$rp_NON_acquisitions[idx] / dfla$cs_mkgrowth[idx]
       xiw <- ceiling( logXf( 1 + xiw ) )
       arrNetIw[i,t] <-  ifelse( xiw > cut.i, cut.i, ifelse(xiw < min.i, min.i, xiw))
       ## market growth
@@ -933,7 +935,7 @@ firm_i <- 'microsoft'
   ##
   ##
   ##--------------------------------------
-  sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,  #depNonAcq,
+  sysDat <- sienaDataCreate(depNetR, depNetI, depMMC,   #depNonAcq,
                             # covNetRw, covMktGro,
                             covEmploy, covAcqExper, covAge, covSales,
                             covCatSim, covSlack,
@@ -947,7 +949,7 @@ firm_i <- 'microsoft'
                            name="depMMC", interaction1 = 'covAge')
   sysEff <- includeEffects(sysEff, X,
                            name="depMMC", interaction1 = 'covCatSim')
-  sysEff <- includeEffects(sysEff, totDist2, 
+  sysEff <- includeEffects(sysEff, totDist2,
                            name="depMMC", type='creation', interaction1 = 'depNetR')
   ## CONTROL BEHVAIOR
   sysEff <- includeEffects(sysEff, isolate,
@@ -987,8 +989,8 @@ firm_i <- 'microsoft'
 
   sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
                            name="depNetR", interaction1 = 'depMMC')
-  sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
-                           name="depNetI", interaction1 = 'depMMC')
+  # sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
+  #                          name="depNetI", interaction1 = 'depMMC')
   #
   sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDorig-0', 
                                  firstg = 0.07,  ## default: 0.2
