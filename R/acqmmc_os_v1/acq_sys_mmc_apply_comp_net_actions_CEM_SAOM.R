@@ -50,6 +50,12 @@ rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
 # dtafile <- 'rp40_2000_2016.dta'
 # rvn.all <- read.dta13(file.path(rvn_dir, dtafile), select.rows=10)
 
+## summarize action types
+cnt <- plyr::ddply(rvn, .(action_category, category), summarize, cnt=length(timestamp_utc))
+cnt <- cnt[order(cnt$action_category),]
+cnt$pct <- 100 * cnt$cnt / sum(cnt$cnt)
+head(cnt, 20)
+
 
 ##===============================
 ## set analysis params

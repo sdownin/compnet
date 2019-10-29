@@ -1,0 +1,109 @@
+Estimates, standard errors and convergence t-ratios
+
+                                                 Estimate   Standard   Convergence 
+                                                              Error      t-ratio   
+Network Dynamics 
+   1. rate  constant depMMC rate (period 1)       0.4816  ( 0.1071   )    0.0047   
+   2. rate  constant depMMC rate (period 2)       0.2024  ( 0.0586   )    0.0126   
+   3. rate  constant depMMC rate (period 3)       0.3221  ( 0.0737   )    0.0018   
+   4. rate  constant depMMC rate (period 4)       0.2101  ( 0.0605   )    0.0003   
+   5. rate  constant depMMC rate (period 5)       0.1943  ( 0.0598   )   -0.0215   
+   6. rate  constant depMMC rate (period 6)       0.5667  ( 0.0978   )    0.0255   
+   7. eval  degree (density)                     -2.9062  ( 0.3341   )   -0.0497   
+   8. eval  transitive triads                    -1.1955  ( 0.4050   )   -0.0472   
+   9. creat transitive triads                     2.3658  ( 1.1085   )   -0.0314   
+  10. eval  number of actor pairs at dist 2       0.0832  ( 0.0292   )   -0.0462   
+  11. eval  GWESP (69)                            1.9679  ( 0.9578   )   -0.0281   
+  12. eval  covCatSim                             1.5158  ( 0.6490   )   -0.0047   
+  13. eval  covAge ego                            0.0140  ( 0.0100   )   -0.0076   
+
+Behavior Dynamics
+  14. rate  <1> rate depNetI (period 1)           1.1270  ( 0.3291   )    0.0332   
+  15. rate  <1> rate depNetI (period 2)           1.3355  ( 0.3352   )   -0.0282   
+  16. rate  <1> rate depNetI (period 3)           1.4271  ( 0.3879   )   -0.0067   
+  17. rate  <1> rate depNetI (period 4)           5.0054  ( 2.2432   )   -0.0144   
+  18. rate  <1> rate depNetI (period 5)           2.8922  ( 0.9256   )    0.0134   
+  19. rate  <1> rate depNetI (period 6)           1.9286  ( 0.6076   )   -0.0380   
+  20. eval  <1> depNetI linear shape             -0.7788  ( 0.1760   )    0.0391   
+  21. eval  <1> depNetI quadratic shape          -0.2596  ( 0.0695   )   -0.0002   
+  22. eval  <1> depNetI degree                    0.2268  ( 0.0762   )    0.0545   
+  23. eval  <1> depNetI isolate                  -0.0401  ( 0.2985   )    0.0358   
+  24. eval  <1> depNetI total alter               0.0765  ( 0.0327   )    0.0385   
+  25. eval  <1> depNetI dense triads             -0.1274  ( 0.0520   )    0.0715   
+  26. eval  <1> depNetI: effect from covEmploy    0.0037  ( 0.0011   )   -0.0084   
+  27. eval  <1> depNetI: effect from covSales     0.3220  ( 0.1704   )   -0.0033   
+  28. eval  <1> depNetI: effect from covSlack     0.1032  ( 0.0325   )    0.0449   
+  29. rate  <2> rate depNetR (period 1)           0.9385  ( 0.2156   )   -0.0029   
+  30. rate  <2> rate depNetR (period 2)           0.8988  ( 0.2115   )    0.0045   
+  31. rate  <2> rate depNetR (period 3)           1.3665  ( 0.2954   )    0.0112   
+  32. rate  <2> rate depNetR (period 4)           2.5285  ( 0.6525   )   -0.0262   
+  33. rate  <2> rate depNetR (period 5)           2.9801  ( 1.1081   )   -0.0405   
+  34. rate  <2> rate depNetR (period 6)           1.8799  ( 0.6536   )   -0.0028   
+  35. eval  <2> depNetR linear shape             -0.3778  ( 0.1675   )    0.0341   
+  36. eval  <2> depNetR quadratic shape          -0.1750  ( 0.0461   )    0.0001   
+  37. eval  <2> depNetR degree                    0.1474  ( 0.0759   )    0.0386   
+  38. eval  <2> depNetR isolate                  -0.0376  ( 0.2472   )    0.0003   
+  39. eval  <2> depNetR total alter               0.0426  ( 0.0249   )    0.0312   
+  40. eval  <2> depNetR dense triads             -0.0949  ( 0.0504   )    0.0313   
+  41. eval  <2> depNetR: effect from covEmploy    0.0019  ( 0.0010   )   -0.0375   
+  42. eval  <2> depNetR: effect from covAcqExper  0.0879  ( 0.0651   )    0.0399   
+  43. eval  <2> depNetR: effect from covSales     0.3270  ( 0.1811   )   -0.0071   
+  44. eval  <2> depNetR: effect from covSlack     0.0645  ( 0.0296   )    0.0150   
+
+Overall maximum convergence ratio:    0.1977 
+
+
+Total of 6336 iteration steps.
+
+
+========================================================
+                                  Model 1               
+--------------------------------------------------------
+constant depMMC rate (period 1)      0.4816 (0.1071) ***
+constant depMMC rate (period 2)      0.2024 (0.0586) ***
+constant depMMC rate (period 3)      0.3221 (0.0737) ***
+constant depMMC rate (period 4)      0.2101 (0.0605) ***
+constant depMMC rate (period 5)      0.1943 (0.0598) ** 
+constant depMMC rate (period 6)      0.5667 (0.0978) ***
+degree (density)                    -2.9062 (0.3341) ***
+transitive triads (1)               -1.1955 (0.4050) ** 
+transitive triads (2)                2.3658 (1.1085) *  
+number of actor pairs at dist 2      0.0832 (0.0292) ** 
+GWESP (69)                           1.9679 (0.9578) *  
+covCatSim                            1.5158 (0.6490) *  
+covAge ego                           0.0140 (0.0100)    
+rate depNetI (period 1)              1.1270 (0.3291) ***
+rate depNetI (period 2)              1.3355 (0.3352) ***
+rate depNetI (period 3)              1.4271 (0.3879) ***
+rate depNetI (period 4)              5.0054 (2.2432) *  
+rate depNetI (period 5)              2.8922 (0.9256) ** 
+rate depNetI (period 6)              1.9286 (0.6076) ** 
+depNetI linear shape                -0.7788 (0.1760) ***
+depNetI quadratic shape             -0.2596 (0.0695) ***
+depNetI degree                       0.2268 (0.0762) ** 
+depNetI isolate                     -0.0401 (0.2985)    
+depNetI total alter                  0.0765 (0.0327) *  
+depNetI dense triads                -0.1274 (0.0520) *  
+depNetI: effect from covEmploy       0.0037 (0.0011) ***
+depNetI: effect from covSales        0.3220 (0.1704)    
+depNetI: effect from covSlack        0.1032 (0.0325) ** 
+rate depNetR (period 1)              0.9385 (0.2156) ***
+rate depNetR (period 2)              0.8988 (0.2115) ***
+rate depNetR (period 3)              1.3665 (0.2954) ***
+rate depNetR (period 4)              2.5285 (0.6525) ***
+rate depNetR (period 5)              2.9801 (1.1081) ** 
+rate depNetR (period 6)              1.8799 (0.6536) ** 
+depNetR linear shape                -0.3778 (0.1675) *  
+depNetR quadratic shape             -0.1750 (0.0461) ***
+depNetR degree                       0.1474 (0.0759)    
+depNetR isolate                     -0.0376 (0.2472)    
+depNetR total alter                  0.0426 (0.0249)    
+depNetR dense triads                -0.0949 (0.0504)    
+depNetR: effect from covEmploy       0.0019 (0.0010)    
+depNetR: effect from covAcqExper     0.0879 (0.0651)    
+depNetR: effect from covSales        0.3270 (0.1811)    
+depNetR: effect from covSlack        0.0645 (0.0296) *  
+--------------------------------------------------------
+Iterations                        6336                  
+========================================================
+*** p < 0.001; ** p < 0.01; * p < 0.05
