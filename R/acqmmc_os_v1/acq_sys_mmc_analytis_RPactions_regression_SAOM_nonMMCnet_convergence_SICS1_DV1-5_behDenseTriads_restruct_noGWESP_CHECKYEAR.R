@@ -23,7 +23,6 @@ library(dplyr)
 library(lubridate)
 library(RColorBrewer)
 
-
 ## DIRECTORIES
 data_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/crunchbase/crunchbase_export_20161024"
 work_dir <- "C:/Users/steph/Google Drive/PhD/Dissertation/competition networks/compnet2"
@@ -412,28 +411,6 @@ csvfile <- 'rp40_action_categories_2000_2018.csv'
 rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
 
 
-
-rvc <- plyr::count(rvn$entity_name[which(rvn$action_category=='Acquisitions' & rvn$year>=2010)])
-rvc <- rvc[order(rvc$freq, decreasing = T),]
-View(rvc)
-head(rvc,15)
-# x freq
-# 5957                              Moody's Corp.  278
-# 4475                                  IBM Corp.  265
-# 766                   Arthur J. Gallagher & Co.  251
-# 6537                               Oracle Corp.  251
-# 848                                   AT&T Inc.  250
-# 6885                      Pinetree Capital Ltd.  206
-# 2682                         Deutsche Boerse AG  203
-# 2080                         Cisco Systems Inc.  199
-# 5819                            Microsoft Corp.  177
-# 1189                    Berkshire Hathaway Inc.  175
-# 9203 Valeant Pharmaceuticals International Inc.  175
-# 3757                       General Electric Co.  170
-# 6845                                Pfizer Inc.  168
-# 7873                                  Shire PLC  157
-# 3840                       Glencore Xstrata PLC  151
-
 ##===============================================
 ##  Financial controls
 ##-----------------------------------------------
@@ -545,8 +522,9 @@ csa2$roa <- csa2$ebitda / csa2$act
 
 
 
+
 # firms.todo <- c('ibm','qualtrics','medallia','first-mile-geo','verint')
-firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
+firm_i <- 'microsoft'
 # firms.todo <- c('microsoft')
 # for (firm_i in firms.todo)
 # {
@@ -822,11 +800,6 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
     arrSmmcSq[,t] <- arrSmmc[,t]^2
   }
   
-  
-  
-  
-  
-  
   ##########################################################
   ## Save / Load Workspace Image for firm_i
   ##--------------------------------------------------------
@@ -835,9 +808,6 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   #  # save.image(file = workspace_file)
   # load(file = workspace_file)
   ##########################################################
-  
-  
-  
   
   ##------------------
   ## FIRM COVARIATES (Acquisitions)
@@ -961,9 +931,12 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   
   ## FILTER YEARS
   yridx <- 1:(length(netwavepds))#c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
-  ## FILTER FIRMS 
+  
+  yridx.n <- yridx[-length(yridx)]
+  yridx.a <- yridx[-1]
+  
+  ## FILTER FIRMS
   # nmsale <- which(firmnamesub %in% unique(dfla$name[!is.na(dfla$cs_roa_1)]))
-  ## FILTER FIRMS that have at least one action in RavenPack
   idxnm <- which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
   idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
   
@@ -979,45 +952,45 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   # yrsubidx <- (length(nlyrs)-4):(length(nlyrs)-1)
   # yrsub <- nlyrs[yrsubidx]
   #
-  mmcarr2 <- mmcarr[firmsubidx,firmsubidx, yridx ]
-  comparr2 <- comparr[firmsubidx,firmsubidx, yridx ]
+  mmcarr2 <- mmcarr[firmsubidx,firmsubidx, yridx.n ]
+  comparr2 <- comparr[firmsubidx,firmsubidx, yridx.n ]
   #
-  arrNetR2 <- arrNetR[firmsubidx, yridx ]
-  arrNetI2 <- arrNetI[firmsubidx, yridx ]
-  arrNetRw2 <- arrNetRw[firmsubidx, yridx ]
-  arrNetIw2 <- arrNetIw[firmsubidx, yridx ]
-  arrAcq2 <- arrAcq[firmsubidx, yridx ]
-  arrAcqw2 <- arrAcqw[firmsubidx, yridx ]
-  arrProd2 <- arrProd[firmsubidx, yridx ]
-  arrProdw2 <- arrProdw[firmsubidx, yridx ]
-  arrStr2 <- arrStr[firmsubidx, yridx ]
-  arrStrw2 <- arrStrw[firmsubidx, yridx ]
-  arrTac2 <- arrTac[firmsubidx, yridx ]
-  arrTacw2 <- arrTacw[firmsubidx, yridx ]
+  arrNetR2 <- arrNetR[firmsubidx, yridx.a ]
+  arrNetI2 <- arrNetI[firmsubidx, yridx.a ]
+  arrNetRw2 <- arrNetRw[firmsubidx, yridx.a ]
+  arrNetIw2 <- arrNetIw[firmsubidx, yridx.a ]
+  arrAcq2 <- arrAcq[firmsubidx, yridx.a ]
+  arrAcqw2 <- arrAcqw[firmsubidx, yridx.a ]
+  arrProd2 <- arrProd[firmsubidx, yridx.a ]
+  arrProdw2 <- arrProdw[firmsubidx, yridx.a ]
+  arrStr2 <- arrStr[firmsubidx, yridx.a ]
+  arrStrw2 <- arrStrw[firmsubidx, yridx.a ]
+  arrTac2 <- arrTac[firmsubidx, yridx.a ]
+  arrTacw2 <- arrTacw[firmsubidx, yridx.a ]
   #
-  arrMktGro2 <- arrMktGro[firmsubidx, yridx ]
+  arrMktGro2 <- arrMktGro[firmsubidx, yridx.a ]
   ##-----------------------------
   # ##*****MMC subset of compnet (ONLY CrunchBase relations filtered if has MMC)******
-  arrSmmc2 <- arrSmmc[firmsubidx, yridx ]
-  arrSmmcSq2 <- arrSmmcSq[firmsubidx, yridx ]
+  arrSmmc2 <- arrSmmc[firmsubidx, yridx.a ]
+  arrSmmcSq2 <- arrSmmcSq[firmsubidx, yridx.a ]
   # ## All MMC spaces count (not just CrunchBase relations) Degree Centrality
   # arrSmmc2 <- arrDegMmc[firmsubidx,  ]
   # arrSmmcSq2 <- arrDegMmcSq[firmsubidx,  ]
   ##------------------------------
   #
-  arrWdegAcq2 <- arrWdegAcq[firmsubidx, yridx ]
-  arrWdegAll2 <- arrWdegAll[firmsubidx, yridx ]
-  arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx, yridx ]
-  arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx, yridx ]
-  arrSmmc_WdegAll2   <- arrSmmc_WdegAll[firmsubidx, yridx ]
-  arrSmmcSq_WdegAll2 <- arrSmmcSq_WdegAll[firmsubidx, yridx ]
+  arrWdegAcq2 <- arrWdegAcq[firmsubidx, yridx.a ]
+  arrWdegAll2 <- arrWdegAll[firmsubidx, yridx.a ]
+  arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx, yridx.a ]
+  arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx, yridx.a ]
+  arrSmmc_WdegAll2   <- arrSmmc_WdegAll[firmsubidx, yridx.a ]
+  arrSmmcSq_WdegAll2 <- arrSmmcSq_WdegAll[firmsubidx, yridx.a ]
   #
-  arrEmploy2 <- arrEmploy[firmsubidx, yridx ]
-  arrSales2 <- arrSales[firmsubidx, yridx ]
-  arrSlack2 <- arrSlack[firmsubidx, yridx ]
-  arrAcqExper2 <- arrAcqExper[firmsubidx, yridx ]
-  arrAcqSum2 <- arrAcqSum[firmsubidx, yridx ]
-  arrNonAcqAct2 <- arrNonAcqAct[firmsubidx, yridx ]
+  arrEmploy2 <- arrEmploy[firmsubidx, yridx.a ]
+  arrSales2 <- arrSales[firmsubidx, yridx.a ]
+  arrSlack2 <- arrSlack[firmsubidx, yridx.a ]
+  arrAcqExper2 <- arrAcqExper[firmsubidx, yridx.a ]
+  arrAcqSum2 <- arrAcqSum[firmsubidx, yridx.a ]
+  arrNonAcqAct2 <- arrNonAcqAct[firmsubidx, yridx.a ]
   arrAge2 <- arrAge[ firmsubidx ]
   
   # # par(mfrow=c(2,2), mar=c(4.5,2,.3,2))
@@ -1035,7 +1008,7 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   behdf <- rbind(behdf, within(plyr::count(c(arrNetRw2[])),{beh<-'Restructuring'; MarketGrowth<-T }))
   behdf <- rbind(behdf, within(plyr::count(c(arrNetIw2[])),{beh<-'Invariant'; MarketGrowth<-T }))
   matplot(t(arrNetRw2[c(30,45),]), type='b')
-  for (t in yridx) arrPlot(mmcarr2,t,0, main=sprintf('Year %s',netwavepds[t]))
+  for (t in seq_len(dim(mmcarr2)[3])) arrPlot(mmcarr2,t,0, main=sprintf('Year %s',netwavepds[t]))
   ## PLOT BEHAVIOR (all years) by Market Growth - FACET BY AGGRESSIVENESS (RESTRUCT vs INVARIANT
   ggplot(behdf, aes(x=x, y=freq, fill=MarketGrowth)) + 
     geom_bar(stat="identity", width=.6, position = "dodge") +
@@ -1043,10 +1016,10 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
     theme_bw() + theme(legend.position='top') + scale_fill_manual(values = c('darkgrey','steelblue'))
   ## PLOT BEHAVIOR BY YEAR - FACET BY AGGRESSIVENESS (RESTRUCT vs INVARIANT)
   behyrdf <- within(plyr::count(c(arrNetRw2[,1])),{beh<-'Restructuring'; year<-netwavepds[yridx[1]] })
-  for (tt in 2:length(yridx)) 
+  for (tt in 2:dim(mmcarr2)[3]) 
     behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetRw2[,tt])),{beh<-'Restructuring'; year<-netwavepds[yridx[tt]] }) )
   behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetIw2[,1])),{beh<-'Invariant'; year<-netwavepds[yridx[1]] }) )
-  for (tt in 2:length(yridx)) 
+  for (tt in 2:dim(mmcarr2)[3]) 
     behyrdf <- rbind(behyrdf, within(plyr::count(c(arrNetIw2[,tt])),{beh<-'Invariant'; year<-netwavepds[yridx[tt]] }) )
   ggplot(behyrdf, aes(x=x, y=freq, fill=year)) + 
     geom_bar(stat="identity", width=.8, position = "dodge") +
@@ -1183,9 +1156,9 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
                            name="depNetI", interaction1 = 'depMMC')
   #
-  sysMod <- sienaAlgorithmCreate(projname=sprintf('sys-mmc-acq-proj-%s-converg-VDcut-behDenseTriad_restruct_1-Inf_H1ab_H2-0_noGWESP',firm_i_ego), 
-                                 firstg = 0.12, #0.07,  ## default: 0.2
-                                 n2start=240,    ## default: 2.52*(p+7)
+  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-behDenseTriad_restruct_1-Inf_H1ab_H2-0_noGWESP_CHECKYEAR', 
+                                 firstg = 0.07,  ## default: 0.2
+                                 n2start=220,    ## default: 2.52*(p+7)
                                  nsub = 5,       ## default: 4
                                  seed=133, maxlike=F)
   # ##***  save.image('acq_sys_mmc_SAOM_AMC.rda')  ##***
@@ -1205,7 +1178,7 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
                                varName="depMMC"); plot(gfAMC0.tc)
   
-  .prefix <- 'SAOM_1-Inf_H1ab_H2_noGWESP_GOF'
+  .prefix <- 'SAOM_1-Inf_H1ab_H2_noGWESP_GOF_CHECKYEAR'
   png(sprintf('%s_%s.png',.prefix,'behavior_restruct'), height = 4, width = 6.5, units = 'in', res = 300)
     plot(gfAMC0.br); dev.off();
   png(sprintf('%s_%s.png',.prefix,'behavior_invariant'), height = 4, width = 6.5, units = 'in', res = 300)
@@ -1215,9 +1188,9 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   png(sprintf('%s_%s.png',.prefix,'net_triad_census'), height = 4, width = 6.5, units = 'in', res = 300)
     plot(gfAMC0.tc); dev.off();
   saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP.rds')
+          file = 'acq_sys_mmc_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP_CHECKYEAR.rds')
   
-  x <- readRDS('acq_sys_mmc_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP.rds')
+  x <- readRDS('acq_sys_mmc_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP_CHECKYEAR.rds')
     
   # ans <- sysResAMC0
   ans <- x$res
@@ -1671,7 +1644,7 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   
   ## multiparameter Wald tests
   mc0 <- c('depNetR isolate', 'depNetR degree', 'depNetR total alter',
-           'depNetI isolate', 'depNetI degree', 'depNetI total alter', 'depNetR ego' )
+           'depNetI isolate', 'depNetI degree', 'depNetI total alter')
   mc1 <- c('depNetR dense triads', 'depNetI dense triads')
   # mc2 <- c('depNetR tot alter at dist 2')
   mc2 <- c()
@@ -1683,41 +1656,27 @@ firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
   sort(sapply(unique(c(mc0,mc1,mc2)),function(x)grep(x,sysResAMC0$effects$effectName,T,T)))
   # TEST ALL COEVOLUTION
   mtf <- ldply(list(
-   Multipar.RSiena(sysResAMC0ctrl2, 13,22,23,24,37,38,39),
-   Multipar.RSiena(sysResH1ab, 13,22,23,24,25,37,38,39,40),
-   Multipar.RSiena(sysResH2, 15,24,25,26,38,39,40),
-   Multipar.RSiena(sysResAMC0, 15,24,25,26,27,39,40,41,42) 
+   Multipar.RSiena(sysResAMC0ctrl2, 21,22,23,36,37,38),
+   Multipar.RSiena(sysResH1ab, 21,22,23,24,36,37,38,39),
+   Multipar.RSiena(sysResH2, 22,23,24,36,37,38),
+   Multipar.RSiena(sysResAMC0, 22,23,24,25,37,38,39,40) 
   ), data.frame)
   mtf$pvalue <- as.numeric( round(mtf$pvalue, 4) )
   print(mtf)
 
-  # Multipar.RSiena(sysResAMC0ctrl2, 21,22,23,36,37,38),
-  # Multipar.RSiena(sysResH1ab, 21,22,23,24,36,37,38,39),
-  # Multipar.RSiena(sysResH2, 22,23,24,36,37,38),
-  # Multipar.RSiena(sysResAMC0, 22,23,24,25,37,38,39,40) 
-  
   ## HYPOTHESIZED ONLY
   sort(sapply(unique(c(mc1)),function(x)grep(x,sysResH1ab$effects$effectName,T,T)))
   # sort(sapply(unique(c(mc2)),function(x)grep(x,sysResH2$effects$effectName,T,T)))
   sort(sapply(unique(c(mc1,mc2)),function(x)grep(x,sysResAMC0$effects$effectName,T,T)))
   ##
   mth <- ldply(list(
-    Multipar.RSiena(sysResH1ab, 25,40),
+    Multipar.RSiena(sysResH1ab, 24,39),
     # Multipar.RSiena(sysResH2, 11),
-    Multipar.RSiena(sysResAMC0, 27,42)
+    Multipar.RSiena(sysResAMC0, 25,40)
   ), data.frame)
   mth$pvalue <- as.numeric( round(mth$pvalue, 4) )
   print(mth)
 
-  
-  
-  
-  
-  
-  
-  
-  
-  
   
   
   ##------------------------

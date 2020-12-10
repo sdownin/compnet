@@ -545,8 +545,583 @@ csa2$roa <- csa2$ebitda / csa2$act
 
 
 
+egolist <- list(microsoft=list(),apple=list(),amazon=list(),ibm=list(),facebook=list())
+
+for (i in 2:length(egolist)) 
+{
+  
+  firm_i <- names(egolist)[i]
+  
+  name_i <- firm_i
+  firm_i_ego <- firm_i
+  d <- 3
+  yrpd <- 1
+  startYr <- 2006
+  endYr <- 2016            ## dropping first for memory term; actual dates 2007-2016
+  ## --------------  
+  periods <- seq(startYr,endYr,yrpd)
+  
+  
+  
+  ## READ IN DATA FILE
+  
+  y1 <- 2006
+  y2 <- 2016
+  
+  ## load DATA
+  firmfile <- sprintf('acq_sys_mmc_panel_RPactions_regression_df_ego-%s_d%s_%s-%s.csv', 
+                      firm_i_ego, d, y1, y2)
+  dfl <- read.csv(file.path(result_dir,firmfile), stringsAsFactors = F)
+  ## year names off by 1 (2006 - 2015) <-- +1
+  dfl$year <- dfl$year + 1
+  # dfl$name <- as.character(dfl$name)
+  
+  
+  ys <- y1:y2
+  nl <- list()
+  bl <- list()
+  for (t in 1:10) 
+  {
+    netpdfile <- sprintf('acq_sys_mmc_panel_RPactions_NETLIST_ego-%s_d%s_%s-%s_t%s.rds', 
+                         firm_i_ego, d, y1, y2, t)
+    nl[[t]] <- readRDS(file.path(result_dir, netpdfile))
+  }
+  names(nl) <- ys[(length(ys)-10+1):length(ys)]
+  npds <- length(nl)
+  
+  firmnamesall <- unique(c(unlist(sapply(nl,function(x)V(x$gt)$vertex.names))))
+  firmnames0 <- V(nl$`2007`$gt)$vertex.names
+  adj0 <- as_adj(nl$`2007`$gt, sparse = T)
+  n0 <- length(firmnames0)
+  
+  ## which firm made at least 1 acquisitions
+  firm.acq.1 <- unique(dfl$name[which(dfl$rp_Acquisitions > 0)])
+  .filtername <- unique(dfl$name[which(
+    dfl$cent_deg_mmc>0 
+    & dfl$ipo>0 
+    #& (dfl$name %in% firm.acq.1)  ## filter by who made at least one acquisition ?
+  )])
+  ## filter names in vertex order with MMC rivals (is IPO firm)
+  firmnamesub <- V(nl$`2007`$gt)$vertex.names[which(V(nl$`2007`$gt)$vertex.names %in% .filtername)]
+  nsub <- length(firmnamesub)
+  
+  ##----------------------------
+  ## NAMEKEY for compustat controls
+  ##_---------------------------
+  ## MAP names to COMPUSTAT 
+  namekey <- data.frame(name=firmnamesub, stringsAsFactors = F)
+  key.cols <- c('company_name','company_name_unique','cusip','tic','gvkey','conm','stock_symbol','stock_exchange_symbol')
+  namekey <- merge(namekey, cb$co[,key.cols], by.x='name', by.y='company_name_unique', all.x=T, all.y=F)
+  ## print missing firms to patch
+  for (i in which(is.na(namekey$gvkey))) {
+    idx <- grep(namekey$company_name[i],cssnm$conm,T,T)
+    if (length(idx)) {
+      cat(sprintf('\n\nidx=%s %s (%s)\n', paste(idx,collapse = '|'), namekey$company_name[i], namekey$name[i]))
+      print(cssnm[idx,])
+    }
+  }
+  nkpatch2 <- merge(nkpatch,cssnm[which(cssnm$conm%in%nkpatch$conm),],by='conm',all.x=T,all.y=F)
+  for (i in which(is.na(namekey$gvkey))) {
+    cat(sprintf('%s\n',i))
+    .nkid <- which( namekey$name[i] %in% nkpatch2$company_name_unique )
+    if (length(.nkid) & length(nkpatch2$cusip[.nkid])) {
+      namekey$cusip[i] <- nkpatch2$cusip[.nkid]
+      namekey$gvkey[i] <-  nkpatch2$gvkey[.nkid]
+      namekey$tic[i] <-  nkpatch2$tic[.nkid]  # namekey$sic[i] <-  nkpatch2$sic[.nkid]
+    }
+  }
+  #SYNIVERSE HOLDINGS INC-OLD	158473	SVR.1	7373
+  # write.csv(namekey, 'acq_sys_mmc_cs_name_key_patch.csv')
+  #*********************88888888888
+  
+  ##=============================================
+  ## Select Years
+  ##---------------------------------------------
+  ## Aggregate DV Acquisitions by period (2 years, 3 years)
+  agpdlist <- list(c('2010'),c('2011'),c('2012'),c('2013'),
+                   c('2014'),c('2015'),c('2016'))
+  npds <- length(agpdlist)
+  ## number of years in each period to aggregate
+  pdyrs <- length(agpdlist[[1]])
+  ## network waves (snapshots)
+  netwavepds <- as.character(c(sapply(agpdlist, function(x)as.numeric(x[1]))))
+  nwaves <- length(netwavepds)  ## number of network snapshots 
+  
+  
+  ## FIRM-lEVEL PREDICTORS
+  dfla <- data.frame()
+  for (t in 1:npds) {
+    t_yrs <- agpdlist[[t]]
+    yrs <- as.integer(t_yrs)
+    cat(sprintf('t_yrs %s\n',paste(t_yrs, collapse = ',')))
+    for (i in 1:length(firmnamesub)) {
+      gvi <- namekey$gvkey[which(namekey$name==firmnamesub[i])]
+      ##-----------------------------------------------------
+      ## compustat segments for market growth
+      ## compute wieghted average market growth for firm by its segments sales
+      sgti <- css2[which(css2$gvkey==gvi & css2$year %in% yrs),]
+      sgti1 <- css2[which(css2$gvkey==gvi & css2$year %in% (yrs-1)),] ## lag 1 year
+      mkgrowth <- 1 ## default no change in markets ratio 1/1
+      if (nrow(sgti) > 0) {  ## if segments data update market growth avg
+        mkgvec <- c() ## get growth * proportion for each of firm's markets
+        for (j in 1:nrow(sgti)) {
+          sj <-  sgti$SICS1[j] ## segment
+          rj <- sum( SEGT$sum[which(SEGT$SICS1==sj & SEGT$year %in% yrs)] ) # total sales revenue  in sgement
+          rj1<- sum( SEGT$sum[which(SEGT$SICS1==sj & SEGT$year %in% (yrs-1))] ) # total lagged sales revenue in sgement
+          gj <- ifelse( (is.na(rj)|is.na(rj1)|rj1==0),  1,  rj/rj1 ) # growth if exists
+          pj <- sgti$sales[j] / sum(sgti$sales, na.rm = T) ## proportion of portfolio
+          mkgvec <- c(mkgvec, pj * gj ) # weighted market growth 
+        }
+        mkgrowth <- sum(mkgvec, na.rm=T)
+      } 
+      ##compustat controls ---------------
+      csti <- csa2[which(csa2$gvkey==gvi & csa2$fyear %in% yrs),]
+      csti <- csti[order(csti$fyear, decreasing = F), ]
+      cs.exists <- nrow(csti) > 0
+      ## lagged 1 year
+      csti1 <-  csa2[which(csa2$gvkey==gvi & csa2$fyear %in% (yrs-1)),]
+      ## computed values from previous script  -------------------
+      xti <- dfl[which(dfl$year %in% t_yrs & dfl$name==firmnamesub[i]), ]
+      xti <- xti[order(xti$year, decreasing = F),]
+      ## previous year
+      yn1 <- as.integer(min(t_yrs)) - 1
+      xtin1 <- dfl[which(dfl$year == yn1 & dfl$name==firmnamesub[i]), ]
+      ## lag 2 years
+      yn2 <- as.integer(min(t_yrs)) - 2
+      xtin2 <- dfl[which(dfl$year == yn2 & dfl$name==firmnamesub[i]), ]
+      ## lag 3 years
+      yn3 <- as.integer(min(t_yrs)) - 3
+      xtin3 <- dfl[which(dfl$year == yn3 & dfl$name==firmnamesub[i]), ]
+      # pd tmp df to rbind
+      .tmp <- data.frame(
+        i=i, name=firmnamesub[i],
+        pd=t, y1=t_yrs[1], y2=t_yrs[length(t_yrs)],
+        type=xti$type[1], 
+        # weighted average market growth
+        cs_mkgrowth=mkgrowth,
+        ## computstat controls
+        cs_employee= ifelse(cs.exists, csti$emp[1], 0),
+        cs_roa= ifelse(cs.exists, csti$roa[1], 0),
+        cs_roa_1= ifelse(cs.exists, csti1$roa[1], 0),
+        cs_quick= ifelse(cs.exists, csti$quick[1], 0),
+        cs_quick_1= ifelse(cs.exists, csti1$quick[1], 0),
+        ## State (size, position) in peirod t is ending value from range in period (t-1)
+        employee_na_age= xti$employee_na_age[1],
+        sales_na_0_mn= xti$sales_na_0_mn[1],
+        acq_cnt_5= xti$acq_cnt_5[1],
+        acq_sum_1= xti$acq_sum_1[1],
+        cent_deg_mmc= xti$cent_deg_mmc[1],
+        ## DV product
+        rp_Product = sum(c(xti$rp_New_product), na.rm=T),
+        ## DV Acquisitions
+        rp_Acquisitions = sum(c(xti$rp_Acquisitions), na.rm=T),
+        ##        
+        rp_NON_acquisitions=mean(xti$rp_NON_acquisitions, na.rm=T),
+        # RESTRUCTURING VS INVARIANT
+        rp_net_restruct =sum(c(xti$rp_Acquisitions, 
+                               xti$rp_New_product), na.rm=T),
+        rp_net_invariant=sum(c(xti$rp_Capacity, 
+                               xti$rp_Legal, 
+                               xti$rp_Market_expansions,
+                               xti$rp_Marketing,
+                               xti$rp_Pricing,
+                               xti$rp_Strategic_alliances), na.rm=T),
+        # STRATEGIC VS INVARIANT
+        rp_strat =sum(c(xti$rp_Acquisitions, 
+                        xti$rp_New_product,
+                        xti$rp_Capacity,
+                        xti$rp_Market_expansions,
+                        xti$rp_Strategic_alliances), na.rm=T),
+        rp_tacti =sum(c(xti$rp_Legal, 
+                        xti$rp_Marketing,
+                        xti$rp_Pricing), na.rm=T),
+        ## sum(t-1,t-2,t-3) previous 3yr acquisitions == Acq Experience
+        acq_exp_3=sum(c(xtin1$rp_Acquisitions,
+                        xtin2$rp_Acquisitions,
+                        xtin3$rp_Acquisitions), na.rm=T),
+        ## competitive pressure
+        wdeg_rp_Acquisitions=mean(xti$wdeg_rp_Acquisitions, na.rm=T),
+        wdeg_rp_all=sum(c(xti$wdeg_rp_Acquisitions, xti$wdeg_rp_Capacity,
+                          xti$wdeg_rp_Legal, xti$wdeg_rp_Market_expansions,
+                          xti$wdeg_rp_Marketing,  xti$wdeg_rp_New_product,
+                          xti$wdeg_rp_Pricing,  xti$wdeg_rp_Strategic_alliances), na.rm=T)
+      )
+      .tmp$wdeg_rp_NON_acquisitions <- .tmp$wdeg_rp_all - .tmp$wdeg_rp_Acquisitions
+      #
+      dfla <- rbind(dfla,.tmp)
+      #
+    }
+  }
+  
+  ##------------------------------------
+  ## NETWORK DV ARRAY
+  ##------------------------------------
+  mmcarr <- array(0, dim=c(nsub, nsub, nwaves))
+  comparr <- array(0, dim=c(nsub, nsub, nwaves))
+  arrSmmc <- array(0,dim=c(nsub,nwaves))
+  arrSmmcSq <- array(0,dim=c(nsub,nwaves))
+  arrAge <- array(0,dim=c(nsub))
+  for (t in 1:nwaves) {
+    wave <- netwavepds[t]
+    cat(sprintf('wave %s\n',wave))
+    t_nl <- which(names(nl) == wave)
+    x <- nl[[t_nl]]
+    ## adjmat from compnet
+    compadj <- as_adj(x$gt)
+    ## weighted adjmat from MMC network
+    mmcadj <- as_adj(x$gmmc,attr = 'weight')
+    ## MMC values ported to compnet adjmat (x * 0 --> 0; x * 1 --> x)
+    compadj.mmcadj <- as.matrix(compadj * mmcadj)
+    compadj.w.mmc <- compadj.mmcadj
+    ## indices of MMC edges
+    idx.compadj.w.mmc.gt1 <- which(compadj.w.mmc > 1)
+    ## set all edges to 0 and assign only MMC edges to 1
+    compadj.w.mmc[!is.na(compadj.w.mmc)] <- 0
+    compadj.w.mmc[idx.compadj.w.mmc.gt1] <- 1
+    #
+    vids <- which(V(x$gt)$vertex.names %in% firmnamesub)
+    ## Compnet subgraph for firms cohort (public acquirers)
+    gtsub <- induced.subgraph(x$gt,vids)
+    comparr[,,t] <- as_adj(gtsub, sparse = F)
+    ## MMCnet subgraph for firms cohort
+    gtsubmmc <- induced.subgraph(graph.adjacency(compadj.w.mmc),vids)
+    mmcarr[,,t] <- as_adj(gtsubmmc, sparse = F)
+    # ## mmc spaces weighted edges of MMC subset network (no extra spaces)
+    # gtsubmmc.w <- induced.subgraph(graph.adjacency(compadj.mmcadj, weighted = T),vids)
+    ##-----AGE-------------------------
+    # AGE
+    arrAge <- V(x$gt)$age[vids]
+    ##---SMMC-CENTRALITY-----------------
+    arrSmmc[,t] <- log( 1 + igraph::degree(gtsubmmc) )
+    # arrSmmc[,t] <- log(1 + igraph::authority_score(gtsubmmc.w)$vector * 100)
+    # arrSmmc[,t] <- log( 1 + igraph::power_centrality(gtsubmmc, exponent = 0)*100 )
+    # arrSmmc[,t] <- log(  igraph::subgraph.centrality(gtsubmmc, diag = F) )
+    # arrSmmc[,t] <- igraph::coreness(gtsubmmc)
+    # arrSmmc[,t] <- log (1 + 100 / igraph::eccentricity(gtsubmmc) )
+    # trans <- igraph::transitivity(gtsubmmc, type = 'local') * 100
+    # trans[is.nan(trans) | is.na(trans)] <- 0
+    # arrSmmc[,t] <- trans
+    # trans <- igraph::transitivity(gtsubmmc.w, type = 'barrat')
+    # trans[is.nan(trans) | is.na(trans)] <- 0
+    # arrSmmc[,t] <- trans * 100
+    # arrSmmc[,t] <-  log(1 + igraph::betweenness(gtsubmmc))
+    # arrSmmc[,t] <-  log( 1 + igraph::eigen_centrality(gtsubmmc)$vector * 100)
+    # arrSmmc[,t] <- log(1 + authority_score(gtsubmmc)$vector*100)
+    # arrSmmc[,t] <-  constraint(gtsubmmc)*100
+    # const <- constraint(gtsubmmc) * 100
+    # const[is.nan(const) | is.na(const)] <- 0
+    # arrSmmc[,t] <- const
+    # eig <- eigen_centrality(gtsubmmc.w)
+    # arrSmmc[,t] <- bonpow(gtsubmmc.w, exponent = 1/max(eig$value))
+    arrSmmcSq[,t] <- arrSmmc[,t]^2
+  }
+  
+  
+  ##------------------
+  ## FIRM COVARIATES (Acquisitions)
+  arrNetR <- array(0,dim=c(nsub,npds))
+  arrNetI <- array(0,dim=c(nsub,npds))
+  arrNetRw <- array(0,dim=c(nsub,npds))
+  arrNetIw <- array(0,dim=c(nsub,npds))
+  arrAcq <- array(0,dim=c(nsub,npds))
+  #
+  arrAcqw <- array(0,dim=c(nsub,npds))
+  arrProd <- array(0,dim=c(nsub,npds))
+  arrProdw <- array(0,dim=c(nsub,npds))
+  arrStr <- array(0,dim=c(nsub,npds))
+  arrTac <- array(0,dim=c(nsub,npds))
+  arrStrw <- array(0,dim=c(nsub,npds))
+  arrTacw <- array(0,dim=c(nsub,npds))
+  #
+  arrMktGro <- array(0,dim=c(nsub,npds))
+  arrDegMmc <- array(0,dim=c(nsub,npds))
+  arrDegMmcSq <- array(0,dim=c(nsub,npds))
+  arrEmploy <- array(0,dim=c(nsub,npds))
+  arrSales <- array(0,dim=c(nsub,npds))
+  arrSlack <- array(0,dim=c(nsub,npds))
+  arrAcqExper <- array(0,dim=c(nsub,npds))
+  arrDumCris <- array(0,dim=c(nsub,npds)) 
+  arrAcqSum <- array(0,dim=c(nsub,npds)) 
+  arrNonAcqAct <- array(0,dim=c(nsub,npds)) 
+  arrWdegAcq <- array(0,dim=c(nsub,npds))
+  arrWdegAll <- array(0,dim=c(nsub,npds))
+  arrSmmc_WdegAcq <- array(0,dim=c(nsub,npds))
+  arrSmmcSq_WdegAcq <- array(0,dim=c(nsub,npds))
+  arrSmmc_WdegAll <- array(0,dim=c(nsub,npds))
+  arrSmmcSq_WdegAll <- array(0,dim=c(nsub,npds))
+  # arrW <- array(0,dim=c(nsub,npds))
+  for (t in 1:npds) {
+    for (i in 1:length(firmnamesub)) {
+      .namei <- firmnamesub[i]
+      idx <- which(dfla$pd==t & dfla$name==.namei)
+      # behavior cutoffs
+      cut0 <-  Inf
+      cut.r <- Inf
+      cut.i <- Inf
+      min0 <-  1
+      min.r <- 1
+      min.i <- 1
+      logXf <- function(x)log(x, base= exp(1) )
+      ## RESTRUCT--------
+      xr <- dfla$rp_net_restruct[idx] 
+      xr <- ceiling( logXf( 1 + xr ) )
+      arrNetR[i,t] <-  ifelse( xr > cut.r, cut.r, ifelse(xr < min.r, min.r, xr))
+      #
+      xrw <- dfla$rp_net_restruct[idx] / dfla$cs_mkgrowth[idx]
+      xrw <- ceiling( logXf( 1 + xrw ) )
+      arrNetRw[i,t] <-  ifelse( xrw > cut.r, cut.r, ifelse(xrw < min.r, min.r, xrw))
+      ## INVARIANT -------
+      xi <- dfla$rp_net_invariant[idx] 
+      xi <- ceiling( logXf( 1 + xi ) )
+      arrNetI[i,t] <-  ifelse( xi > cut.i, cut.i, ifelse(xi < min.i, min.i, xi))
+      #
+      xiw <- dfla$rp_net_invariant[idx] / dfla$cs_mkgrowth[idx]
+      xiw <- ceiling( logXf( 1 + xiw ) )
+      arrNetIw[i,t] <-  ifelse( xiw > cut.i, cut.i, ifelse(xiw < min.i, min.i, xiw))
+      ## Acquisitions --------
+      xa <- dfla$rp_Acquisitions[idx] 
+      xa <- ceiling( logXf( 1 + xa ) )
+      arrAcq[i,t] <-  ifelse( xa > cut0, cut0, ifelse(xa < min0, min0, xa))
+      #
+      xaw <- dfla$rp_Acquisitions[idx] / dfla$cs_mkgrowth[idx]
+      xaw <- ceiling( logXf( 1 + xaw ) )
+      arrAcqw[i,t] <-  ifelse( xaw > cut0, cut0, ifelse(xaw < min0, min0, xaw))
+      ## Product  --------
+      xp <- dfla$rp_Product[idx] 
+      xp <- ceiling( logXf( 1 + xp ) )
+      arrProd[i,t] <-  ifelse( xp > cut0, cut0, ifelse(xp < min0, min0, xp))
+      #
+      xpw <- dfla$rp_Product[idx] / dfla$cs_mkgrowth[idx]
+      xpw <- ceiling( logXf( 1 + xpw ) )
+      arrProdw[i,t] <-  ifelse( xpw > cut0, cut0, ifelse(xpw < min0, min0, xpw))
+      ## STRATEGIC******************************
+      xs <- dfla$rp_strat[idx] 
+      xs <- ceiling( logXf( 1 + xs ) )
+      arrStr[i,t] <-  ifelse( xs > cut0, cut0, ifelse(xs < min0, min0, xs))
+      #
+      xsw <- dfla$rp_strat[idx] / dfla$cs_mkgrowth[idx]
+      xsw <- ceiling( logXf( 1 + xsw ) )
+      arrStrw[i,t] <-  ifelse( xsw > cut0, cut0, ifelse(xsw < min0, min0, xsw))
+      ## TACTICAL***  --------
+      xt <- dfla$rp_tacti[idx] 
+      xt <- ceiling( logXf( 1 + xt ) )
+      arrTac[i,t] <-  ifelse( xt > cut0, cut0, ifelse(xt < min0, min0, xt))
+      #
+      xtw <- dfla$rp_tacti[idx] / dfla$cs_mkgrowth[idx]
+      xtw <- ceiling( logXf( 1 + xtw ) )
+      arrTacw[i,t] <-  ifelse( xtw > cut0, cut0, ifelse(xtw < min0, min0, xtw))
+      ##-----------------------------------
+      ##-----------------------------------
+      ## market growth
+      arrMktGro[i,t] <- dfla$cs_mkgrowth[idx]
+      #
+      w <- dfla$cent_deg_mmc[idx]
+      arrDegMmc[i,t] <- log(1+w)
+      arrDegMmcSq[i,t] <- log(1+w)^2
+      #
+      arrWdegAcq[i,t] <- log(1 + dfla$wdeg_rp_Acquisitions[idx])
+      arrWdegAll[i,t] <- log(1 + dfla$wdeg_rp_all[idx])
+      #
+      arrEmploy[i,t]    <- dfla$cs_employee[idx]
+      arrSales[i,t]     <- dfla$cs_roa_1[idx]
+      arrSlack[i,t]     <- ifelse(is.na(dfla$cs_quick[idx]), 0, dfla$cs_quick[idx])
+      # arrAcqExper[i,t]  <- log( 1 + dfla$acq_cnt_5[idx] )  # log(1 + dfl$acq_cnt_5[idx])
+      arrAcqExper[i,t]  <- log(1 + dfla$acq_exp_3[idx])  # log(1 + dfl$acq_cnt_5[idx])
+      arrAcqSum[i,t]    <- dfla$acq_sum_1[idx]/1e+09
+      arrNonAcqAct[i,t] <- log(1 + dfla$rp_NON_acquisitions[idx])
+      #
+      arrSmmc_WdegAcq[i,t]   <- arrWdegAcq[i,t] * arrSmmc[i,t]
+      arrSmmcSq_WdegAcq[i,t] <- arrWdegAcq[i,t] * arrSmmcSq[i,t]
+      arrSmmc_WdegAll[i,t]   <- arrWdegAll[i,t] * arrSmmc[i,t]
+      arrSmmcSq_WdegAll[i,t] <- arrWdegAll[i,t] * arrSmmcSq[i,t]
+    }
+  }
+  
+  ## FILTER YEARS
+  yridx <- 1:(length(netwavepds))#c(1,3,5,7) #1:length(netwavepds) # c(1,4,7) 
+  ## FILTER FIRMS 
+  # nmsale <- which(firmnamesub %in% unique(dfla$name[!is.na(dfla$cs_roa_1)]))
+  ## FILTER FIRMS that have at least one action in RavenPack
+  idxnm <- which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
+  idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
+  
+  # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
+  ##
+  firmsubidx <- intersect(idxnm,idxdeg) ## ## FILTER ACQUISITIONS > 0
+  
+  # firmsubidx <- 1:length(firmnamesub)  ## KEEP ALL
+  ##
+  firmnamesub2 <- firmnamesub[firmsubidx]
+  nsub2 <- length(firmnamesub2)
+
+  
+  
+  
+  egolist[[firm_i]] <- list(
+    gt = sort(unique(c(unlist(lapply(nl,function(l) V(l$gt)$vertex.names ))))),
+    gmmc = sort(unique(c(unlist(lapply(nl,function(l) V(l$gmmc)$vertex.names ))))),
+    gmmcsub = sort(unique(c(unlist(lapply(nl,function(l) V(l$gmmcsub)$vertex.names ))))),
+    #
+    inMMC=firmnamesub,    ## MMC
+    #
+    inRVN=firmnamesub2  ## ravepack
+  )
+  
+  
+  
+  saveRDS(egolist, file = 'SMJ_compare_ego_firm_net_cohorts_list.rds')
+  
+    
+} 
+
+
+
+
+
+
+for (id in names(egolist))
+{
+  cat(sprintf('%s\n',id))
+  print(summary(egolist[[id]]))
+  cat('\n')
+}
+
+
+egolist$microsoft$inMMC
+all(egolist$ibm$inMMC %in% egolist$microsoft$inMMC)
+
+all(egolist$facebook$inMMC %in% egolist$microsoft$inMMC)
+
+egolist$facebook$inMMC[ ! egolist$facebook$inMMC %in% egolist$microsoft$inMMC ]
+
+
+egolist$microsoft
+
+
+##
+##
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # firms.todo <- c('ibm','qualtrics','medallia','first-mile-geo','verint')
-firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
+# firm_i <- 'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
 # firms.todo <- c('microsoft')
 # for (firm_i in firms.todo)
 # {
