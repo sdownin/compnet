@@ -92,26 +92,6 @@ names.type.true <- unique(dfl$name[dfl$type])
 dfreg <- dfl[which(dfl$name %in% names.type.true & dfl$name %in% ipo.yrmin.name), ]
 # dfreg <- dfl[which(dfl$name %in% names.type.true), ]
 
-## compute feedback measure
-dfreg$feedback1 <- NA
-dfreg$feedback2 <- NA
-dfreg$feedback3 <- NA
-dfreg$feedback4 <- NA
-dfreg$feedback5 <- NA
-for (t in unique(dfreg$year)) {
-  if (t == min(unique(dfreg$year))) {
-    dfreg$feedback1[which(dfreg$year==t)] <- NA
-    dfreg$feedback2[which(dfreg$year==t)] <- NA
-    dfreg$feedback3[which(dfreg$year==t)] <- NA
-    dfreg$feedback4[which(dfreg$year==t)] <- NA
-  } else {
-    dfreg$feedback1[which(dfreg$year==t)] <- dfreg$smmc1[which(dfreg$year==t)] - dfreg$smmc1[which(dfreg$year==(t-1))] 
-    dfreg$feedback2[which(dfreg$year==t)] <- dfreg$smmc2[which(dfreg$year==t)] - dfreg$smmc2[which(dfreg$year==(t-1))] 
-    dfreg$feedback3[which(dfreg$year==t)] <- dfreg$smmc3[which(dfreg$year==t)] - dfreg$smmc3[which(dfreg$year==(t-1))] 
-    dfreg$feedback4[which(dfreg$year==t)] <- dfreg$smmc4[which(dfreg$year==t)] - dfreg$smmc4[which(dfreg$year==(t-1))] 
-  }
-}
-
 ##factors
 dfreg$i <- as.factor(dfreg$i)
 dfreg$year <- as.factor(dfreg$year)

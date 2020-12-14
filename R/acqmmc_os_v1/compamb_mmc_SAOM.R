@@ -42,382 +42,31 @@ setwd(work_dir)
 ## LOAD DATA AND DEPENDENCIES
 cb     <- source(file.path(version_dir,'acq_cb_data_prep.R'))$value 
 acf    <- source(file.path(version_dir,'acq_compnet_functions.R'))$value 
+## helper function
+source(file.path(version_dir,'compamb_mmc_helper_functions.R'))
 
+##===============================================
+## CHECK FIRMS IN MMC NETWORKS TO CHECK COMPUSTAT MANUALLY
+##-----------------------------------------------
+egolist <- readRDS('SMJ_compare_ego_firm_net_cohorts_list.rds')
 
-###
-## Compute HHI 
-###
-hhi <- function(x, na.rm=FALSE){
-  if (na.rm) {
-    x <- x[ which(!is.nan(x) & !is.na(x)) ]
-  }
-  z <- 100 * x / sum(x)
-  return(sum(z^2))
-}
-
-##
-# Plot from adjacency matrix
-##
-arrPlot <- function(arr, t=1, min.deg=0, ...)
-{
-  top <- ifelse('main' %in% names(list(...)), 2, .1)
-  par(mar=c(.1,.1,top,.1))
-  gx=graph.adjacency(arr[,,t])
-  plot(induced.subgraph(gx,which(igraph::degree(gx)>=min.deg)), 
-       edge.arrow.width=.2, edge.arrow.size=.1, 
-       vertex.label.cex=.5, vertex.size=5, 
-       ...)
-}
-
-###
-## Complexity measure of actions 
-##  @see Yu, Subramaniam, & Cannella, 2009
-###
-complexity <- function(x, scale=FALSE) {
-  sumx <- sum(x)
-  sq.prop <- sapply(x, function(k) (k/sumx)^2 )
-  sum.sq.prop <- sum(sq.prop)
-  y <- ifelse(sum.sq.prop==0, 0, 1/sum.sq.prop)
-  if (scale)
-    return(y / length(x))
-  return(y)
-}
-
-##
-#  Check Siena Model Converged
-#   - max overall t ratio < 0.25
-#   - all t-ratio < 0.1
-#  @return bool
-##
-checkSienaConv <- function(res, t.lim=0.1,max.lim=0.25) {
-  tmax <- res$tconv.max
-  ts <- abs(res$tconv)
-  ck.tmax <- tmax < max.lim
-  ck.ts <- all(ts < t.lim)
-  ck <- all(ck.tmax, ck.ts)
-  cat(sprintf('\nCONVERGED:  %s\n  tconv.max (%.3f) < 0.25  %s\n  all t (max %.3f) < 0.10  %s\n\n',
-              ck, tmax, ck.tmax, max(ts), ck.ts))
-  return(ck)
-}
-
-
-###
-## CrunchBase category Cosine Similarity
-##
-cbCatCosSim <- function(df) 
-{
-  all_cat_vec <- sort(unique(unlist(strsplit(df$category_list, '[|]'))))
-  
-  ## CATEGORY-FIRM MATRIX  [M,N] : M cateories, N firms
-  firm_cats <- df$category_list
-  cfm <- unname(sapply(firm_cats, function(x){
-    as.integer(sapply(all_cat_vec,function(cat)grepl(cat,x)))
-  }))
-  ## FIRM-CATEGORY MATRIX [N,M] :  N firms, M categories
-  fcm <- t(cfm)
-  
-  ## COMPUTE Cosine Similarity:
-  ## =  u.v / |u||v|
-  ## Firm-Firm COVARIANCE MATRIX [[u1.v1],[u2.v2], ...]
-  X <- fcm %*% t(fcm)
-  ## Firm Norms  |u|;  and |v| = |u|
-  u <- apply(fcm, MARGIN = 1, FUN = function(x) sqrt(sum(x^2)) )
-  ## NORM-NORM MATRIX   [ [|u1||v1|, |u1||v2|, ...], [|u2||v1|, |u2||v2|, ...], ...]
-  UV <- outer(u, u, '*')
-  ## COSINE SIMILARITY MATRIX equals elementwise division of 
-  ##  covariance matrix by the norms matrix
-  ##  = X / UV
-  sim <- X / UV
-  
-  ## replace NULL, NA, NaN, diags with zero
-  sim[is.null(sim)] <- 0
-  sim[is.nan(sim)] <- 0
-  sim[is.na(sim)] <- 0
-  diag(sim) <- 0
-  
-  ## RETURN
-  return(sim)
-}
-
-##
-#
-##
-pngPlot <- function(x, filename, height = 4, width = 6.5, units = 'in', res = 300)
-{
-  png(filename,height = height, width = width, units = units, res =res )
-  plot(x)
-  dev.off()
-}
-
-##
-#
-##
-getPvalStars <- function(p) {
-  if (is.na(p)|is.nan(p))return('   ')
-  if(p < 0.001)return('***')
-  if(p < 0.01) return('** ')
-  if(p < 0.05) return('*  ')
-  return('   ')
-}
-
-##
-#
-##
-saomResDf <- function(res, digits=3) 
-{
-  df <- data.frame(
-    DV=res$effects$name,
-    Effect=res$effects$effectName,
-    Type=res$effects$type,
-    Est=round(res$theta, digits = digits),
-    se=round(res$se, digits = digits),
-    t=round(res$theta/res$se, digits = digits),
-    p=round(pt(abs(res$theta/res$se), df=Inf, lower.tail = F) * 2, digits = digits),
-    stringsAsFactors = F
-  )
-  idx.rate <- grep('rate',df$Effect,T,T)
-  df$t[idx.rate] <- NA
-  df$p[idx.rate] <- NA
-  return(df)
-}
-
-##
-#
-##
-cbindDfList <- function(dfList) {
-  df <- dfList[[1]]
-  if (length(dfList) > 1) {
-    for (i in 2:length(dfList)) {
-      df <- cbind(df, dfList[[i]])
-    }
-  }
-  return(df)
-}
-
-
-##
-#  Create SAOM regression comparison Table
-##
-saomTable <- function(resList, file=NA, nameMap=NA, digits=3, drop.p.col=TRUE, drop.dv.col=TRUE)
-{
-  if (class(resList) != 'list') {
-    resList <- list(resList)
-  }
-  behNames <- c()
-  netNames <- c()
-  for (res in resList) {
-    behNames <- c(behNames, names(res$f$Data1$Behaviors))
-    netNames <- c(netNames, names(res$f$Data1$nets))
-  }
-  dvNames <- unique(c(behNames, netNames))
-  
-  nameList <- list()
-  for (res in resList) {
-    resDvdf <- data.frame()
-    for (dv in dvNames) {
-      .effDf <- as.data.frame(res$effects)
-      effTypeNames <- .effDf[grep(dv,res$effects$name,T,T),c('effectName','type')]
-      nameList[[dv]] <- unique(rbind(resDvdf, effTypeNames))
-    }
-  }
-  
-  dfl <- list()
-  for (res in resList) {
-    for (dv in dvNames) {
-      if (dv %in% res$effects$name) {
-        .df <- saomResDf(res, digits=digits)
-        dfl[[dv]][[ length(dfl[[dv]]) + 1 ]] <- .df[which(.df$DV==dv),]
-      }
-    }
-  }
-  
-  mod.cols <- c('Est','se','p')
-  
-  tdf <- data.frame(stringsAsFactors = F)
-  for (dv in names(nameList)) {
-    hasRowname <- FALSE
-    for (rowi in 1:nrow(nameList[[dv]])) { ## effect row
-      eff <- nameList[[dv]][rowi,]
-      effRow <- list()
-      for (modDf in dfl[[dv]] ) { ## model dataframe in DV group
-        effId <- which(modDf$Effect == eff$effectName & modDf$Type == eff$type)
-        if (length(effId) > 0) {
-          effRow[[length(effRow)+1]] <- modDf[effId,mod.cols]
-        } else {
-          .nadf <- data.frame()
-          for (col in mod.cols) .nadf[1,col] <- NA
-          effRow[[length(effRow)+1]] <- .nadf
-        }
-      }
-      effRowDf <- cbind(data.frame(DV=dv,Effect=eff$effectName, Type=eff$type, stringsAsFactors = F), cbindDfList(effRow))
-      if (!hasRowname) {
-        effRowDf <- rbind(effRowDf, effRowDf)
-        effRowDf[1,]  <- c('', sprintf('Dynamics: %s', dv), rep(NA, ncol(effRowDf)-2))
-        hasRowname <- TRUE
-      }
-      tdf <- rbind(tdf, effRowDf)
-    }
-  }
-  
-  # move rate rows to end
-  .tmp.rate.row <- tdf[1,]
-  .tmp.rate.row$Effect <- 'Rate Parameters'
-  rate.idx <- which(tdf$Type=='rate')
-  tdf <- rbind(tdf[-rate.idx,], .tmp.rate.row, tdf[rate.idx, ])
-  
-  obs <- c()
-  ns <- c()
-  conv <- c()
-  convt <- c()
-  iter <- c()
-  for (res in resList) {
-    obs <-c(obs, res$observations)
-    ns <- c(ns, attributes(res$f$Data1$nets[[1]][[1]][[1]])$nActors)
-    conv <- c(conv, res$tconv.max)
-    convt<- c(convt, max(abs(res$tconv)))
-    iter <- c(iter, res$n)
-  }  
-  
-  # est idx
-  idx.est <- which(names(tdf)%in% 'Est')
-  #
-  tdf[nrow(tdf)+1, ] <- NA
-  tdf[nrow(tdf), 'Effect'] <- 'Time Periods'
-  tdf[nrow(tdf), idx.est] <-  obs
-  #
-  tdf[nrow(tdf)+1, ] <- NA
-  tdf[nrow(tdf), 'Effect'] <- 'Num. Firms'
-  tdf[nrow(tdf), idx.est] <-  ns
-  #
-  tdf[nrow(tdf)+1, ] <- NA
-  tdf[nrow(tdf), 'Effect'] <- 'Largest converg. t ratio'
-  tdf[nrow(tdf), idx.est] <-  round(convt, digits = digits)
-  #
-  tdf[nrow(tdf)+1, ] <- NA
-  tdf[nrow(tdf), 'Effect'] <- 'Overall max. converg. ratio'
-  tdf[nrow(tdf), idx.est] <-  round(conv, digits = digits)
-  #
-  tdf[nrow(tdf)+1, ] <- NA
-  tdf[nrow(tdf), 'Effect'] <- 'Iterations'
-  tdf[nrow(tdf), idx.est] <-  iter
-  
-  idx.se  <- grep('^se\\.{0,1}',names(tdf),T,T)
-  idx.p <- grep('^p\\.{0,}', names(tdf),T,T)
-  for (i in 1:length(idx.se)) {
-    sei <- idx.se[i]
-    pi <- idx.p[i]
-    tdf[,sei] <- apply(tdf[,c(sei,pi)],1,function(x) {
-      se <- x[1]
-      p <- x[2]
-      spfstr <- sprintf('(%s%s.%sf)%s','%',digits+2,digits,getPvalStars(p))
-      ifelse(is.na(se)|se=='NA','',sprintf(spfstr,as.numeric(se)))
-    })
-  }
-  
-  ## add Type to name (not eval or rate)
-  idx.nonrate <- which(tdf$Type %in% c('endow','creation'))
-  tdf$Effect[idx.nonrate] <- apply(tdf[idx.nonrate,c('Effect','Type')],1,function(x){
-    sprintf('%s: %s',x[2],x[1])
-  })
-  tdf <- tdf[,which(names(tdf) != 'Type')]
-  
-  ## name mapping for effects
-  if (!any(is.na(nameMap))) 
-  {
-    ord <- c()
-    for (eff in names(nameMap)) {
-      idx.nm <- which(tdf$Effect == eff)
-      ord <- c(ord, idx.nm)
-      if (length(idx.nm) > 0) {
-        tdf$Effect[idx.nm] <- nameMap[[eff]]
-      }
-    }
-    tdf <- rbind(tdf[ord,], tdf[-ord,])
-  }
-  
-  if (drop.dv.col) {
-    tdf <- tdf[,-1]
-  }
-  if (drop.p.col) {
-    idx.p.col <- grep('^p[\\.\\d]{0,}',names(tdf),T,T)
-    tdf <- tdf[, -idx.p.col]
-  }
-  
-  if (!is.na(file)) {
-    write.csv(tdf, file = file, na = "", row.names = F)
-  }
-  
-  return(tdf)
-  
-}
-
-
-##
-## Network stability measure (Jaccard index)
-##
-netJaccard <- function(m1, m2)
-{
-  ## num. maintained
-  n11 <- sum(m1 * m2) ## element-wise multiplication
-  ##  num. dropped or added
-  n10.n01 <- sum( (m2 - m1) != 0 )
-  ## jaccard index
-  return( n11 / (n11 + n10.n01) )
-}
-
-
-
-
-
-###
-## PGLM FUNCTION FOR TEXREG TABLE
-###
-extract.pglm <- function (model, include.nobs = TRUE, include.loglik = TRUE, ...) {
-  s <- summary(model, ...)
-  coefficient.names <- rownames(s$estimate)
-  coefficients <- s$estimate[, 1]
-  standard.errors <- s$estimate[, 2]
-  significance <- s$estimate[, 4]
-  loglik.value <- s$loglik
-  n <- nrow(model$model)
-  gof <- numeric()
-  gof.names <- character()
-  gof.decimal <- logical()
-  if (include.loglik == TRUE) {
-    gof <- c(gof, loglik.value)
-    gof.names <- c(gof.names, "Log-Likelihood")
-    gof.decimal <- c(gof.decimal, TRUE)
-  }
-  if (include.nobs == TRUE) {
-    gof <- c(gof, n)
-    gof.names <- c(gof.names, "Num. obs.")
-    gof.decimal <- c(gof.decimal, FALSE)
-  }
-  tr <- createTexreg(coef.names = coefficient.names, coef = coefficients, 
-                     se = standard.errors, pvalues = significance, gof.names = gof.names, 
-                     gof = gof, gof.decimal = gof.decimal)
-  return(tr)
-}
-
-## In order for this code to work, you should also register the function so that it handles the pglm maxLik objects by default when extract is called:
-setMethod("extract", signature = className("maxLik", "maxLik"), 
-          definition = extract.pglm)
-# ## set firms to create networks (focal firm or replication study focal firms)
 
 ##===============================================
 ## Load Ravenpack Data
 ##-----------------------------------------------
-csvfile <- 'rp40_action_categories_2000_2018.csv'
+# csvfile <- 'rp40_action_categories_2000_2018.csv'
+csvfile <- 'ravenpack_resolved_actions_2006-2016.csv'
 ##convert
 rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
 
 
 
-rvc <- plyr::count(rvn$entity_name[which(rvn$action_category=='Acquisitions' & rvn$year>=2010)])
-rvc <- rvc[order(rvc$freq, decreasing = T),]
-View(rvc)
-head(rvc,15)
-# x freq
+# rvc <- plyr::count(rvn$entity_name[which(rvn$category=='acquisition-acquirer' & rvn$year>=2010)])
+# rvc <- rvc[order(rvc$freq, decreasing = T),]
+# View(rvc)
+# head(rvc,15)
+### Before resolving RavenPack actions (possibly multiple stores about 1 event)
+#                                              x  freq
 # 5957                              Moody's Corp.  278
 # 4475                                  IBM Corp.  265
 # 766                   Arthur J. Gallagher & Co.  251
@@ -434,6 +83,24 @@ head(rvc,15)
 # 7873                                  Shire PLC  157
 # 3840                       Glencore Xstrata PLC  151
 
+## After resolving RavenPack actions
+#                                         x  freq
+# 6369                 Pinetree Capital Ltd.  185
+# 5485                         Moody's Corp.  170
+# 710              Arthur J. Gallagher & Co.  124
+# 4137                             IBM Corp.   63
+# 5261                           Mednax Inc.   63
+# 8026                  Terreno Realty Corp.   57
+# 8986                               WPP PLC   56
+# 6041                          Oracle Corp.   53
+# 3500                  General Electric Co.   52
+# 3675                           Google Inc.   51
+# 93                           Accenture PLC   50
+# 1101               Berkshire Hathaway Inc.   46
+# 21                        3D Systems Corp.   45
+# 4678                        KKR & Co. L.P.   45
+# 5473 Monmouth Real Estate Investment Corp.   42
+
 ##===============================================
 ##  Financial controls
 ##-----------------------------------------------
@@ -442,21 +109,6 @@ head(rvc,15)
 # Performance -- lagged ROA
 # Org. learning -- Acquisition experience 
 # Market overlap -- lagged proportion of sales in overlapped segments (Compustat segments)
-
-## compustat - CrunchBase names for patching missing gvkey 
-## patch names with missing gvkey from crunchbase cb$co
-nkpatch <- data.frame(
-  company_name_unique=c('blackberry', 'broadsoft','cnova', 'compuware',
-                        'csc', 'digital-river','fujitsu','geeknet',
-                        'lg-display-co', 'looksmart', 'naspers', 'opera-software',
-                        'siemens','sony','sybase','syniverse-technologies',
-                        'telstra','velti','violin-memory','xerox'),
-  conm=c('BLACKBERRY LTD','BROADSOFT INC',  'CNOVA NV', 'COMPUWARE CORP',
-         'CSC HOLDINGS LLC', 'DIGITAL RIVER INC','FUJITSU LTD', 'GEEKNET INC',
-         'LG DISPLAY CO LTD', 'LOOKSMART GROUP INC', 'NASPERS LTD', 'OPERA LTD -ADR',
-         'SIEMENS AG', 'SONY CORP', 'SYBASE INC','SYNIVERSE HOLDINGS',
-         'TELSTRA CORP LTD', 'VELTI PLC', 'VIOLIN MEMORY INC','XEROX CORP'
-  ), stringsAsFactors=F)
 
 ## Compustat SEGMENTS
 css<- read.csv(file.path(cs_dir,'segments.csv'), nrows=Inf, stringsAsFactors = F)
@@ -542,11 +194,34 @@ csa2$roa <- csa2$ebitda / csa2$act
 # # 1347             tripadvisor   15
 
 
+##==========================================================
+## compustat - CrunchBase names for patching missing gvkey 
+##----------------------------------------------------------
+## patch names with missing gvkey from crunchbase cb$co
+nkpatch <- data.frame(
+  company_name_unique=c('blackberry', 'broadsoft','cnova', 'compuware',
+                        'csc', 'digital-river','fujitsu','geeknet',
+                        'lg-display-co', 'looksmart', 'naspers', 'opera-software',
+                        'siemens','sony','sybase','syniverse-technologies',
+                        'telstra','velti','violin-memory','xerox'),
+  conm=c('BLACKBERRY LTD','BROADSOFT INC',  'CNOVA NV', 'COMPUWARE CORP',
+         'CSC HOLDINGS LLC', 'DIGITAL RIVER INC','FUJITSU LTD', 'GEEKNET INC',
+         'LG DISPLAY CO LTD', 'LOOKSMART GROUP INC', 'NASPERS LTD', 'OPERA LTD -ADR',
+         'SIEMENS AG', 'SONY CORP', 'SYBASE INC','SYNIVERSE HOLDINGS',
+         'TELSTRA CORP LTD', 'VELTI PLC', 'VIOLIN MEMORY INC','XEROX CORP'
+  ), stringsAsFactors=F)
+
+nkpfull <- merge(data.frame(company_name_unique=egolist$microsoft$inMMC),nkpatch, by='company_name_unique', all.x=T, all.y=T)
+write.csv(nkpfull, file = 'name_key_path_full_crunchbase-compustat.csv', row.names = F, na = '')
+
+### check for CB firm in Compustat
+csa2[grep('accenture',csa2$conm,ignore.case=T, perl=T),]
+
 
 
 
 # firms.todo <- c('ibm','qualtrics','medallia','first-mile-geo','verint')
-firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
+firm_i <- 'ibm' # 'google' #'ibm' #'microsoft' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
 # firms.todo <- c('microsoft')
 # for (firm_i in firms.todo)
 # {
@@ -570,7 +245,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   y2 <- 2016
   
   ## load DATA
-  firmfile <- sprintf('acq_sys_mmc_panel_RPactions_regression_df_ego-%s_d%s_%s-%s.csv', 
+  firmfile <- sprintf('compamb_mmc_panel_RPactions_regression_df_ego-%s_d%s_%s-%s.csv', 
                       firm_i_ego, d, y1, y2)
   dfl <- read.csv(file.path(result_dir,firmfile), stringsAsFactors = F)
   ## year names off by 1 (2006 - 2015) <-- +1
@@ -583,7 +258,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   bl <- list()
   for (t in 1:10) 
   {
-    netpdfile <- sprintf('acq_sys_mmc_panel_RPactions_NETLIST_ego-%s_d%s_%s-%s_t%s.rds', 
+    netpdfile <- sprintf('compamb_mmc_panel_RPactions_NETLIST_ego-%s_d%s_%s-%s_t%s.rds', 
                          firm_i_ego, d, y1, y2, t)
     nl[[t]] <- readRDS(file.path(result_dir, netpdfile))
   }
@@ -591,20 +266,26 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   npds <- length(nl)
   
   firmnamesall <- unique(c(unlist(sapply(nl,function(x)V(x$gt)$vertex.names))))
-  firmnames0 <- V(nl$`2007`$gt)$vertex.names
-  adj0 <- as_adj(nl$`2007`$gt, sparse = T)
+  firmnames0 <- V(nl$`2014`$gt)$vertex.names
+  adj0 <- as_adj(nl$`2014`$gt, sparse = T)
   n0 <- length(firmnames0)
   
   ## which firm made at least 1 acquisitions
-  firm.acq.1 <- unique(dfl$name[which(dfl$rp_Acquisitions > 0)])
+  # firm.acq.1 <- unique(dfl$name[which(dfl$rp_Acquisitions > 0)])  ## %%CHANGED%%
+  firm.acq.1 <- unique(dfl$name)  ##                                ## %%CHANGED%%
   .filtername <- unique(dfl$name[which(
-    dfl$cent_deg_mmc>0 
-    & dfl$ipo>0 
+    # dfl$cent_deg_mmc>0 &                                          ## %%CHANGED%%
+    dfl$ipo>0 
     #& (dfl$name %in% firm.acq.1)  ## filter by who made at least one acquisition ?
   )])
   ## filter names in vertex order with MMC rivals (is IPO firm)
-  firmnamesub <- V(nl$`2007`$gt)$vertex.names[which(V(nl$`2007`$gt)$vertex.names %in% .filtername)]
+  firmnamesub <- V(nl$`2014`$gt)$vertex.names[which(V(nl$`2014`$gt)$vertex.names %in% .filtername)]
   nsub <- length(firmnamesub)
+  
+  
+  # .gx <- nl$`2014`$gmmcsub
+  # .nbrs <- igraph::neighbors(graph = .gx, which(V(.gx)$vertex.names==firm_i))
+  # V(.gx)$vertex.names[.nbrs]
   
   ##----------------------------
   ## NAMEKEY for compustat controls
@@ -709,15 +390,15 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
         ## State (size, position) in peirod t is ending value from range in period (t-1)
         employee_na_age= xti$employee_na_age[1],
         sales_na_0_mn= xti$sales_na_0_mn[1],
-        acq_cnt_5= xti$acq_cnt_5[1],
-        acq_sum_1= xti$acq_sum_1[1],
-        cent_deg_mmc= xti$cent_deg_mmc[1],
+        # acq_cnt_5= xti$acq_cnt_5[1],
+        # acq_sum_1= xti$acq_sum_1[1],
+        # cent_deg_mmc= xti$cent_deg_mmc[1],
         ## DV product
         rp_Product = sum(c(xti$rp_New_product), na.rm=T),
         ## DV Acquisitions
         rp_Acquisitions = sum(c(xti$rp_Acquisitions), na.rm=T),
         ##        
-        rp_NON_acquisitions=mean(xti$rp_NON_acquisitions, na.rm=T),
+        # rp_NON_acquisitions=mean(xti$rp_NON_acquisitions, na.rm=T),
         # RESTRUCTURING VS INVARIANT
         rp_net_restruct =sum(c(xti$rp_Acquisitions, 
                                xti$rp_New_product), na.rm=T),
@@ -739,15 +420,15 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
         ## sum(t-1,t-2,t-3) previous 3yr acquisitions == Acq Experience
         acq_exp_3=sum(c(xtin1$rp_Acquisitions,
                         xtin2$rp_Acquisitions,
-                        xtin3$rp_Acquisitions), na.rm=T),
-        ## competitive pressure
-        wdeg_rp_Acquisitions=mean(xti$wdeg_rp_Acquisitions, na.rm=T),
-        wdeg_rp_all=sum(c(xti$wdeg_rp_Acquisitions, xti$wdeg_rp_Capacity,
-                          xti$wdeg_rp_Legal, xti$wdeg_rp_Market_expansions,
-                          xti$wdeg_rp_Marketing,  xti$wdeg_rp_New_product,
-                          xti$wdeg_rp_Pricing,  xti$wdeg_rp_Strategic_alliances), na.rm=T)
+                        xtin3$rp_Acquisitions), na.rm=T)#,
+        # ## competitive pressure
+        # wdeg_rp_Acquisitions=mean(xti$wdeg_rp_Acquisitions, na.rm=T),
+        # wdeg_rp_all=sum(c(xti$wdeg_rp_Acquisitions, xti$wdeg_rp_Capacity,
+        #                   xti$wdeg_rp_Legal, xti$wdeg_rp_Market_expansions,
+        #                   xti$wdeg_rp_Marketing,  xti$wdeg_rp_New_product,
+        #                   xti$wdeg_rp_Pricing,  xti$wdeg_rp_Strategic_alliances), na.rm=T)
       )
-      .tmp$wdeg_rp_NON_acquisitions <- .tmp$wdeg_rp_all - .tmp$wdeg_rp_Acquisitions
+      # .tmp$wdeg_rp_NON_acquisitions <- .tmp$wdeg_rp_all - .tmp$wdeg_rp_Acquisitions
       #
       dfla <- rbind(dfla,.tmp)
       #
@@ -764,8 +445,8 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   ##------------------------------------
   mmcarr <- array(0, dim=c(nsub, nsub, nwaves))
   comparr <- array(0, dim=c(nsub, nsub, nwaves))
-  arrSmmc <- array(0,dim=c(nsub,nwaves))
-  arrSmmcSq <- array(0,dim=c(nsub,nwaves))
+  # arrSmmc <- array(0,dim=c(nsub,nwaves))
+  # arrSmmcSq <- array(0,dim=c(nsub,nwaves))
   arrAge <- array(0,dim=c(nsub))
   for (t in 1:nwaves) {
     wave <- netwavepds[t]
@@ -798,7 +479,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
     # AGE
     arrAge <- V(x$gt)$age[vids]
     ##---SMMC-CENTRALITY-----------------
-    arrSmmc[,t] <- log( 1 + igraph::degree(gtsubmmc) )
+    # arrSmmc[,t] <- log( 1 + igraph::degree(gtsubmmc) )
     # arrSmmc[,t] <- log(1 + igraph::authority_score(gtsubmmc.w)$vector * 100)
     # arrSmmc[,t] <- log( 1 + igraph::power_centrality(gtsubmmc, exponent = 0)*100 )
     # arrSmmc[,t] <- log(  igraph::subgraph.centrality(gtsubmmc, diag = F) )
@@ -819,7 +500,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
     # arrSmmc[,t] <- const
     # eig <- eigen_centrality(gtsubmmc.w)
     # arrSmmc[,t] <- bonpow(gtsubmmc.w, exponent = 1/max(eig$value))
-    arrSmmcSq[,t] <- arrSmmc[,t]^2
+    # arrSmmcSq[,t] <- arrSmmc[,t]^2
   }
   
   
@@ -830,10 +511,10 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   ##########################################################
   ## Save / Load Workspace Image for firm_i
   ##--------------------------------------------------------
-  workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
-                                    firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
-   # save.image(file = workspace_file)
-  load(file = workspace_file)
+  workspace_file <- sprintf(sprintf('compamb_mmc_workspace_pre-saom_%s_%s-%s.RData',
+                                    firm_i,netwavepds[1],netwavepds[length(netwavepds)]))
+  save.image(file = workspace_file)
+  # load(file = workspace_file)
   ##########################################################
   
   
@@ -867,10 +548,10 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   arrNonAcqAct <- array(0,dim=c(nsub,npds)) 
   arrWdegAcq <- array(0,dim=c(nsub,npds))
   arrWdegAll <- array(0,dim=c(nsub,npds))
-  arrSmmc_WdegAcq <- array(0,dim=c(nsub,npds))
-  arrSmmcSq_WdegAcq <- array(0,dim=c(nsub,npds))
-  arrSmmc_WdegAll <- array(0,dim=c(nsub,npds))
-  arrSmmcSq_WdegAll <- array(0,dim=c(nsub,npds))
+  # arrSmmc_WdegAcq <- array(0,dim=c(nsub,npds))
+  # arrSmmcSq_WdegAcq <- array(0,dim=c(nsub,npds))
+  # arrSmmc_WdegAll <- array(0,dim=c(nsub,npds))
+  # arrSmmcSq_WdegAll <- array(0,dim=c(nsub,npds))
   # arrW <- array(0,dim=c(nsub,npds))
   for (t in 1:npds) {
     for (i in 1:length(firmnamesub)) {
@@ -880,82 +561,85 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
       cut0 <-  Inf
       cut.r <- Inf
       cut.i <- Inf
-      min0 <-  1
-      min.r <- 1
-      min.i <- 1
-      logXf <- function(x)log(x, base= exp(1) )
+      min0 <-  0
+      min.r <- 0
+      min.i <- 0
+      logXf <- function(x)log(x, base= exp(1) )  ## natural log function
+      discf <- function(x)round(x)+1  ## discretize with either ceiling or floor function ## add 1 to shift 0-5 range to 1-6 ## 1 minimum beh level for SAOM
+      ##----Mk Growth:  Prevent divide by zero --------------
+      mkgrowidx <- ifelse(dfla$cs_mkgrowth[idx] > 0, dfla$cs_mkgrowth[idx], 1)  ## Just ignore growth weighting if growth is zero
       ## RESTRUCT--------
       xr <- dfla$rp_net_restruct[idx] 
-      xr <- ceiling( logXf( 1 + xr ) )
+      xr <- discf( logXf( 1 + xr ) )
       arrNetR[i,t] <-  ifelse( xr > cut.r, cut.r, ifelse(xr < min.r, min.r, xr))
       #
-      xrw <- dfla$rp_net_restruct[idx] / dfla$cs_mkgrowth[idx]
-      xrw <- ceiling( logXf( 1 + xrw ) )
+      xrw <- dfla$rp_net_restruct[idx] / mkgrowidx
+      xrw <- discf( logXf( 1 + xrw ) )
       arrNetRw[i,t] <-  ifelse( xrw > cut.r, cut.r, ifelse(xrw < min.r, min.r, xrw))
       ## INVARIANT -------
       xi <- dfla$rp_net_invariant[idx] 
-      xi <- ceiling( logXf( 1 + xi ) )
+      xi <- discf( logXf( 1 + xi ) )
       arrNetI[i,t] <-  ifelse( xi > cut.i, cut.i, ifelse(xi < min.i, min.i, xi))
       #
-      xiw <- dfla$rp_net_invariant[idx] / dfla$cs_mkgrowth[idx]
-      xiw <- ceiling( logXf( 1 + xiw ) )
+      xiw <- dfla$rp_net_invariant[idx] / mkgrowidx
+      xiw <- discf( logXf( 1 + xiw ) )
       arrNetIw[i,t] <-  ifelse( xiw > cut.i, cut.i, ifelse(xiw < min.i, min.i, xiw))
       ## Acquisitions --------
       xa <- dfla$rp_Acquisitions[idx] 
-      xa <- ceiling( logXf( 1 + xa ) )
+      xa <- discf( logXf( 1 + xa ) )
       arrAcq[i,t] <-  ifelse( xa > cut0, cut0, ifelse(xa < min0, min0, xa))
       #
-      xaw <- dfla$rp_Acquisitions[idx] / dfla$cs_mkgrowth[idx]
-      xaw <- ceiling( logXf( 1 + xaw ) )
+      xaw <- dfla$rp_Acquisitions[idx] / mkgrowidx
+      xaw <- discf( logXf( 1 + xaw ) )
       arrAcqw[i,t] <-  ifelse( xaw > cut0, cut0, ifelse(xaw < min0, min0, xaw))
       ## Product  --------
       xp <- dfla$rp_Product[idx] 
-      xp <- ceiling( logXf( 1 + xp ) )
+      xp <- discf( logXf( 1 + xp ) )
       arrProd[i,t] <-  ifelse( xp > cut0, cut0, ifelse(xp < min0, min0, xp))
       #
-      xpw <- dfla$rp_Product[idx] / dfla$cs_mkgrowth[idx]
-      xpw <- ceiling( logXf( 1 + xpw ) )
+      xpw <- dfla$rp_Product[idx] / mkgrowidx
+      xpw <- discf( logXf( 1 + xpw ) )
       arrProdw[i,t] <-  ifelse( xpw > cut0, cut0, ifelse(xpw < min0, min0, xpw))
       ## STRATEGIC******************************
       xs <- dfla$rp_strat[idx] 
-      xs <- ceiling( logXf( 1 + xs ) )
+      xs <- discf( logXf( 1 + xs ) )
       arrStr[i,t] <-  ifelse( xs > cut0, cut0, ifelse(xs < min0, min0, xs))
       #
-      xsw <- dfla$rp_strat[idx] / dfla$cs_mkgrowth[idx]
-      xsw <- ceiling( logXf( 1 + xsw ) )
+      xsw <- dfla$rp_strat[idx] / mkgrowidx
+      xsw <- discf( logXf( 1 + xsw ) )
       arrStrw[i,t] <-  ifelse( xsw > cut0, cut0, ifelse(xsw < min0, min0, xsw))
       ## TACTICAL***  --------
       xt <- dfla$rp_tacti[idx] 
-      xt <- ceiling( logXf( 1 + xt ) )
+      xt <- discf( logXf( 1 + xt ) )
       arrTac[i,t] <-  ifelse( xt > cut0, cut0, ifelse(xt < min0, min0, xt))
       #
-      xtw <- dfla$rp_tacti[idx] / dfla$cs_mkgrowth[idx]
-      xtw <- ceiling( logXf( 1 + xtw ) )
+      xtw <- dfla$rp_tacti[idx] / mkgrowidx
+      xtw <- discf( logXf( 1 + xtw ) )
       arrTacw[i,t] <-  ifelse( xtw > cut0, cut0, ifelse(xtw < min0, min0, xtw))
       ##-----------------------------------
       ##-----------------------------------
       ## market growth
       arrMktGro[i,t] <- dfla$cs_mkgrowth[idx]
       #
-      w <- dfla$cent_deg_mmc[idx]
-      arrDegMmc[i,t] <- log(1+w)
-      arrDegMmcSq[i,t] <- log(1+w)^2
+      # w <- dfla$cent_deg_mmc[idx]
+      # arrDegMmc[i,t] <- log(1+w)
+      # arrDegMmcSq[i,t] <- log(1+w)^2
       #
-      arrWdegAcq[i,t] <- log(1 + dfla$wdeg_rp_Acquisitions[idx])
-      arrWdegAll[i,t] <- log(1 + dfla$wdeg_rp_all[idx])
+      # arrWdegAcq[i,t] <- log(1 + dfla$wdeg_rp_Acquisitions[idx])
+      # arrWdegAll[i,t] <- log(1 + dfla$wdeg_rp_all[idx])
       #
       arrEmploy[i,t]    <- dfla$cs_employee[idx]
       arrSales[i,t]     <- dfla$cs_roa_1[idx]
       arrSlack[i,t]     <- ifelse(is.na(dfla$cs_quick[idx]), 0, dfla$cs_quick[idx])
       # arrAcqExper[i,t]  <- log( 1 + dfla$acq_cnt_5[idx] )  # log(1 + dfl$acq_cnt_5[idx])
       arrAcqExper[i,t]  <- log(1 + dfla$acq_exp_3[idx])  # log(1 + dfl$acq_cnt_5[idx])
-      arrAcqSum[i,t]    <- dfla$acq_sum_1[idx]/1e+09
-      arrNonAcqAct[i,t] <- log(1 + dfla$rp_NON_acquisitions[idx])
+      # arrAcqSum[i,t]    <- dfla$acq_sum_1[idx]/1e+09
+      # arrNonAcqAct[i,t] <- log(1 + dfla$rp_NON_acquisitions[idx])
       #
-      arrSmmc_WdegAcq[i,t]   <- arrWdegAcq[i,t] * arrSmmc[i,t]
-      arrSmmcSq_WdegAcq[i,t] <- arrWdegAcq[i,t] * arrSmmcSq[i,t]
-      arrSmmc_WdegAll[i,t]   <- arrWdegAll[i,t] * arrSmmc[i,t]
-      arrSmmcSq_WdegAll[i,t] <- arrWdegAll[i,t] * arrSmmcSq[i,t]
+      # arrSmmc_WdegAcq[i,t]   <- arrWdegAcq[i,t] * arrSmmc[i,t]
+      # arrSmmcSq_WdegAcq[i,t] <- arrWdegAcq[i,t] * arrSmmcSq[i,t]
+      # arrSmmc_WdegAll[i,t]   <- arrWdegAll[i,t] * arrSmmc[i,t]
+      # arrSmmcSq_WdegAll[i,t] <- arrWdegAll[i,t] * arrSmmcSq[i,t]
     }
   }
   
@@ -964,8 +648,9 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   ## FILTER FIRMS 
   # nmsale <- which(firmnamesub %in% unique(dfla$name[!is.na(dfla$cs_roa_1)]))
   ## FILTER FIRMS that have at least one action in RavenPack
-  idxnm <- which(firmnamesub %in% unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)]))
-  idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
+  idxnm <- which(firmnamesub %in% as.character(unique(dfla$name[which(dfla$rp_net_restruct>0 | dfla$rp_net_invariant>0)])))
+  # idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>0))))
+  idxdeg <- c(unlist(sapply(yridx, function(t)which(rowSums(mmcarr[,,t])>=0))))  ## %%CHANGE%%
   
   # nmactall <- unique(dfla$name[which(dfla$rp_net_restruct>0)])
   ##
@@ -998,19 +683,19 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   arrMktGro2 <- arrMktGro[firmsubidx, yridx ]
   ##-----------------------------
   # ##*****MMC subset of compnet (ONLY CrunchBase relations filtered if has MMC)******
-  arrSmmc2 <- arrSmmc[firmsubidx, yridx ]
-  arrSmmcSq2 <- arrSmmcSq[firmsubidx, yridx ]
+  # arrSmmc2 <- arrSmmc[firmsubidx, yridx ]
+  # arrSmmcSq2 <- arrSmmcSq[firmsubidx, yridx ]
   # ## All MMC spaces count (not just CrunchBase relations) Degree Centrality
   # arrSmmc2 <- arrDegMmc[firmsubidx,  ]
   # arrSmmcSq2 <- arrDegMmcSq[firmsubidx,  ]
   ##------------------------------
   #
-  arrWdegAcq2 <- arrWdegAcq[firmsubidx, yridx ]
-  arrWdegAll2 <- arrWdegAll[firmsubidx, yridx ]
-  arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx, yridx ]
-  arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx, yridx ]
-  arrSmmc_WdegAll2   <- arrSmmc_WdegAll[firmsubidx, yridx ]
-  arrSmmcSq_WdegAll2 <- arrSmmcSq_WdegAll[firmsubidx, yridx ]
+  # arrWdegAcq2 <- arrWdegAcq[firmsubidx, yridx ]
+  # arrWdegAll2 <- arrWdegAll[firmsubidx, yridx ]
+  # arrSmmc_WdegAcq2   <- arrSmmc_WdegAcq[firmsubidx, yridx ]
+  # arrSmmcSq_WdegAcq2 <- arrSmmcSq_WdegAcq[firmsubidx, yridx ]
+  # arrSmmc_WdegAll2   <- arrSmmc_WdegAll[firmsubidx, yridx ]
+  # arrSmmcSq_WdegAll2 <- arrSmmcSq_WdegAll[firmsubidx, yridx ]
   #
   arrEmploy2 <- arrEmploy[firmsubidx, yridx ]
   arrSales2 <- arrSales[firmsubidx, yridx ]
@@ -1088,10 +773,10 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
                            sparse = FALSE, allowOnly = FALSE)  
   
   # #PREDICTOR
-  covSmmc <- varCovar(arrSmmc2, nodeSet="FIRMS")
-  covSmmcSq <- varCovar(arrSmmcSq2, nodeSet="FIRMS")
-  covWdegAcq <- varCovar(arrWdegAcq2, nodeSet="FIRMS")
-  covWdegAll <- varCovar(arrWdegAll2, nodeSet="FIRMS")
+  # covSmmc <- varCovar(arrSmmc2, nodeSet="FIRMS")
+  # covSmmcSq <- varCovar(arrSmmcSq2, nodeSet="FIRMS")
+  # covWdegAcq <- varCovar(arrWdegAcq2, nodeSet="FIRMS")
+  # covWdegAll <- varCovar(arrWdegAll2, nodeSet="FIRMS")
   # DV scaled
   covNetRw <- varCovar(arrNetRw2, nodeSet="FIRMS")
   covNetIw <- varCovar(arrNetIw2, nodeSet="FIRMS")
@@ -1102,11 +787,11 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   covAcqExper <- varCovar(arrAcqExper2, nodeSet="FIRMS")
   covAcqSum <- varCovar(arrAcqSum2, nodeSet="FIRMS")
   covSlack <- varCovar(arrSlack2, nodeSet="FIRMS")
-  # covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
-  covSmmc_covWdegAcq <- varCovar(arrSmmc_WdegAcq2, nodeSet="FIRMS")
-  covSmmcSq_covWdegAcq <- varCovar(arrSmmcSq_WdegAcq2, nodeSet="FIRMS")
-  covSmmc_covWdegAll <- varCovar(arrSmmc_WdegAll2, nodeSet="FIRMS")
-  covSmmcSq_covWdegAll <- varCovar(arrSmmcSq_WdegAll2, nodeSet="FIRMS")
+  # # covNonAcqAct <- varCovar(arrNonAcqAct2, nodeSet="FIRMS")
+  # covSmmc_covWdegAcq <- varCovar(arrSmmc_WdegAcq2, nodeSet="FIRMS")
+  # covSmmcSq_covWdegAcq <- varCovar(arrSmmcSq_WdegAcq2, nodeSet="FIRMS")
+  # covSmmc_covWdegAll <- varCovar(arrSmmc_WdegAll2, nodeSet="FIRMS")
+  # covSmmcSq_covWdegAll <- varCovar(arrSmmcSq_WdegAll2, nodeSet="FIRMS")
   ## Constant covar
   covAge <- coCovar(arrAge2, nodeSet = "FIRMS")
   ## Constant Dyadic covar
@@ -1183,7 +868,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
                            name="depNetI", interaction1 = 'depMMC')
   #
-  sysMod <- sienaAlgorithmCreate(projname=sprintf('sys-mmc-acq-proj-%s-converg-VDcut-behDenseTriad_restruct_1-Inf_H1ab_H2-0_noGWESP',firm_i_ego), 
+  sysMod <- sienaAlgorithmCreate(projname=sprintf('compamb-SAOM-%s-converg-VDcut-behDenseTriad_restruct_1-Inf_H1ab_H2-0_noGWESP',firm_i), 
                                  firstg = 0.12, #0.07,  ## default: 0.2
                                  n2start=240,    ## default: 2.52*(p+7)
                                  nsub = 5,       ## default: 4
@@ -1205,7 +890,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   gfAMC0.tc = RSiena::sienaGOF(sysResAMC0, TriadCensus,
                                varName="depMMC"); plot(gfAMC0.tc)
   
-  .prefix <- 'SAOM_1-Inf_H1ab_H2_noGWESP_GOF'
+  .prefix <- sprintf('SAOM_%s_1-Inf_H1ab_H2_noGWESP_GOF',firm_i)
   png(sprintf('%s_%s.png',.prefix,'behavior_restruct'), height = 4, width = 6.5, units = 'in', res = 300)
     plot(gfAMC0.br); dev.off();
   png(sprintf('%s_%s.png',.prefix,'behavior_invariant'), height = 4, width = 6.5, units = 'in', res = 300)
@@ -1215,9 +900,9 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   png(sprintf('%s_%s.png',.prefix,'net_triad_census'), height = 4, width = 6.5, units = 'in', res = 300)
     plot(gfAMC0.tc); dev.off();
   saveRDS(list(res=sysResAMC0, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP.rds')
+          file = sprintf('compamb_SAOM_%s_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP.rds',firm_i))
   
-  x <- readRDS('acq_sys_mmc_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP.rds')
+  x <- readRDS(sprintf('compamb_SAOM_%s_sysResAMC0_converg_DVcut_behDenseTriad_restruct_1-Inf_H1ab_H2_noGWESP.rds',firm_i))
     
   # ans <- sysResAMC0
   ans <- x$res
@@ -1239,7 +924,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   
   
   ## GET MMC CHAINS
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-behDenseTriad_restruct_1-Inf_H1ab_H2-0_noGWESP_CHAINS')
+  sysMod <- sienaAlgorithmCreate(projname='compamb-test-proj-converg-VDcut-behDenseTriad_restruct_1-Inf_H1ab_H2-0_noGWESP_CHAINS')
   sysResAMC0Chains <- siena07(sysMod, data=sysDat, effects=sysEff, 
                         batch = T,   returnDeps = T, returnChains=T, ## necessary for GOF
                         useCluster = T, nbrNodes = detectCores(), clusterType = 'PSOCK')
@@ -1316,7 +1001,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   sysEff <- includeEffects(sysEff, behDenseTriads,# behDenseTriads,
                            name="depNetI", interaction1 = 'depMMC')
   #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-H1ab_noGWESP', 
+  sysMod <- sienaAlgorithmCreate(projname='compamb-test-proj-converg-VDcut-H1ab_noGWESP', 
                                  firstg = 0.13,  ## default: 0.2
                                  n2start=220,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
@@ -1339,7 +1024,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
                                varName="depMMC"); plot(gfH1.tc)
   
   saveRDS(list(res=sysResH1ab, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_converg_DVcut_H1ab_noGWESP.rds')
+          file = 'compamb_sysResAMC0_converg_DVcut_H1ab_noGWESP.rds')
   
   
   
@@ -1400,7 +1085,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   sysEff <- includeEffects(sysEff, totAlt,
                            name="depNetI", interaction1 = 'depMMC')
   #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-H2_noGWESP', 
+  sysMod <- sienaAlgorithmCreate(projname='compamb-converg-VDcut-H2_noGWESP', 
                                  firstg = 0.1,  ## default: 0.2
                                  n2start=280,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
@@ -1423,7 +1108,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
                              varName="depMMC"); plot(gfH2.tc)
   
   saveRDS(list(res=sysResH2, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_converg_DVcut_H2_noGWESP.rds')
+          file = 'compamb_sysResAMC0_converg_DVcut_H2_noGWESP.rds')
   
   
   
@@ -1484,7 +1169,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   sysEff <- includeEffects(sysEff, outdeg,
                            name="depNetI", interaction1 = 'depMMC')
   #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-ctrl2_noGWESP', 
+  sysMod <- sienaAlgorithmCreate(projname='compamb-converg-VDcut-ctrl2_noGWESP', 
                                  firstg = 0.13,  ## default: 0.2
                                  n2start=230,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
@@ -1507,7 +1192,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
                                    varName="depMMC"); plot(gfAMC0ctrl2.tc)
   
   saveRDS(list(res=sysResAMC0ctrl2, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_converg_DVcut_ctrl2_noGWESP.rds')
+          file = 'compamb_sysResAMC0_converg_DVcut_ctrl2_noGWESP.rds')
   
   # meta0 <- siena08(sysResAMC0,
   #                  sysResAMC0ctrl, 
@@ -1558,7 +1243,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   sysEff <- includeEffects(sysEff, effFrom,
                            name="depNetR", interaction1 = 'covSlack')
   #
-  sysMod <- sienaAlgorithmCreate(projname='sys-mmc-acq-test-proj-converg-VDcut-ctrl_noGWESP',
+  sysMod <- sienaAlgorithmCreate(projname='compamb-converg-VDcut-ctrl_noGWESP',
                                  firstg = 0.13,  ## default: 0.2
                                  n2start=180,    ## default: 2.52*(p+7)
                                  nsub = 4,       ## default: 4
@@ -1581,7 +1266,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
                                    varName="depMMC"); plot(gfAMC0ctrl.tc)
 
   saveRDS(list(res=sysResAMC0ctrl, mod=sysMod, dat=sysDat, eff=sysEff),
-          file = 'acq_sys_mmc_sysResAMC0_converg_DVcut_ctrl_noGWESP.rds')
+          file = 'compamb_sysResAMC0_converg_DVcut_ctrl_noGWESP.rds')
 
 
 
@@ -1665,9 +1350,9 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   
   sysResList <- list(sysResAMC0ctrl, sysResAMC0ctrl2, 
                      sysResH1ab, sysResH2, sysResAMC0)
-  saveRDS(sysResList, file="sys_MMC_SAOM_res_list_microsoft_DVcut_1-Inf_2010-2016_noGWESP.rds")
+  saveRDS(sysResList, file="compamb_SAOM_res_list_microsoft_DVcut_1-Inf_2010-2016_noGWESP.rds")
   tab <- saomTable(sysResList, digits = 3, nameMap = sysNameMap,
-            file="sys_MMC_SAOM_res_table_microsoft_DVcut_1-Inf_2010-2016_noGWESP.csv")
+            file="compamb_SAOM_res_table_microsoft_DVcut_1-Inf_2010-2016_noGWESP.csv")
   
   ## multiparameter Wald tests
   mc0 <- c('depNetR isolate', 'depNetR degree', 'depNetR total alter',
@@ -1723,7 +1408,7 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   ##------------------------
   ## LOAD data from cold start
   ##------------------------
-  sysResList <- readRDS("sys_MMC_SAOM_res_list_microsoft_DVcut_1-Inf_2010-2016_noGWESP.rds")
+  sysResList <- readRDS("compamb_SAOM_res_list_microsoft_DVcut_1-Inf_2010-2016_noGWESP.rds")
   sysResAMC0ctrl <- sysResList[[1]]
   sysResAMC0ctrl2 <- sysResList[[2]]
   sysResH1ab <- sysResList[[3]]

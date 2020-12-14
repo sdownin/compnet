@@ -546,7 +546,7 @@ csa2$roa <- csa2$ebitda / csa2$act
 
 
 # firms.todo <- c('ibm','qualtrics','medallia','first-mile-geo','verint')
-firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
+firm_i <- 'microsoft' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
 # firms.todo <- c('microsoft')
 # for (firm_i in firms.todo)
 # {
@@ -830,10 +830,10 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   ##########################################################
   ## Save / Load Workspace Image for firm_i
   ##--------------------------------------------------------
-  workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
-                                    firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
-   # save.image(file = workspace_file)
-  load(file = workspace_file)
+  # workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
+  #                                   firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
+  #  # save.image(file = workspace_file)
+  # load(file = workspace_file)
   ##########################################################
   
   
@@ -973,7 +973,12 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   
   # firmsubidx <- 1:length(firmnamesub)  ## KEEP ALL
   ##
-  firmnamesub2 <- firmnamesub[firmsubidx]
+  ##**********************************************************************************
+  # firmnamesub2 <- firmnamesub[firmsubidx]  ###  SUBSET FIRMS BY RAVENPACK
+  #-----
+  firmnamesub2 <- firmnamesub                ###  NOT SUBSET FIRMS BY RAVENPACK
+  firmsubidx <- 1:length(firmnamesub)
+  ##**********************************************************************************
   nsub2 <- length(firmnamesub2)
   # nlyrs <- as.numeric(names(nl))
   # yrsubidx <- (length(nlyrs)-4):(length(nlyrs)-1)

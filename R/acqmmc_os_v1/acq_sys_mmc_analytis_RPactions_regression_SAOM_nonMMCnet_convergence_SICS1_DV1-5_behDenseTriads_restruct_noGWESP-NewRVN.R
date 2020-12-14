@@ -405,19 +405,27 @@ setMethod("extract", signature = className("maxLik", "maxLik"),
 # ## set firms to create networks (focal firm or replication study focal firms)
 
 ##===============================================
+## CHECK FIRMS IN MMC NETWORKS TO CHECK COMPUSTAT MANUALLY
+##-----------------------------------------------
+egolist <- readRDS('SMJ_compare_ego_firm_net_cohorts_list.rds')
+
+
+##===============================================
 ## Load Ravenpack Data
 ##-----------------------------------------------
-csvfile <- 'rp40_action_categories_2000_2018.csv'
+# csvfile <- 'rp40_action_categories_2000_2018.csv'
+csvfile <- 'ravenpack_resolved_actions_2008-2016.csv'
 ##convert
 rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
 
 
 
-rvc <- plyr::count(rvn$entity_name[which(rvn$action_category=='Acquisitions' & rvn$year>=2010)])
+rvc <- plyr::count(rvn$entity_name[which(rvn$category=='acquisition-acquirer' & rvn$year>=2010)])
 rvc <- rvc[order(rvc$freq, decreasing = T),]
 View(rvc)
 head(rvc,15)
-# x freq
+### Before resolving RavenPack actions (possibly multiple stores about 1 event)
+#                                              x  freq
 # 5957                              Moody's Corp.  278
 # 4475                                  IBM Corp.  265
 # 766                   Arthur J. Gallagher & Co.  251
@@ -434,6 +442,24 @@ head(rvc,15)
 # 7873                                  Shire PLC  157
 # 3840                       Glencore Xstrata PLC  151
 
+## After resolving RavenPack actions
+#                                         x  freq
+# 6369                 Pinetree Capital Ltd.  185
+# 5485                         Moody's Corp.  170
+# 710              Arthur J. Gallagher & Co.  124
+# 4137                             IBM Corp.   63
+# 5261                           Mednax Inc.   63
+# 8026                  Terreno Realty Corp.   57
+# 8986                               WPP PLC   56
+# 6041                          Oracle Corp.   53
+# 3500                  General Electric Co.   52
+# 3675                           Google Inc.   51
+# 93                           Accenture PLC   50
+# 1101               Berkshire Hathaway Inc.   46
+# 21                        3D Systems Corp.   45
+# 4678                        KKR & Co. L.P.   45
+# 5473 Monmouth Real Estate Investment Corp.   42
+
 ##===============================================
 ##  Financial controls
 ##-----------------------------------------------
@@ -442,21 +468,6 @@ head(rvc,15)
 # Performance -- lagged ROA
 # Org. learning -- Acquisition experience 
 # Market overlap -- lagged proportion of sales in overlapped segments (Compustat segments)
-
-## compustat - CrunchBase names for patching missing gvkey 
-## patch names with missing gvkey from crunchbase cb$co
-nkpatch <- data.frame(
-  company_name_unique=c('blackberry', 'broadsoft','cnova', 'compuware',
-                        'csc', 'digital-river','fujitsu','geeknet',
-                        'lg-display-co', 'looksmart', 'naspers', 'opera-software',
-                        'siemens','sony','sybase','syniverse-technologies',
-                        'telstra','velti','violin-memory','xerox'),
-  conm=c('BLACKBERRY LTD','BROADSOFT INC',  'CNOVA NV', 'COMPUWARE CORP',
-         'CSC HOLDINGS LLC', 'DIGITAL RIVER INC','FUJITSU LTD', 'GEEKNET INC',
-         'LG DISPLAY CO LTD', 'LOOKSMART GROUP INC', 'NASPERS LTD', 'OPERA LTD -ADR',
-         'SIEMENS AG', 'SONY CORP', 'SYBASE INC','SYNIVERSE HOLDINGS',
-         'TELSTRA CORP LTD', 'VELTI PLC', 'VIOLIN MEMORY INC','XEROX CORP'
-  ), stringsAsFactors=F)
 
 ## Compustat SEGMENTS
 css<- read.csv(file.path(cs_dir,'segments.csv'), nrows=Inf, stringsAsFactors = F)
@@ -542,11 +553,34 @@ csa2$roa <- csa2$ebitda / csa2$act
 # # 1347             tripadvisor   15
 
 
+##==========================================================
+## compustat - CrunchBase names for patching missing gvkey 
+##----------------------------------------------------------
+## patch names with missing gvkey from crunchbase cb$co
+nkpatch <- data.frame(
+  company_name_unique=c('blackberry', 'broadsoft','cnova', 'compuware',
+                        'csc', 'digital-river','fujitsu','geeknet',
+                        'lg-display-co', 'looksmart', 'naspers', 'opera-software',
+                        'siemens','sony','sybase','syniverse-technologies',
+                        'telstra','velti','violin-memory','xerox'),
+  conm=c('BLACKBERRY LTD','BROADSOFT INC',  'CNOVA NV', 'COMPUWARE CORP',
+         'CSC HOLDINGS LLC', 'DIGITAL RIVER INC','FUJITSU LTD', 'GEEKNET INC',
+         'LG DISPLAY CO LTD', 'LOOKSMART GROUP INC', 'NASPERS LTD', 'OPERA LTD -ADR',
+         'SIEMENS AG', 'SONY CORP', 'SYBASE INC','SYNIVERSE HOLDINGS',
+         'TELSTRA CORP LTD', 'VELTI PLC', 'VIOLIN MEMORY INC','XEROX CORP'
+  ), stringsAsFactors=F)
+
+nkpfull <- merge(data.frame(company_name_unique=egolist$microsoft$inMMC),nkpatch, by='company_name_unique', all.x=T, all.y=T)
+write.csv(nkpfull, file = 'name_key_path_full_crunchbase-compustat.csv', row.names = F, na = '')
+
+### check for CB firm in Compustat
+csa2[grep('a10',csa2$conm,ignore.case=T, perl=T),]
+
 
 
 
 # firms.todo <- c('ibm','qualtrics','medallia','first-mile-geo','verint')
-firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
+firm_i <- 'microsoft' #'ibm' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' 'ibm'
 # firms.todo <- c('microsoft')
 # for (firm_i in firms.todo)
 # {

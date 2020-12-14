@@ -830,10 +830,10 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   ##########################################################
   ## Save / Load Workspace Image for firm_i
   ##--------------------------------------------------------
-  workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
-                                    firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
-   # save.image(file = workspace_file)
-  load(file = workspace_file)
+  # workspace_file <- sprintf(sprintf('sys_mmc_workspace_pre-saom_%s_%s-%s.RData',
+  #                                   firm_i_ego,netwavepds[1],netwavepds[length(netwavepds)]))
+  #  # save.image(file = workspace_file)
+  # load(file = workspace_file)
   ##########################################################
   
   
@@ -1074,28 +1074,28 @@ firm_i <- 'ibm' #'facebook' #'ibm'  # 'microsoft'  'amazon' 'apple' 'facebook' '
   depComp <- sienaDependent(comparr2, type="oneMode", nodeSet=c('FIRMS'), 
                            sparse = FALSE, allowOnly = FALSE)
   # TREATMENT
-  depNetR <- sienaDependent(arrNetRw2, type="behavior", nodeSet=c('FIRMS'), 
+  depNetR <- sienaDependent(arrNetR2, type="behavior", nodeSet=c('FIRMS'),   ##** arrNetRw2 ******
                               sparse = FALSE, allowOnly = FALSE)
-  depNetI <- sienaDependent(arrNetIw2, type="behavior", nodeSet=c('FIRMS'), 
+  depNetI <- sienaDependent(arrNetI2, type="behavior", nodeSet=c('FIRMS'),  ##** arrNetIw2 ******
                               sparse = FALSE, allowOnly = FALSE)
-  depAcq <- sienaDependent(arrAcqw2, type="behavior", nodeSet=c('FIRMS'), 
-                             sparse = FALSE, allowOnly = FALSE)  
-  depProd <- sienaDependent(arrProdw2, type="behavior", nodeSet=c('FIRMS'), 
-                           sparse = FALSE, allowOnly = FALSE)  
-  depStr <- sienaDependent(arrStrw2, type="behavior", nodeSet=c('FIRMS'), 
-                            sparse = FALSE, allowOnly = FALSE)  
-  depTac <- sienaDependent(arrTacw2, type="behavior", nodeSet=c('FIRMS'), 
-                           sparse = FALSE, allowOnly = FALSE)  
+  # depAcq <- sienaDependent(arrAcq2, type="behavior", nodeSet=c('FIRMS'), ##** 
+  #                            sparse = FALSE, allowOnly = FALSE)  
+  # depProd <- sienaDependent(arrProd2, type="behavior", nodeSet=c('FIRMS'), 
+  #                          sparse = FALSE, allowOnly = FALSE)  
+  # depStr <- sienaDependent(arrStr2, type="behavior", nodeSet=c('FIRMS'), 
+  #                           sparse = FALSE, allowOnly = FALSE)  
+  # depTac <- sienaDependent(arrTac2, type="behavior", nodeSet=c('FIRMS'), 
+  #                          sparse = FALSE, allowOnly = FALSE)  
   
   # #PREDICTOR
   covSmmc <- varCovar(arrSmmc2, nodeSet="FIRMS")
   covSmmcSq <- varCovar(arrSmmcSq2, nodeSet="FIRMS")
   covWdegAcq <- varCovar(arrWdegAcq2, nodeSet="FIRMS")
   covWdegAll <- varCovar(arrWdegAll2, nodeSet="FIRMS")
-  # DV scaled
-  covNetRw <- varCovar(arrNetRw2, nodeSet="FIRMS")
-  covNetIw <- varCovar(arrNetIw2, nodeSet="FIRMS")
-  covMktGro <- varCovar(arrMktGro2, nodeSet="FIRMS")
+  # # DV scaled
+  # covNetR <- varCovar(arrNetR2, nodeSet="FIRMS")   ###***
+  # covNetI <- varCovar(arrNetI2, nodeSet="FIRMS")   ###***
+  # covMktGro <- varCovar(arrMktGro2, nodeSet="FIRMS")   ###***
   # #CONTROLS
   covEmploy <- varCovar(arrEmploy2, nodeSet="FIRMS")
   covSales <- varCovar(arrSales2, nodeSet="FIRMS")

@@ -43,7 +43,8 @@ cb     <- source(file.path(version_dir,'acq_cb_data_prep.R'))$value           ##
 ##   ACTION CATEGORIES
 ##----------------------------
 # dtafile <- 'rp40_action_categories_2000_2018.dta'
-csvfile <- 'rp40_action_categories_2000_2018.csv'
+# csvfile <- 'rp40_action_categories_2000_2018.csv'
+csvfile <- 'ravenpack_resolved_actions_2008-2016.csv'     ## %%CHANGED%%
 ##convert
 rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
 
@@ -56,7 +57,7 @@ rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
 ##===============================
 ## set analysis params
 ##-------------------------------
-firms.todo <- c('facebook')
+firms.todo <- c('cisco')
 firm_i <- firms.todo[1]
 firm_i_ego <- firm_i
 d <- 3
@@ -342,7 +343,7 @@ write.csv(cbrpmap, file=file.path(result_dir,cbrpmapfile))
 
 
 # firms.todo <- c('ibm','google')
-firms.todo <- c('apple','amazon','facebook','google')
+firms.todo <- c('cisco','google') ## c('apple','amazon','facebook','google')
 for (firm_i_ego in firms.todo)
 {
   

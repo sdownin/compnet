@@ -26,6 +26,9 @@ rvn_dir <- 'C:/Data/RavenPack'
 setwd(work_dir)
 
 
+## LOAD HELPER FUNCTIONS
+source(file.path(version_dir,'compamb_mmc_helper_functions.R'))
+
 ## LOAD DATA AND DEPENDENCIES
 acf    <- source(file.path(version_dir,'acq_compnet_functions.R'))$value    ## acf: awareness functions
 cb     <- source(file.path(version_dir,'acq_cb_data_prep.R'))$value           ## cb : CrunchBase
@@ -43,9 +46,13 @@ cb     <- source(file.path(version_dir,'acq_cb_data_prep.R'))$value           ##
 ##----------------------------
 # dtafile <- 'rp40_action_categories_2000_2018.dta'
 # csvfile <- 'rp40_action_categories_2000_2018.csv'
-csvfile <- 'ravenpack_resolved_actions_2008-2016.csv'
+csvfile <- 'ravenpack_resolved_actions_2006-2016.csv'
 ##convert
 rvn <- read.csv(file.path(rvn_dir, csvfile), stringsAsFactors = F)
+
+# ### Check for combined entities
+# View(rvn[grep('ibm',rvn$entity_name,ignore.case = T,perl = T), 1:20])
+
 
 # ## all data 7GB
 # dtafile <- 'rp40_2000_2016.dta'
@@ -69,10 +76,11 @@ cnt <- cnt[order(cnt$cnt, decreasing = T),]
 cnt$pct <- round(100 * cnt$cnt / sum(cnt$cnt), 3)
 head(cnt, 20)
 
+
 ##===============================
 ## set analysis params
 ##-------------------------------
-firms.todo <- c('ibm')
+firms.todo <- c('microsoft','ibm','google','apple','amazon','facebook', 'cisco')  ## cisco
 firm_i <- firms.todo[1]
 firm_i_ego <- firm_i
 d <- 3
@@ -88,14 +96,18 @@ endYr <- 2017            ## dropping first for memory term; actual dates 2007-20
 ##----------------------------
 ## 1. load networks list file
 data_file <- file.path(nets_dir,sprintf('%s_d%s.rds',firm_i,d))
-nets <- readRDS(data_file)
-## 2. Combine nets files for larger networks
-nets <- list()
-for (t in startYr:endYr) {
-  data_file <- file.path(nets_repl_dir,sprintf('%s_d%s_y%s.rds',firm_i,d,t-1))
-  nets[[length(nets)+1]] <- readRDS(data_file)
+if(file.exists(data_file)) {
+  nets <- readRDS(data_file)
+} else {
+  ## 2. Combine nets files for larger networks
+  nets <- list()
+  for (t in startYr:endYr) {
+    data_file <- file.path(nets_repl_dir,sprintf('%s_d%s_y%s.rds',firm_i,d,t-1))
+    nets[[length(nets)+1]] <- readRDS(data_file)
+  }
+  names(nets) <- as.integer(startYr:endYr) 
 }
-names(nets) <- as.integer(startYr:endYr) 
+
 
 #filter list periods
 if (nPeriods < length(nets))   
@@ -106,74 +118,6 @@ periods <- as.integer(names(nets)) -1
 
 
 
-
-##================================
-##
-##    FUNCTIONS
-##
-##-------------------------------
-
-###
-## Complexity measure of actions 
-##  @see Yu, Subramaniam, & Cannella, 2009
-###
-complexity <- function(x, scale=FALSE) {
-  sumx <- sum(x)
-  sq.prop <- sapply(x, function(k) (k/sumx)^2 )
-  sum.sq.prop <- sum(sq.prop)
-  y <- ifelse(sum.sq.prop==0, 0, 1/sum.sq.prop)
-  if (scale)
-    return(y / length(x))
-  return(y)
-}
-
-##
-# Gets the count of actions of given type for given firms in RavenPack data
-# @param [dataframe] rvnsub   RavenPack subset by period (year)
-# @param [string[n]] names    CrunchBase company_name_unique vector for network vertices
-# @param [dataframe] cbrpmap  CB-to-RP name (entity ID) mapping
-# @param [string] var_rp      Name of action type in RavenPack dataframe 
-# @return [integer[n]]        The action counts vector
-##
-getRpActionCount <- function(rvnsub, names, cbrpmap, var_rp)
-{
-  n <- length(names)
-  x <- rep(0,n)
-  
-  if (length(rvnsub)==0 | nrow(rvnsub)==0)
-    return(x)
-  
-  ## network vertex indices of firms in RavenPack data
-  vids <- which(names %in% cbrpmap$company_name_unique)
-  for (i in 1:length(vids)) 
-  {
-    actids <- which(
-      rvnsub$rp_entity_id==cbrpmap$rp_entity_id[i] & 
-      rvnsub$action_category==var_rp
-    )
-    v <- vids[i]  ## the v'th firm in network is the i'th RP entity
-    x[v] <- length(actids) ## count of actions is the length of the action ids vector
-  }
-  
-  return(x)
-}
-
-##
-# Gets each vertex's sum of neighbors' values of given attribute (attr)
-# @param [igraph] gt    Igraph object (for period t)
-# @param [integer] vid  Vertex index of focal firm to fetch neighbors' attributes
-# @param [string] attr  Name of vertex attribute
-# @return [integer[m]]  Vector of neighbors attribute values (for m neighbors)
-##
-getNeighborsAttrSum <- function(gt, attr) {
-  adjmat <- igraph::get.adjacency(gt)
-  attr <- igraph::get.vertex.attribute(gt, attr)
-  return(as.numeric(adjmat %*% attr))
-}
-# getNeighborsAttr <- function(gt, vid, attr) {
-#   nvids <- as.integer(igraph::neighbors(gt, vid))
-#   return(igraph::get.vertex.attribute(gt, attr, nvids))
-# }
 
 
 ##==========================================
@@ -195,400 +139,842 @@ firms.all.df$company_name[idxm] <- firms.all.df$company_name_unique[idxm]
 fdf <- igraph::as_data_frame(g0, what='vertices')
 View(head(fdf, 30))
 
-## firms that have sales > 0 in ANY period
-sidx <- sapply(nets, function(net) which(net %v% 'sales_na_0' > 0))
-sidx <- sort(unique(unlist(sapply(nets, function(net) which(net %v% 'sales_na_0' > 0)))))
-firms <- firms.all.df[sidx, ]
-View(firms)
+##--------------------------------------------
+# ## FILTER firms that are public (IPO==1) or have sales > 0 in ANY period
+##--------------------------------------------
+# sidx <- sapply(nets, function(net) which(net %v% 'sales_na_0' > 0))
+sidx <- sort(unique(unlist(sapply(nets, function(net) which(net %v% 'sales_na_0' > 0 | net %v% 'ipo_status' == 1)))))
+firms <- firms.all.df[sidx, ]  ## ego=Microsoft(d3) --> 999 firms
+# firms <- firms.all.df   ##  %%CHANGE%%
+# View(firms)
 
 
 
 
 
 
-
-
-
-##--------------------------------------------------------
+##=====================================================================
 ##
-## AFTER Creating CB-RP Matches List  (manually checking)
+## MAIN LOOP TO CREATE REGRESSION DATAFRAME OF RP ACTIONS
+##  and lists of Competition Network & MMC Network
 ##
-##--------------------------------------------------------
-firm_i <-'ibm'
-name_i <- firm_i
-firm_i_ego <- firm_i
-#
-cbrpmapfile <- sprintf('cb_ravenpack_name_map_ego-%s_d%s.csv',firm_i_ego,d)
-## LOAD CB-Ravenpack approximate matches
-cbrpmatch <- read.csv(file=file.path(data_dir,cbrpmapfile), 
-                    stringsAsFactors = F, na.strings = c("'","-","'-"))
-cbrpmatch$name <- cbrpmatch$company_name_unique
-## Filter subset of firms with match
-cbrpmapsub <- cbrpmatch[!is.na(cbrpmatch$OK),]
-## Create CB-RP Map
-cbrpmap <- data.frame(stringsAsFactors = F)
-for (i in 1:nrow(cbrpmapsub)) 
+##----------------------------------------------------------------------
+firms.todo <- c('apple','amazon','facebook','google') # c('microsoft','ibm') #,'google','apple','amazon','facebook')
+# firms.todo <- c('cisco','google') ## c('apple','amazon','facebook','google')
+for (firm_i_ego in firms.todo)
 {
-  if(cbrpmapsub$OK[i] == 1) {
-    rp_entity_id <- cbrpmapsub$rp_entity_id_1[i]
-    rp_entity_name <- cbrpmapsub$entity_name_1[i]
-  } else if (cbrpmapsub$OK[i] == 2) {
-    rp_entity_id <- cbrpmapsub$rp_entity_id_2[i]
-    rp_entity_name <- cbrpmapsub$entity_name_2[i]
-  } else if (cbrpmapsub$OK[i] == 3) {
-    rp_entity_id <- cbrpmapsub$rp_entity_id_3[i]
-    rp_entity_name <- cbrpmapsub$entity_name_3[i]
-  } else {
-    next
-  }
-  cat(sprintf('i=%s, OK=%s, rp_ent_id=%s\n',
-              i, cbrpmapsub$OK[i], rp_entity_id))
-  cbrpmap <- rbind(cbrpmap, data.frame(
-    company_name_unique=cbrpmapsub$name[i],
-    rp_entity_id=rp_entity_id, 
-    rp_entity_name=rp_entity_name,
-    stringsAsFactors = F
-    )
-  )
-}
-
-head(cbrpmap)
-
-
-
-##----------------------------------------
-##  Compute Ravenpack ACTIONS per Firm-Year
-##----------------------------------------
-##  tmp mapping df
-.rptmp <- data.frame(
-  rp = c('Acquisitions', 'Capacity_related_actions',
-         'Legal_actions', 'Market_expansion', 'Marketing_actions',
-         'New_Product_Action', 'pricing_actions',
-         'strategic_alliance'),
-  dfreg= c('rp_Acquisitions','rp_Capacity','rp_Legal',
-           'rp_Market_expansions','rp_Marketing',
-           'rp_New_product','rp_Pricing',
-           'rp_Strategic_alliances'),
-  val = rep(0,8),
-  stringsAsFactors = F
-)
-
-
-
-
-##--------------------------------------------------------
-##--------------------------------------------------------
-##------------Network Time Period List--------------------
-##--------------------------------------------------------
-##--------------------------------------------------------
-# load('acq_sys_mmc_analysis_test_1.Rdata')
-nl <- list()
-dfl <- data.frame()
-
-## look through period 1:(T-1)
-##   use node-collapsed network structure from
-##   year 1 (lagged year) to predict year 2 acquisitions (1st non-lag year)
-##   year T-1 to predict year T aquisitions (last year in sample)
-for (t in 1:(length(nets)-1)) 
-{
-  cat(sprintf('t=%s\n',t))
-  ## year 1 end of year collapsed network to predict year 2 aquisitions
-  ## drop year 1 lag (so year 2 is year 1)
-  net <- nets[[t]]
   
-  ##=================================================================
-  ## MMC & Acquisitions
-  ## -- CRUNCHBASE ACQUISITIONS DATA
-  ##-----------------------------------------------------------------
-  gt <- asIgraph(net)
-  V(gt)$com_multilevel <- igraph::multilevel.community(gt)$membership
   
-  ## Create [Firm x Market] incidence matrix
-  ## markets of each firm (which markets they are in based on NC membership of their rivals)
-  cat('  computing firm-market matrix\n')
-  membership <- V(gt)$com_multilevel
-  markets <- unique(membership)
-  markets <- markets[order(markets)]
-  adj <- igraph::as_adjacency_matrix(gt, sparse = F)
-  df.ms <- ldply(1:nrow(adj), function(i){
-    i.nbr <- unname(which( adj[i, ] == 1 ))  ## rivals (neighbors in the network) ## i.nbr <- as.integer(igraph::neighbors(g, V(g)[i]))  
-    i.ms <- unique(membership[i.nbr])  ## markets of firm i (the markets of the rivals of firm i)
-    i.ms.row <- rep(0, length(markets)) ## dummy row for [Firm x Market] matrix
-    i.ms.row[ i.ms ] <- 1 ## assign [Firm x Market] matrix row value to 1
-    names(i.ms.row) <- sapply(1:length(markets),function(x)paste0('m',x))
-    return(i.ms.row)
-  })
-  ## convert df to matrix
-  m.ms <- as.matrix(df.ms)
-  ## bipartite firm-market
-  gb <- igraph::graph_from_incidence_matrix(m.ms, directed = F)
-  ## MMC weighted unipartite projections
-  gmmc <- igraph::bipartite.projection(gb, multiplicity = T)$proj1
-  E(gmmc)$invweight <- 1/E(gmmc)$weight
-  ##--------------------
-  ##  SET COVARIATES
-  ##--------------------
-  cat(sprintf('  computing controls\n'))
-  V(gmmc)$vertex.names <- V(gt)$vertex.names
-  V(gmmc)$ipo_status <- V(gt)$ipo_status
-  V(gmmc)$employee_na_age <- V(gt)$employee_na_age
-  V(gmmc)$sales_na_0_mn <- V(gt)$sales_na_0_mn
-  V(gmmc)$cent_deg_all <- igraph::degree(gt)
-  ## CRUNCHBASE ACQUISTIONS
-  a10<- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-10) & cb$co_acq$acquired_year < periods[t]), ]
-  a5 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-5) & cb$co_acq$acquired_year < periods[t]), ]
-  a2 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-2) & cb$co_acq$acquired_year < periods[t]), ]
-  a1 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-1) & cb$co_acq$acquired_year < periods[t]), ]
+  ##--------------------------------------------------------
+  ##
+  ## AFTER Creating CB-RP Matches List
+  ##
+  ##--------------------------------------------------------
+  firm_i <- firm_i_ego
+  name_i <- firm_i
   #
-  V(gmmc)$acq_cnt_10 <- 0
-  V(gmmc)$acq_cnt_5 <- 0
-  V(gmmc)$acq_cnt_1 <- 0
-  V(gmmc)$acq_sum_1 <- 0
-  V(gmmc)$acq_mean_1 <- 0
-  V(gmmc)$acq_median_1 <- 0
-  V(gmmc)$acq_sum_2 <- 0
-  V(gmmc)$acq_mean_2 <- 0
-  V(gmmc)$acq_median_2 <- 0
-  
-  for (v in 1:vcount(gmmc)) {
-    firm_v <- V(gmmc)$vertex.names[v]
-    ## ACQUISITION EXPERIENCE (count of acquisitions in last 5 years)
-    V(gmmc)$acq_cnt_10[v] <- length(which(a10$acquirer_name_unique==firm_v))
-    V(gmmc)$acq_cnt_5[v] <- length(which(a5$acquirer_name_unique==firm_v))
-    V(gmmc)$acq_cnt_1[v] <- length(which(a1$acquirer_name_unique==firm_v))
-    ## LACK OF SLACK RESOURCES (Value of Acquisitions in previous year)
-    vals1 <- a1$price_usd[which(a1$acquirer_name_unique==firm_v)]
-    vals2 <- a2$price_usd[which(a2$acquirer_name_unique==firm_v)]
-    V(gmmc)$acq_sum_1[v] <- sum(vals1, na.rm = T)
-    V(gmmc)$acq_mean_1[v] <-  mean(vals1, na.rm = T)
-    V(gmmc)$acq_median_1[v] <-  median(vals1, na.rm = T)
-    V(gmmc)$acq_sum_2[v] <-  sum(vals2, na.rm = T)
-    V(gmmc)$acq_mean_2[v] <-  mean(vals2, na.rm = T)
-    V(gmmc)$acq_median_2[v] <-  median(vals2, na.rm = T)
-  }
-  # ##-----------------
-  # ## COMPUTE Competitive Pressure
-  # ##-----------------
-  # pres1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp= 0.1), error = function(e)e)
-  # pres2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp= 0.2), error = function(e)e)
-  # pres3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp= 0.3), error = function(e)e)
-  # pres4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp= 0.4), error = function(e)e)
-  # pres1n <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp=-0.1), error = function(e)e)
-  # pres2n <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp=-0.2), error = function(e)e)
-  # pres3n <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp=-0.3), error = function(e)e)
-  # pres4n <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp=-0.4), error = function(e)e)
-  # preseig <- igraph::eigen_centrality(gmmc)$vector
-  # presconstr <- igraph::constraint(gmmc)
-  # presclose <- igraph::closeness(gmmc, normalized = T)
-  # presbetw  <- igraph::betweenness(gmmc, normalized = T)
-  # # presalphaw  <- igraph::alpha.centrality(gmmc, weights = 'weight', sparse = T)
-  # # presalphainvw  <- igraph::alpha.centrality(gmmc, weights = 'invweight', sparse = T)
-  # presauthw <- igraph::authority.score(gmmc)$vector
-  # presdivers <- igraph::diversity(gmmc)
-  ##-----------------
-  ## COMPUTE SYSTEM MMC VECTORS
-  ##-----------------
-  cat('  computing system MMC measure\n')
-  ## remove edges weight < 2
-  gmmc.e <- igraph::delete.edges(gmmc, which(E(gmmc)$weight < 2))
-  ## create subgraph removing isolates
-  gmmcsub <- igraph::induced.subgraph(gmmc.e, which(igraph::degree(gmmc.e) > 0))
-  E(gmmcsub)$invweight <- 1/E(gmmcsub)$weight
-  mmcnames <- V(gmmcsub)$vertex.names
-  ## Centrality -- SYSTEMS MMC for only firms with MMC eges
-  pc0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp= 0.1), error = function(e)e)
-  pc0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp= 0.2), error = function(e)e)
-  pc0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp= 0.3), error = function(e)e)
-  pc0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp= 0.4), error = function(e)e)
-  #
-  pcn0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp=-0.1), error = function(e)e)
-  pcn0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp=-0.2), error = function(e)e)
-  pcn0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp=-0.3), error = function(e)e)
-  pcn0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp=-0.4), error = function(e)e)
-  ## init vector of system MMC for ALL singlemarket and multimarket firms
-  smmc1n <- rep(0, vcount(gmmc))
-  smmc2n <- rep(0, vcount(gmmc))
-  smmc3n <- rep(0, vcount(gmmc))
-  smmc4n <- rep(0, vcount(gmmc))
-  smmc1 <- rep(0, vcount(gmmc))
-  smmc2 <- rep(0, vcount(gmmc))
-  smmc3 <- rep(0, vcount(gmmc))
-  smmc4 <- rep(0, vcount(gmmc))
-  smmceig <- rep(0, vcount(gmmc))
-  smmcconstr <- rep(0, vcount(gmmc))
-  smmcclose <- rep(0, vcount(gmmc))
-  smmcbetw <- rep(0, vcount(gmmc))
-  # smmcalphaw<- rep(0, vcount(gmmc))
-  # smmcalphainvw<- rep(0, vcount(gmmc))
-  smmcauthw <- rep(0, vcount(gmmc))
-  smmcdivers <- rep(0, vcount(gmmc))
-  ## indices of mmc firm subset within full graph
-  idx.sub.in.mmc <- unname(sapply(mmcnames, function(x) which(V(gmmc)$vertex.names == x)))
-  ## assign subset MMC firms' system MMC into vector for all firms
-  smmc1n[idx.sub.in.mmc] <- pcn0.1
-  smmc2n[idx.sub.in.mmc] <- pcn0.2
-  smmc3n[idx.sub.in.mmc] <- pcn0.3
-  smmc4n[idx.sub.in.mmc] <- pcn0.4
-  #
-  smmc1[idx.sub.in.mmc] <- pc0.1
-  smmc2[idx.sub.in.mmc] <- pc0.2
-  smmc3[idx.sub.in.mmc] <- pc0.3
-  smmc4[idx.sub.in.mmc] <- pc0.4
-  #
-  smmceig[idx.sub.in.mmc] <- igraph::eigen_centrality(gmmcsub)$vector
-  smmcconstr[idx.sub.in.mmc] <- igraph::constraint(gmmcsub)
-  #
-  smmcclose[idx.sub.in.mmc] <- igraph::closeness(gmmcsub, normalized = T)
-  smmcbetw[idx.sub.in.mmc]  <- igraph::betweenness(gmmcsub, normalized = T)
-  # smmcalphaw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'weight', sparse = T)
-  # smmcalphainvw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'invweight', sparse = T)
-  #
-  smmcauthw[idx.sub.in.mmc] <- igraph::authority.score(gmmcsub)$vector
-  smmcdivers[idx.sub.in.mmc] <- igraph::diversity(gmmcsub)
-  ##-----------------
-  ## Number of competitors
-  ##-----------------
-  cent_deg_mmc        <- rep(0, vcount(gmmc))
-  cent_deg_mmc_weight <- rep(0, vcount(gmmc))
-  # 
-  cent_deg_mmc[idx.sub.in.mmc]        <- igraph::degree(gmmcsub)        ## number of MMC rivals
-  cent_deg_all <- V(gmmc)$cent_deg_all
-  cent_deg_single <- cent_deg_all - cent_deg_mmc
-  #
-  cent_deg_mmc_weight[idx.sub.in.mmc] <- sapply(1:vcount(gmmcsub), function(v){
-    eids <- unname(unlist(igraph::incident_edges(gmmcsub, v)))
-    return(sum(E(gmmcsub)$weight[eids]))
-  })
-  
-  ##-----------------
-  ## init period dataframe
-  ##------------------
-  tdf <- data.frame(name=V(gmmc)$vertex.names, 
-                    i=as.integer(V(gmmc)), 
-                    year=periods[t], 
-                    type=as.integer(V(gmmc)) %in% idx.sub.in.mmc,
-                    ipo = V(gmmc)$ipo_status,
-                    employee_na_age=V(gmmc)$employee_na_age,
-                    sales_na_0_mn=V(gmmc)$sales_na_0_mn,
-                    cent_deg_mmc=cent_deg_mmc,
-                    cent_deg_mmc_weight=cent_deg_mmc_weight,
-                    cent_deg_single=cent_deg_single,
-                    cent_deg_all= cent_deg_all,
-                    cent_deg_mmc_diff= cent_deg_mmc - cent_deg_single,
-                    cent_deg_mmc_weight_diff= cent_deg_mmc_weight - cent_deg_single,
-                    acq_cnt_10=V(gmmc)$acq_cnt_10,
-                    acq_cnt_5=V(gmmc)$acq_cnt_5,
-                    acq_cnt_1=V(gmmc)$acq_cnt_1,
-                    acq_sum_1=V(gmmc)$acq_sum_1,
-                    acq_mean_1=V(gmmc)$acq_mean_1,
-                    acq_median_1=V(gmmc)$acq_median_1,
-                    acq_sum_2=V(gmmc)$acq_sum_2,
-                    acq_mean_2=V(gmmc)$acq_mean_2,
-                    acq_median_2=V(gmmc)$acq_median_2,
-                    # pres1=pres1, pres2=pres2, pres3=pres3, pres4=pres4,
-                    smmc1=smmc1, smmc2=smmc2, smmc3=smmc3, smmc4=smmc4,
-                    # pres1n=pres1n, pres2n=pres2n, pres3n=pres3n, pres4n=pres4n,
-                    smmc1n=smmc1n, smmc2n=smmc2n, smmc3n=smmc3n, smmc4n=smmc4n,
-                    # preseig=preseig,  presconstr=presconstr,
-                    smmceig=smmceig, smmcconstr=smmcconstr,
-                    smmcclose=smmcclose, smmcbetw=smmcbetw,
-                    # smmcalphaw=smmcalphaw, smmcalphainvw=smmcalphainvw,
-                    smmcdivers=smmcdivers,
-                    # presclose=presclose, presbetw=presbetw,
-                    # presalphaw=presalphaw, presalphainvw=presalphainvw,
-                    # presdivers=presdivers,
-                    y.new=NA, y.cur=NA)
-  
-  ##-----------------
-  ## CRUNCHBASE -  DV Acquisitions
-  ##-----------------
-  cat('  computing DV acquisition counts\n')
-  al <- lapply(V(gmmc)$vertex.names, function(.)list(cur=0, new=0))
-  names(al) <- V(gmmc)$vertex.names
-  ## subset CB acquisitions
-  t1 <- sprintf('%d-01-01',periods[t]) ## inclusive start date 'YYYY-MM-DD'
-  t2 <- sprintf('%d-12-31',periods[t]) ## inclusive end date 'YYYY-MM-DD'
-  ## period years indicate [start, end) -- start inclusive; end exclusive ; acquisitions witin period
-  acqs.pd <- cb$co_acq[cb$co_acq$acquired_on >= t1 & cb$co_acq$acquired_on <= t2, ]
-  ## acquisitions in period
-  for (i in 1:nrow(acqs.pd)) {
-    name.t <- acqs.pd$acquiree_name_unique[i]
-    name.a <- acqs.pd$acquirer_name_unique[i]
-    ## vertex index
-    idx.t <- which(V(gmmc)$vertex.names == name.t)
-    idx.a <- which(V(gmmc)$vertex.names == name.a)
-    if (length(idx.a)==0) {
-      if (i %% 100 == 0) cat(sprintf(' skipping [i=%04s] %s-->%s\n',i,name.a,name.t))
-      next  ## skip if acquirer isn't in network
-    }
-    ## indices of firms in markets of acquiring firm
-    js <- unname(which(m.ms[idx.a,] > 0))
-    ## indices of competitors of acquiring firm
-    idx.comp <- which(apply(m.ms, 1, function(x) sum(x[js]) > 0))
-    ## increment 
-    target.in.net <- length(idx.t)>0  ## target exists in network
-    is.cur.market.acq <- ifelse(target.in.net, idx.t %in% idx.comp, FALSE)  ## target in competitors
-    if (is.cur.market.acq) {
-      al[[name.a]]$cur <- al[[name.a]]$cur + 1
+  cbrpmapfile <- sprintf('cb_ravenpack_name_map_ego-%s_d%s.csv',firm_i_ego,d)
+  ## LOAD CB-Ravenpack approximate matches
+  cbrpmatch <- read.csv(file=file.path(data_dir,cbrpmapfile), 
+                        stringsAsFactors = F, na.strings = c("'","-","'-"))
+  cbrpmatch$name <- cbrpmatch$company_name_unique
+  ## Filter subset of firms with match
+  cbrpmapsub <- cbrpmatch[!is.na(cbrpmatch$OK),]
+  ## Create CB-RP Map
+  cbrpmap <- data.frame(stringsAsFactors = F)
+  for (i in 1:nrow(cbrpmapsub)) 
+  {
+    if(cbrpmapsub$OK[i] == 1) {
+      rp_entity_id <- cbrpmapsub$rp_entity_id_1[i]
+      rp_entity_name <- cbrpmapsub$entity_name_1[i]
+    } else if (cbrpmapsub$OK[i] == 2) {
+      rp_entity_id <- cbrpmapsub$rp_entity_id_2[i]
+      rp_entity_name <- cbrpmapsub$entity_name_2[i]
+    } else if (cbrpmapsub$OK[i] == 3) {
+      rp_entity_id <- cbrpmapsub$rp_entity_id_3[i]
+      rp_entity_name <- cbrpmapsub$entity_name_3[i]
     } else {
-      al[[name.a]]$new <- al[[name.a]]$new + 1
+      next
     }
+    cat(sprintf('i=%s, OK=%s, rp_ent_id=%s\n',
+                i, cbrpmapsub$OK[i], rp_entity_id))
+    cbrpmap <- rbind(cbrpmap, data.frame(
+      company_name_unique=cbrpmapsub$name[i],
+      rp_entity_id=rp_entity_id, 
+      rp_entity_name=rp_entity_name,
+      stringsAsFactors = F
+    )
+    )
   }
-  ## ASSIGN DVs
-  tdf$y.new <- sapply(al, function(x)x$new)
-  tdf$y.cur <- sapply(al, function(x)x$cur)
+  
+  head(cbrpmap)
+  ##----------end Ravenpack name map----------
   
 
-  ##-----------------
-  ## RavenPack Actions  (alternative Acquisitions DV; 2nd )
-  ##-----------------
-  cat('  computing RavenPack action counts\n')
-  rvnsub <- rvn[rvn$year==periods[t], ] ## ravepack data subset
-  n <- vcount(gmmc)
   
-  ## loop each action type to set
-  V(gmmc)$rp_all <- 0
-  for (j in 1:nrow(.rptmp)) {
-    val <- getRpActionCount(rvnsub, V(gmmc)$vertex.names, cbrpmap, .rptmp$rp[j])
-    ## increment action count to total intensity "rp_all"
-    V(gmmc)$rp_all <- V(gmmc)$rp_all + val
-    ## set action count to new attributes
-    gmmc <- igraph::set.vertex.attribute(gmmc, name=.rptmp$dfreg[j], value=val)
-    ##---------------------------------------------------------------
-    ## PRESSURE 1: vertex-weighted degree (count of rivals actions)
-    ##---------------------------------------------------------------
-    wdeg_val <- getNeighborsAttrSum(gmmc, .rptmp$dfreg[j])
-    wdeg_name <- sprintf('wdeg_%s',.rptmp$dfreg[j])
-    gmmc <- igraph::set.vertex.attribute(gmmc, name=wdeg_name, value=wdeg_val)
-    ## TODO: add weighted eigen centrality (using vertex dyad sums as edge weights)
-    ##        as alternative measure PRESSURE 2
-    ##---------------------------------------------------------------
-    ##  Add attributes to Regression Dataframe
-    ##---------------------------------------------------------------
-    tdf[, .rptmp$dfreg[j] ] <- val
-    tdf[, wdeg_name ] <- wdeg_val
-    tdf[, 'rp_all'] <- V(gmmc)$rp_all
-  }
+  ##----------------------------------------
+  ##  Compute Ravenpack ACTIONS per Firm-Year
+  ##----------------------------------------
+  # ## init DVs
+  # dfreg$rp_Acquisitions <- 0
+  # dfreg$rp_Capacity <- 0
+  # dfreg$rp_Legal <- 0
+  # dfreg$rp_Market_expansions <- 0
+  # dfreg$rp_Marketing <- 0
+  # dfreg$rp_New_product <- 0
+  # dfreg$rp_Pricing <- 0
+  # dfreg$rp_Strategic_alliances <- 0
+  # dfreg$rp_NON_acquisitions <- 0
+  # dfreg$rp_all <- 0
+  # dfreg$rp_complexity <- 0
+  ##  tmp mapping df
+  .rptmp <- data.frame(
+    rp = c('Acquisitions', 'Capacity_related_actions',
+           'Legal_actions', 'Market_expansion', 'Marketing_actions',
+           'New_Product_Action', 'pricing_actions',
+           'strategic_alliance'),
+    dfreg= c('rp_Acquisitions','rp_Capacity','rp_Legal',
+             'rp_Market_expansions','rp_Marketing',
+             'rp_New_product','rp_Pricing',
+             'rp_Strategic_alliances'),
+    val = rep(0,8),
+    stringsAsFactors = F
+  )
+  
+  
+  
+  
+  ##--------------------------------------------------------
+  ##--------------------------------------------------------
+  ##------------Network Time Period List--------------------
+  ##--------------------------------------------------------
+  ##--------------------------------------------------------
+  # load('acq_sys_mmc_analysis_test_1.Rdata')
+  nl <- list(gt=list(),gmmc=list(),gmmcsub=list())
+  dfl <- data.frame()
+  
+  ## look through period 1:(T-1)
+  ##   use node-collapsed network structure from
+  ##   year 1 (lagged year) to predict year 2 acquisitions (1st non-lag year)
+  ##   year T-1 to predict year T aquisitions (last year in sample)
+  for (t in 1:(length(nets)-1)) 
+  {
+    cat(sprintf('t=%s\n',t))
+    ## year 1 end of year collapsed network to predict year 2 aquisitions
+    ## drop year 1 lag (so year 2 is year 1)
+    net <- nets[[t]]
+    
+    ##=================================================================
+    ## MMC & Acquisitions
+    ## -- CRUNCHBASE ACQUISITIONS DATA
+    ##-----------------------------------------------------------------
+    gt <- asIgraph(net)
+    V(gt)$com_multilevel <- igraph::multilevel.community(gt)$membership
+    # V(gt)$com_infomap <- igraph::infomap.community(gt)$membership
+    
+    ## Create [Firm x Market] incidence matrix
+    ## markets of each firm (which markets they are in based on NC membership of their rivals)
+    cat('  computing firm-market matrix\n')
+    membership <- V(gt)$com_multilevel
+    markets <- unique(membership)
+    markets <- markets[order(markets)]
+    adj <- igraph::as_adjacency_matrix(gt, sparse = F)
+    df.ms <- ldply(1:nrow(adj), function(i){
+      i.nbr <- unname(which( adj[i, ] == 1 ))  ## rivals (neighbors in the network) ## i.nbr <- as.integer(igraph::neighbors(g, V(g)[i]))  
+      i.ms <- unique(membership[i.nbr])  ## markets of firm i (the markets of the rivals of firm i)
+      i.ms.row <- rep(0, length(markets)) ## dummy row for [Firm x Market] matrix
+      i.ms.row[ i.ms ] <- 1 ## assign [Firm x Market] matrix row value to 1
+      names(i.ms.row) <- sapply(1:length(markets),function(x)paste0('m',x))
+      return(i.ms.row)
+    })
+    ## convert df to matrix
+    m.ms <- as.matrix(df.ms)
+    ## bipartite firm-market
+    gb <- igraph::graph_from_incidence_matrix(m.ms, directed = F)
+    ## MMC weighted unipartite projections
+    gmmc <- igraph::bipartite.projection(gb, multiplicity = T)$proj1
+    E(gmmc)$invweight <- 1/E(gmmc)$weight
+    ##--------------------
+    ##  SET COVARIATES
+    ##--------------------
+    cat(sprintf('  computing controls\n'))
+    V(gmmc)$vertex.names <- V(gt)$vertex.names
+    V(gmmc)$ipo_status <- V(gt)$ipo_status
+    V(gmmc)$employee_na_age <- V(gt)$employee_na_age
+    V(gmmc)$sales_na_0_mn <- V(gt)$sales_na_0_mn
+    V(gmmc)$cent_deg_all <- igraph::degree(gt)
+    # ## CRUNCHBASE ACQUISTIONS
+    # a10<- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-10) & cb$co_acq$acquired_year < periods[t]), ]
+    # a5 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-5) & cb$co_acq$acquired_year < periods[t]), ]
+    # a2 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-2) & cb$co_acq$acquired_year < periods[t]), ]
+    # a1 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-1) & cb$co_acq$acquired_year < periods[t]), ]
+    # #
+    # V(gmmc)$acq_cnt_10 <- 0
+    # V(gmmc)$acq_cnt_5 <- 0
+    # V(gmmc)$acq_cnt_1 <- 0
+    # V(gmmc)$acq_sum_1 <- 0
+    # V(gmmc)$acq_mean_1 <- 0
+    # V(gmmc)$acq_median_1 <- 0
+    # V(gmmc)$acq_sum_2 <- 0
+    # V(gmmc)$acq_mean_2 <- 0
+    # V(gmmc)$acq_median_2 <- 0
+    # 
+    # for (v in 1:vcount(gmmc)) {
+    #   firm_v <- V(gmmc)$vertex.names[v]
+    #   ## ACQUISITION EXPERIENCE (count of acquisitions in last 5 years)
+    #   V(gmmc)$acq_cnt_10[v] <- length(which(a10$acquirer_name_unique==firm_v))
+    #   V(gmmc)$acq_cnt_5[v] <- length(which(a5$acquirer_name_unique==firm_v))
+    #   V(gmmc)$acq_cnt_1[v] <- length(which(a1$acquirer_name_unique==firm_v))
+    #   ## LACK OF SLACK RESOURCES (Value of Acquisitions in previous year)
+    #   vals1 <- a1$price_usd[which(a1$acquirer_name_unique==firm_v)]
+    #   vals2 <- a2$price_usd[which(a2$acquirer_name_unique==firm_v)]
+    #   V(gmmc)$acq_sum_1[v] <- sum(vals1, na.rm = T)
+    #   V(gmmc)$acq_mean_1[v] <-  mean(vals1, na.rm = T)
+    #   V(gmmc)$acq_median_1[v] <-  median(vals1, na.rm = T)
+    #   V(gmmc)$acq_sum_2[v] <-  sum(vals2, na.rm = T)
+    #   V(gmmc)$acq_mean_2[v] <-  mean(vals2, na.rm = T)
+    #   V(gmmc)$acq_median_2[v] <-  median(vals2, na.rm = T)
+    # }
+    # ##-----------------
+    # ## COMPUTE Competitive Pressure
+    # ##-----------------
+    # pres1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp= 0.1), error = function(e)e)
+    # pres2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp= 0.2), error = function(e)e)
+    # pres3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp= 0.3), error = function(e)e)
+    # pres4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp= 0.4), error = function(e)e)
+    # pres1n <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp=-0.1), error = function(e)e)
+    # pres2n <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp=-0.2), error = function(e)e)
+    # pres3n <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp=-0.3), error = function(e)e)
+    # pres4n <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp=-0.4), error = function(e)e)
+    # preseig <- igraph::eigen_centrality(gmmc)$vector
+    # presconstr <- igraph::constraint(gmmc)
+    # presclose <- igraph::closeness(gmmc, normalized = T)
+    # presbetw  <- igraph::betweenness(gmmc, normalized = T)
+    # # presalphaw  <- igraph::alpha.centrality(gmmc, weights = 'weight', sparse = T)
+    # # presalphainvw  <- igraph::alpha.centrality(gmmc, weights = 'invweight', sparse = T)
+    # presauthw <- igraph::authority.score(gmmc)$vector
+    # presdivers <- igraph::diversity(gmmc)
+    ##-----------------
+    ## COMPUTE SYSTEM MMC VECTORS
+    ##-----------------
+    cat('  computing system MMC measure\n')
+    ## remove edges weight < 2
+    gmmc.e <- igraph::delete.edges(gmmc, which(E(gmmc)$weight < 2))
+    ## create subgraph removing isolates
+    gmmcsub <- igraph::induced.subgraph(gmmc.e, which(igraph::degree(gmmc.e) > 0))
+    E(gmmcsub)$invweight <- 1/E(gmmcsub)$weight
+    mmcnames <- V(gmmcsub)$vertex.names
+    # ## Centrality -- SYSTEMS MMC for only firms with MMC eges
+    # pc0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp= 0.1), error = function(e)e)
+    # # pc0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp= 0.2), error = function(e)e)
+    # # pc0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp= 0.3), error = function(e)e)
+    # pc0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp= 0.4), error = function(e)e)
+    # #
+    # pcn0.1  <- tryCatch(tmpn0.1 <- igraph::power_centrality(gmmcsub, exp=-0.1), error = function(e)e)
+    # pcn0.2  <- tryCatch(tmpn0.2 <- igraph::power_centrality(gmmcsub, exp=-0.2), error = function(e)e)
+    # pcn0.3  <- tryCatch(tmpn0.3 <- igraph::power_centrality(gmmcsub, exp=-0.3), error = function(e)e)
+    # pcn0.35 <- tryCatch(tmpn0.35<- igraph::power_centrality(gmmcsub, exp=-0.35), error = function(e)e)
+    # pcn0.4  <- tryCatch(tmpn0.4 <- igraph::power_centrality(gmmcsub, exp=-0.4), error = function(e)e)
+    # pcn0.45 <- tryCatch(tmpn0.45<- igraph::power_centrality(gmmcsub, exp=-0.45), error = function(e)e)
+    # pcn0.5  <- tryCatch(tmpn0.5 <- igraph::power_centrality(gmmcsub, exp=-0.5), error = function(e)e)
+    # ## init vector of system MMC for ALL singlemarket and multimarket firms
+    # smmc1n <- rep(0, vcount(gmmc))
+    # smmc2n <- rep(0, vcount(gmmc))
+    # smmc3n <- rep(0, vcount(gmmc))
+    # smmc35n <- rep(0, vcount(gmmc))
+    # smmc4n <- rep(0, vcount(gmmc))
+    # smmc45n <- rep(0, vcount(gmmc))
+    # smmc5n <- rep(0, vcount(gmmc))
+    # #
+    # smmc1 <- rep(0, vcount(gmmc))
+    # # smmc2 <- rep(0, vcount(gmmc))
+    # # smmc3 <- rep(0, vcount(gmmc))
+    # smmc4 <- rep(0, vcount(gmmc))
+    # smmceig <- rep(0, vcount(gmmc))
+    # smmcconstr <- rep(0, vcount(gmmc))
+    # smmcclose <- rep(0, vcount(gmmc))
+    # smmcbetw <- rep(0, vcount(gmmc))
+    # # smmcalphaw<- rep(0, vcount(gmmc))
+    # # smmcalphainvw<- rep(0, vcount(gmmc))
+    # smmcauthw <- rep(0, vcount(gmmc))
+    # smmcdivers <- rep(0, vcount(gmmc))
+    # ## indices of mmc firm subset within full graph
+    idx.sub.in.mmc <- unname(sapply(mmcnames, function(x) which(V(gmmc)$vertex.names == x)))
+    # ## assign subset MMC firms' system MMC into vector for all firms
+    # smmc1n[idx.sub.in.mmc]  <- pcn0.1
+    # smmc2n[idx.sub.in.mmc]  <- pcn0.2
+    # smmc3n[idx.sub.in.mmc]  <- pcn0.3
+    # smmc35n[idx.sub.in.mmc] <- pcn0.35
+    # smmc4n[idx.sub.in.mmc]  <- pcn0.4
+    # smmc45n[idx.sub.in.mmc] <- pcn0.45
+    # smmc5n[idx.sub.in.mmc]  <- pcn0.5
+    # #
+    # smmc1[idx.sub.in.mmc] <- pc0.1
+    # # smmc2[idx.sub.in.mmc] <- pc0.2
+    # # smmc3[idx.sub.in.mmc] <- pc0.3
+    # smmc4[idx.sub.in.mmc] <- pc0.4
+    # #
+    # smmceig[idx.sub.in.mmc] <- igraph::eigen_centrality(gmmcsub)$vector
+    # smmcconstr[idx.sub.in.mmc] <- igraph::constraint(gmmcsub)
+    # #
+    # smmcclose[idx.sub.in.mmc] <- igraph::closeness(gmmcsub, normalized = T)
+    # smmcbetw[idx.sub.in.mmc]  <- igraph::betweenness(gmmcsub, normalized = T)
+    # # smmcalphaw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'weight', sparse = T)
+    # # smmcalphainvw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'invweight', sparse = T)
+    # #
+    # smmcauthw[idx.sub.in.mmc] <- igraph::authority.score(gmmcsub)$vector
+    # smmcdivers[idx.sub.in.mmc] <- igraph::diversity(gmmcsub)
+    # ##-----------------
+    # ## Number of competitors
+    # ##-----------------
+    # cent_deg_mmc        <- rep(0, vcount(gmmc))
+    # cent_deg_mmc_weight <- rep(0, vcount(gmmc))
+    # # 
+    # cent_deg_mmc[idx.sub.in.mmc]        <- igraph::degree(gmmcsub)        ## number of MMC rivals
+    # cent_deg_all <- V(gmmc)$cent_deg_all
+    # cent_deg_single <- cent_deg_all - cent_deg_mmc
+    # #
+    # cent_deg_mmc_weight[idx.sub.in.mmc] <- sapply(1:vcount(gmmcsub), function(v){
+    #   eids <- unname(unlist(igraph::incident_edges(gmmcsub, v)))
+    #   return(sum(E(gmmcsub)$weight[eids]))
+    # })
+    
+    ##-----------------
+    ## init period dataframe
+    ##------------------
+    tdf <- data.frame(name=V(gmmc)$vertex.names, 
+                      i=as.integer(V(gmmc)), 
+                      year=periods[t], 
+                      type=as.integer(V(gmmc)) %in% idx.sub.in.mmc,
+                      ipo = V(gmmc)$ipo_status,
+                      employee_na_age=V(gmmc)$employee_na_age,
+                      sales_na_0_mn=V(gmmc)$sales_na_0_mn)
+                      # cent_deg_mmc=cent_deg_mmc,
+                      # cent_deg_mmc_weight=cent_deg_mmc_weight,
+                      # cent_deg_single=cent_deg_single,
+                      # cent_deg_all= cent_deg_all,
+                      # cent_deg_mmc_diff= cent_deg_mmc - cent_deg_single,
+                      # cent_deg_mmc_weight_diff= cent_deg_mmc_weight - cent_deg_single,
+                      # acq_cnt_10=V(gmmc)$acq_cnt_10,
+                      # acq_cnt_5=V(gmmc)$acq_cnt_5,
+                      # acq_cnt_1=V(gmmc)$acq_cnt_1,
+                      # acq_sum_1=V(gmmc)$acq_sum_1,
+                      # acq_mean_1=V(gmmc)$acq_mean_1,
+                      # acq_median_1=V(gmmc)$acq_median_1,
+                      # acq_sum_2=V(gmmc)$acq_sum_2,
+                      # acq_mean_2=V(gmmc)$acq_mean_2,
+                      # acq_median_2=V(gmmc)$acq_median_2,
+                      # # pres1=pres1, pres2=pres2, pres3=pres3, pres4=pres4,
+                      # smmc1=smmc1, 
+                      # # smmc2=smmc2, smmc3=smmc3, 
+                      # smmc4=smmc4,
+                      # # pres1n=pres1n, pres2n=pres2n, pres3n=pres3n, pres4n=pres4n,
+                      # smmc1n=smmc1n, smmc2n=smmc2n, smmc3n=smmc3n, smmc35n=smmc35n,
+                      # smmc4n=smmc4n, smmc45n=smmc45n, smmc5n=smmc5n,
+                      # # smmc5n=smmc5n,
+                      # # preseig=preseig,  presconstr=presconstr,
+                      # smmceig=smmceig, smmcconstr=smmcconstr,
+                      # smmcclose=smmcclose, smmcbetw=smmcbetw,
+                      # # smmcalphaw=smmcalphaw, smmcalphainvw=smmcalphainvw,
+                      # smmcdivers=smmcdivers,
+                      # # presclose=presclose, presbetw=presbetw,
+                      # # presalphaw=presalphaw, presalphainvw=presalphainvw,
+                      # # presdivers=presdivers,
+                      # y.new=NA, y.cur=NA)
+    
+    # ##-----------------
+    # ## CRUNCHBASE -  DV Acquisitions
+    # ##-----------------
+    # cat('  computing DV acquisition counts\n')
+    # al <- lapply(V(gmmc)$vertex.names, function(.)list(cur=0, new=0))
+    # names(al) <- V(gmmc)$vertex.names
+    # ## subset CB acquisitions
+    # t1 <- sprintf('%d-01-01',periods[t]) ## inclusive start date 'YYYY-MM-DD'
+    # t2 <- sprintf('%d-12-31',periods[t]) ## inclusive end date 'YYYY-MM-DD'
+    # ## period years indicate [start, end) -- start inclusive; end exclusive ; acquisitions witin period
+    # acqs.pd <- cb$co_acq[cb$co_acq$acquired_on >= t1 & cb$co_acq$acquired_on <= t2, ]
+    # ## acquisitions in period
+    # for (i in 1:nrow(acqs.pd)) {
+    #   name.t <- acqs.pd$acquiree_name_unique[i]
+    #   name.a <- acqs.pd$acquirer_name_unique[i]
+    #   ## vertex index
+    #   idx.t <- which(V(gmmc)$vertex.names == name.t)
+    #   idx.a <- which(V(gmmc)$vertex.names == name.a)
+    #   if (length(idx.a)==0) {
+    #     if (i %% 100 == 0) cat(sprintf(' skipping [i=%04s] %s-->%s\n',i,name.a,name.t))
+    #     next  ## skip if acquirer isn't in network
+    #   }
+    #   ## indices of firms in markets of acquiring firm
+    #   js <- unname(which(m.ms[idx.a,] > 0))
+    #   ## indices of competitors of acquiring firm
+    #   idx.comp <- which(apply(m.ms, 1, function(x) sum(x[js]) > 0))
+    #   ## increment 
+    #   target.in.net <- length(idx.t)>0  ## target exists in network
+    #   is.cur.market.acq <- ifelse(target.in.net, idx.t %in% idx.comp, FALSE)  ## target in competitors
+    #   if (is.cur.market.acq) {
+    #     al[[name.a]]$cur <- al[[name.a]]$cur + 1
+    #   } else {
+    #     al[[name.a]]$new <- al[[name.a]]$new + 1
+    #   }
+    # }
+    # ## ASSIGN DVs
+    # tdf$y.new <- sapply(al, function(x)x$new)
+    # tdf$y.cur <- sapply(al, function(x)x$cur)
+    
+    
+    ##-----------------
+    ## RavenPack Actions  (alternative Acquisitions DV; 2nd )
+    ##-----------------
+    cat('  computing RavenPack action counts\n')
+    rvnsub <- rvn[rvn$year==periods[t], ] ## ravepack data subset
+    n <- vcount(gmmc)
+    
+    ## loop each action type to set
+    V(gmmc)$rp_all <- 0
+    for (j in 1:nrow(.rptmp)) {
+      val <- getRpActionCount(rvnsub, V(gmmc)$vertex.names, cbrpmap, .rptmp$rp[j])
+      ## increment action count to total intensity "rp_all"
+      V(gmmc)$rp_all <- V(gmmc)$rp_all + val
+      ## set action count to new attributes
+      gmmc <- igraph::set.vertex.attribute(gmmc, name=.rptmp$dfreg[j], value=val)
+      # ##---------------------------------------------------------------
+      # ## PRESSURE 1: vertex-weighted degree (count of rivals actions)
+      # ##---------------------------------------------------------------
+      # wdeg_val <- getNeighborsAttrSum(gmmc, .rptmp$dfreg[j])
+      # wdeg_name <- sprintf('wdeg_%s',.rptmp$dfreg[j])
+      # gmmc <- igraph::set.vertex.attribute(gmmc, name=wdeg_name, value=wdeg_val)
+      ## TODO: add weighted eigen centrality (using vertex dyad sums as edge weights)
+      ##        as alternative measure PRESSURE 2
+      ##---------------------------------------------------------------
+      ##  Add attributes to Regression Dataframe
+      ##---------------------------------------------------------------
+      tdf[, .rptmp$dfreg[j] ] <- val
+      # tdf[, wdeg_name ] <- wdeg_val
+      tdf[, 'rp_all'] <- V(gmmc)$rp_all
+    }
+    
+    # ## add aggregate action measures
+    # tdf$rp_NON_acquisitions <- tdf$rp_all - tdf$rp_Acquisitions
+    # tdf$rp_net_relations <- tdf$rp_New_product + tdf$rp_Market_expansions ## market expansions + product market entires
+    # tdf$rp_net_invariant <- (tdf$rp_Capacity + tdf$rp_Legal + 
+    #                            tdf$rp_Marketing + tdf$rp_Pricing +
+    #                            tdf$rp_Strategic_alliances) ## excluding acquisitions, new_product, markte_expansions
+    
+    
+    ##-------------------------
+    ## append dataframe
+    dfl <- rbind(dfl, tdf)   
+    
+    ##------------------------
+    ## save network lists
+    glistfile <- sprintf('compamb_mmc_panel_RPactions_NETLIST_ego-%s_d%s_%s-%s_t%s.rds', 
+                         firm_i_ego, d, periods[1], periods[length(periods)], t)
+    saveRDS(list(gt=gt, gmmc=gmmc, gmmcsub=gmmcsub), file=file.path(data_dir,glistfile))
+    
+    
+  } ## end firm_i period loop
+  
+  
+  ## SAVE DATA
+  firmfile <- sprintf('compamb_mmc_panel_RPactions_regression_df_ego-%s_d%s_%s-%s.csv', 
+                      firm_i_ego, d, periods[1], periods[length(periods)])
+  write.csv(dfl, file=file.path(data_dir,firmfile))
+  
+  
+  
+} ## end firms.todo loop
 
-  ## add aggregate action measures
-  tdf$rp_NON_acquisitions <- tdf$rp_all - tdf$rp_Acquisitions
-  tdf$rp_net_relations <- tdf$rp_New_product + tdf$rp_Market_expansions ## market expansions + product market entires
-  tdf$rp_net_invariant <- (tdf$rp_Capacity + tdf$rp_Legal + 
-                             tdf$rp_Marketing + tdf$rp_Pricing +
-                             tdf$rp_Strategic_alliances) ## excluding acquisitions, new_product, markte_expansions
-  
-  
-  ##-------------------------
-  ## append dataframe
-  dfl <- rbind(dfl, tdf)   
-  
-}
 
 
-## SAVE DATA
-firmfile <- sprintf('acq_sys_mmc_panel_RPactions_regression_df_ego-%s_d%s_%s-%s.csv', 
-                    firm_i_ego, d, periods[1], periods[length(periods)])
-write.csv(dfl, file=file.path(data_dir,firmfile))
+
+
+
+
+
+
+
+
+# 
+# ##--------------------------------------------------------
+# ##
+# ## AFTER Creating CB-RP Matches List  (manually checking)
+# ##
+# ##--------------------------------------------------------
+# firm_i <- 'microsoft'   ##'ibm'
+# name_i <- firm_i
+# firm_i_ego <- firm_i
+# #
+# cbrpmapfile <- sprintf('cb_ravenpack_name_map_ego-%s_d%s.csv',firm_i_ego,d)
+# ## LOAD CB-Ravenpack approximate matches
+# cbrpmatch <- read.csv(file=file.path(data_dir,cbrpmapfile), 
+#                     stringsAsFactors = F, na.strings = c("'","-","'-"))
+# cbrpmatch$name <- cbrpmatch$company_name_unique
+# ## Filter subset of firms with match
+# cbrpmapsub <- cbrpmatch[!is.na(cbrpmatch$OK),]
+# ## Create CB-RP Map
+# cbrpmap <- data.frame(stringsAsFactors = F)
+# for (i in 1:nrow(cbrpmapsub)) 
+# {
+#   if(cbrpmapsub$OK[i] == 1) {
+#     rp_entity_id <- cbrpmapsub$rp_entity_id_1[i]
+#     rp_entity_name <- cbrpmapsub$entity_name_1[i]
+#   } else if (cbrpmapsub$OK[i] == 2) {
+#     rp_entity_id <- cbrpmapsub$rp_entity_id_2[i]
+#     rp_entity_name <- cbrpmapsub$entity_name_2[i]
+#   } else if (cbrpmapsub$OK[i] == 3) {
+#     rp_entity_id <- cbrpmapsub$rp_entity_id_3[i]
+#     rp_entity_name <- cbrpmapsub$entity_name_3[i]
+#   } else {
+#     next
+#   }
+#   cat(sprintf('i=%s, OK=%s, rp_ent_id=%s\n',
+#               i, cbrpmapsub$OK[i], rp_entity_id))
+#   cbrpmap <- rbind(cbrpmap, data.frame(
+#     company_name_unique=cbrpmapsub$name[i],
+#     rp_entity_id=rp_entity_id, 
+#     rp_entity_name=rp_entity_name,
+#     stringsAsFactors = F
+#     )
+#   )
+# }
+# 
+# head(cbrpmap)
+# 
+# ### ego=Microsoft(d3) --> 145 firms in cbrpmap
+# 
+# 
+# ##----------------------------------------
+# ##  Compute Ravenpack ACTIONS per Firm-Year
+# ##----------------------------------------
+# ##  tmp mapping df
+# .rptmp <- data.frame(
+#   rp = c('Acquisitions', 'Capacity_related_actions',
+#          'Legal_actions', 'Market_expansion', 'Marketing_actions',
+#          'New_Product_Action', 'pricing_actions',
+#          'strategic_alliance'),
+#   dfreg= c('rp_Acquisitions','rp_Capacity','rp_Legal',
+#            'rp_Market_expansions','rp_Marketing',
+#            'rp_New_product','rp_Pricing',
+#            'rp_Strategic_alliances'),
+#   val = rep(0,8),
+#   stringsAsFactors = F
+# )
+# 
+# 
+# 
+# 
+# ##--------------------------------------------------------
+# ##--------------------------------------------------------
+# ##------------Network Time Period List--------------------
+# ##--------------------------------------------------------
+# ##--------------------------------------------------------
+# # load('acq_sys_mmc_analysis_test_1.Rdata')
+# nl <- list()
+# dfl <- data.frame()
+# 
+# ## look through period 1:(T-1)
+# ##   use node-collapsed network structure from
+# for (t in 1:(length(nets)-1)) 
+# {
+#   cat(sprintf('t=%s\n',t))
+#   ## year 1 end of year collapsed network to predict year 2 aquisitions
+#   ## drop year 1 lag (so year 2 is year 1)
+#   net <- nets[[t]]
+#   
+#   ##=================================================================
+#   ## MMC & Acquisitions
+#   ## -- CRUNCHBASE ACQUISITIONS DATA
+#   ##-----------------------------------------------------------------
+#   gt <- asIgraph(net)
+#   V(gt)$com_multilevel <- igraph::multilevel.community(gt)$membership
+#   # V(gt)$com_infomap <- igraph::infomap.community(gt)$membership
+#   
+#   ## Create [Firm x Market] incidence matrix
+#   ## markets of each firm (which markets they are in based on NC membership of their rivals)
+#   cat('  computing firm-market matrix\n')
+#   membership <- V(gt)$com_multilevel
+#   markets <- unique(membership)
+#   markets <- markets[order(markets)]
+#   adj <- igraph::as_adjacency_matrix(gt, sparse = F)
+#   df.ms <- ldply(1:nrow(adj), function(i){
+#     i.nbr <- unname(which( adj[i, ] == 1 ))  ## rivals (neighbors in the network) ## i.nbr <- as.integer(igraph::neighbors(g, V(g)[i]))  
+#     i.ms <- unique(membership[i.nbr])  ## markets of firm i (the markets of the rivals of firm i)
+#     i.ms.row <- rep(0, length(markets)) ## dummy row for [Firm x Market] matrix
+#     i.ms.row[ i.ms ] <- 1 ## assign [Firm x Market] matrix row value to 1
+#     names(i.ms.row) <- sapply(1:length(markets),function(x)paste0('m',x))
+#     return(i.ms.row)
+#   })
+#   ## convert df to matrix
+#   m.ms <- as.matrix(df.ms)
+#   ## bipartite firm-market
+#   gb <- igraph::graph_from_incidence_matrix(m.ms, directed = F)
+#   ## MMC weighted unipartite projections
+#   gmmc <- igraph::bipartite.projection(gb, multiplicity = T)$proj1
+#   E(gmmc)$invweight <- 1/E(gmmc)$weight
+#   ##--------------------
+#   ##  SET COVARIATES
+#   ##--------------------
+#   cat(sprintf('  computing controls\n'))
+#   V(gmmc)$vertex.names <- V(gt)$vertex.names
+#   V(gmmc)$ipo_status <- V(gt)$ipo_status
+#   V(gmmc)$employee_na_age <- V(gt)$employee_na_age
+#   V(gmmc)$sales_na_0_mn <- V(gt)$sales_na_0_mn
+#   V(gmmc)$cent_deg_all <- igraph::degree(gt)
+#   # ## CRUNCHBASE ACQUISTIONS
+#   # a10<- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-10) & cb$co_acq$acquired_year < periods[t]), ]
+#   # a5 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-5) & cb$co_acq$acquired_year < periods[t]), ]
+#   # a2 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-2) & cb$co_acq$acquired_year < periods[t]), ]
+#   # a1 <- cb$co_acq[which(cb$co_acq$acquired_year >= (periods[t]-1) & cb$co_acq$acquired_year < periods[t]), ]
+#   # #
+#   # V(gmmc)$acq_cnt_10 <- 0
+#   # V(gmmc)$acq_cnt_5 <- 0
+#   # V(gmmc)$acq_cnt_1 <- 0
+#   # V(gmmc)$acq_sum_1 <- 0
+#   # V(gmmc)$acq_mean_1 <- 0
+#   # V(gmmc)$acq_median_1 <- 0
+#   # V(gmmc)$acq_sum_2 <- 0
+#   # V(gmmc)$acq_mean_2 <- 0
+#   # V(gmmc)$acq_median_2 <- 0
+#   # 
+#   # for (v in 1:vcount(gmmc)) {
+#   #   firm_v <- V(gmmc)$vertex.names[v]
+#   #   ## ACQUISITION EXPERIENCE (count of acquisitions in last 5 years)
+#   #   V(gmmc)$acq_cnt_10[v] <- length(which(a10$acquirer_name_unique==firm_v))
+#   #   V(gmmc)$acq_cnt_5[v] <- length(which(a5$acquirer_name_unique==firm_v))
+#   #   V(gmmc)$acq_cnt_1[v] <- length(which(a1$acquirer_name_unique==firm_v))
+#   #   ## LACK OF SLACK RESOURCES (Value of Acquisitions in previous year)
+#   #   vals1 <- a1$price_usd[which(a1$acquirer_name_unique==firm_v)]
+#   #   vals2 <- a2$price_usd[which(a2$acquirer_name_unique==firm_v)]
+#   #   V(gmmc)$acq_sum_1[v] <- sum(vals1, na.rm = T)
+#   #   V(gmmc)$acq_mean_1[v] <-  mean(vals1, na.rm = T)
+#   #   V(gmmc)$acq_median_1[v] <-  median(vals1, na.rm = T)
+#   #   V(gmmc)$acq_sum_2[v] <-  sum(vals2, na.rm = T)
+#   #   V(gmmc)$acq_mean_2[v] <-  mean(vals2, na.rm = T)
+#   #   V(gmmc)$acq_median_2[v] <-  median(vals2, na.rm = T)
+#   # }
+#   # ##-----------------
+#   # ## COMPUTE Competitive Pressure
+#   # ##-----------------
+#   # pres1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp= 0.1), error = function(e)e)
+#   # pres2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp= 0.2), error = function(e)e)
+#   # pres3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp= 0.3), error = function(e)e)
+#   # pres4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp= 0.4), error = function(e)e)
+#   # pres1n <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmc, exp=-0.1), error = function(e)e)
+#   # pres2n <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmc, exp=-0.2), error = function(e)e)
+#   # pres3n <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmc, exp=-0.3), error = function(e)e)
+#   # pres4n <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmc, exp=-0.4), error = function(e)e)
+#   # preseig <- igraph::eigen_centrality(gmmc)$vector
+#   # presconstr <- igraph::constraint(gmmc)
+#   # presclose <- igraph::closeness(gmmc, normalized = T)
+#   # presbetw  <- igraph::betweenness(gmmc, normalized = T)
+#   # # presalphaw  <- igraph::alpha.centrality(gmmc, weights = 'weight', sparse = T)
+#   # # presalphainvw  <- igraph::alpha.centrality(gmmc, weights = 'invweight', sparse = T)
+#   # presauthw <- igraph::authority.score(gmmc)$vector
+#   # presdivers <- igraph::diversity(gmmc)
+#   ##-----------------
+#   ## COMPUTE SYSTEM MMC VECTORS
+#   ##-----------------
+#   cat('  computing system MMC measure\n')
+#   ## remove edges weight < 2
+#   gmmc.e <- igraph::delete.edges(gmmc, which(E(gmmc)$weight < 2))
+#   ## create subgraph removing isolates
+#   gmmcsub <- igraph::induced.subgraph(gmmc.e, which(igraph::degree(gmmc.e) > 0))
+#   E(gmmcsub)$invweight <- 1/E(gmmcsub)$weight
+#   mmcnames <- V(gmmcsub)$vertex.names
+#   # ## Centrality -- SYSTEMS MMC for only firms with MMC eges
+#   # pc0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp= 0.1), error = function(e)e)
+#   # pc0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp= 0.2), error = function(e)e)
+#   # pc0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp= 0.3), error = function(e)e)
+#   # pc0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp= 0.4), error = function(e)e)
+#   # #
+#   # pcn0.1 <- tryCatch(tmpn0.1<- igraph::power_centrality(gmmcsub, exp=-0.1), error = function(e)e)
+#   # pcn0.2 <- tryCatch(tmpn0.2<- igraph::power_centrality(gmmcsub, exp=-0.2), error = function(e)e)
+#   # pcn0.3 <- tryCatch(tmpn0.3<- igraph::power_centrality(gmmcsub, exp=-0.3), error = function(e)e)
+#   # pcn0.4 <- tryCatch(tmpn0.4<- igraph::power_centrality(gmmcsub, exp=-0.4), error = function(e)e)
+#   # ## init vector of system MMC for ALL singlemarket and multimarket firms
+#   # smmc1n <- rep(0, vcount(gmmc))
+#   # smmc2n <- rep(0, vcount(gmmc))
+#   # smmc3n <- rep(0, vcount(gmmc))
+#   # smmc4n <- rep(0, vcount(gmmc))
+#   # smmc1 <- rep(0, vcount(gmmc))
+#   # smmc2 <- rep(0, vcount(gmmc))
+#   # smmc3 <- rep(0, vcount(gmmc))
+#   # smmc4 <- rep(0, vcount(gmmc))
+#   # smmceig <- rep(0, vcount(gmmc))
+#   # smmcconstr <- rep(0, vcount(gmmc))
+#   # smmcclose <- rep(0, vcount(gmmc))
+#   # smmcbetw <- rep(0, vcount(gmmc))
+#   # # smmcalphaw<- rep(0, vcount(gmmc))
+#   # # smmcalphainvw<- rep(0, vcount(gmmc))
+#   # smmcauthw <- rep(0, vcount(gmmc))
+#   # smmcdivers <- rep(0, vcount(gmmc))
+#   # ## indices of mmc firm subset within full graph
+#   idx.sub.in.mmc <- unname(sapply(mmcnames, function(x) which(V(gmmc)$vertex.names == x)))
+#   # ## assign subset MMC firms' system MMC into vector for all firms
+#   # smmc1n[idx.sub.in.mmc] <- pcn0.1
+#   # smmc2n[idx.sub.in.mmc] <- pcn0.2
+#   # smmc3n[idx.sub.in.mmc] <- pcn0.3
+#   # smmc4n[idx.sub.in.mmc] <- pcn0.4
+#   # #
+#   # smmc1[idx.sub.in.mmc] <- pc0.1
+#   # smmc2[idx.sub.in.mmc] <- pc0.2
+#   # smmc3[idx.sub.in.mmc] <- pc0.3
+#   # smmc4[idx.sub.in.mmc] <- pc0.4
+#   # #
+#   # smmceig[idx.sub.in.mmc] <- igraph::eigen_centrality(gmmcsub)$vector
+#   # smmcconstr[idx.sub.in.mmc] <- igraph::constraint(gmmcsub)
+#   # #
+#   # smmcclose[idx.sub.in.mmc] <- igraph::closeness(gmmcsub, normalized = T)
+#   # smmcbetw[idx.sub.in.mmc]  <- igraph::betweenness(gmmcsub, normalized = T)
+#   # # smmcalphaw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'weight', sparse = T)
+#   # # smmcalphainvw[idx.sub.in.mmc]  <- igraph::alpha.centrality(gmmcsub, weights = 'invweight', sparse = T)
+#   # #
+#   # smmcauthw[idx.sub.in.mmc] <- igraph::authority.score(gmmcsub)$vector
+#   # smmcdivers[idx.sub.in.mmc] <- igraph::diversity(gmmcsub)
+#   # ##-----------------
+#   # ## Number of competitors
+#   # ##-----------------
+#   # cent_deg_mmc        <- rep(0, vcount(gmmc))
+#   # cent_deg_mmc_weight <- rep(0, vcount(gmmc))
+#   # # 
+#   # cent_deg_mmc[idx.sub.in.mmc]        <- igraph::degree(gmmcsub)        ## number of MMC rivals
+#   # cent_deg_all <- V(gmmc)$cent_deg_all
+#   # cent_deg_single <- cent_deg_all - cent_deg_mmc
+#   # #
+#   # cent_deg_mmc_weight[idx.sub.in.mmc] <- sapply(1:vcount(gmmcsub), function(v){
+#   #   eids <- unname(unlist(igraph::incident_edges(gmmcsub, v)))
+#   #   return(sum(E(gmmcsub)$weight[eids]))
+#   # })
+#   
+#   ##-----------------
+#   ## init period dataframe
+#   ##------------------
+#   tdf <- data.frame(name=V(gmmc)$vertex.names, 
+#                     i=as.integer(V(gmmc)), 
+#                     year=periods[t], 
+#                     type=as.integer(V(gmmc)) %in% idx.sub.in.mmc,
+#                     ipo = V(gmmc)$ipo_status,
+#                     employee_na_age=V(gmmc)$employee_na_age,
+#                     sales_na_0_mn=V(gmmc)$sales_na_0_mn)
+#                     # cent_deg_mmc=cent_deg_mmc,
+#                     # cent_deg_mmc_weight=cent_deg_mmc_weight,
+#                     # cent_deg_single=cent_deg_single,
+#                     # cent_deg_all= cent_deg_all,
+#                     # cent_deg_mmc_diff= cent_deg_mmc - cent_deg_single,
+#                     # cent_deg_mmc_weight_diff= cent_deg_mmc_weight - cent_deg_single,
+#                     # acq_cnt_10=V(gmmc)$acq_cnt_10,
+#                     # acq_cnt_5=V(gmmc)$acq_cnt_5,
+#                     # acq_cnt_1=V(gmmc)$acq_cnt_1,
+#                     # acq_sum_1=V(gmmc)$acq_sum_1,
+#                     # acq_mean_1=V(gmmc)$acq_mean_1,
+#                     # acq_median_1=V(gmmc)$acq_median_1,
+#                     # acq_sum_2=V(gmmc)$acq_sum_2,
+#                     # acq_mean_2=V(gmmc)$acq_mean_2,
+#                     # acq_median_2=V(gmmc)$acq_median_2,
+#                     # pres1=pres1, pres2=pres2, pres3=pres3, pres4=pres4,
+#                     # smmc1=smmc1, smmc2=smmc2, smmc3=smmc3, smmc4=smmc4,
+#                     # pres1n=pres1n, pres2n=pres2n, pres3n=pres3n, pres4n=pres4n,
+#                     # smmc1n=smmc1n, smmc2n=smmc2n, smmc3n=smmc3n, smmc4n=smmc4n,
+#                     # preseig=preseig,  presconstr=presconstr,
+#                     # smmceig=smmceig, smmcconstr=smmcconstr,
+#                     # smmcclose=smmcclose, smmcbetw=smmcbetw,
+#                     # smmcalphaw=smmcalphaw, smmcalphainvw=smmcalphainvw,
+#                     # smmcdivers=smmcdivers,
+#                     # presclose=presclose, presbetw=presbetw,
+#                     # presalphaw=presalphaw, presalphainvw=presalphainvw,
+#                     # presdivers=presdivers,
+#                     # y.new=NA, y.cur=NA)
+#   
+#   # ##-----------------
+#   # ## CRUNCHBASE -  DV Acquisitions
+#   # ##-----------------
+#   # cat('  computing DV acquisition counts\n')
+#   # al <- lapply(V(gmmc)$vertex.names, function(.)list(cur=0, new=0))
+#   # names(al) <- V(gmmc)$vertex.names
+#   # ## subset CB acquisitions
+#   # t1 <- sprintf('%d-01-01',periods[t]) ## inclusive start date 'YYYY-MM-DD'
+#   # t2 <- sprintf('%d-12-31',periods[t]) ## inclusive end date 'YYYY-MM-DD'
+#   # ## period years indicate [start, end) -- start inclusive; end exclusive ; acquisitions witin period
+#   # acqs.pd <- cb$co_acq[cb$co_acq$acquired_on >= t1 & cb$co_acq$acquired_on <= t2, ]
+#   # ## acquisitions in period
+#   # for (i in 1:nrow(acqs.pd)) {
+#   #   name.t <- acqs.pd$acquiree_name_unique[i]
+#   #   name.a <- acqs.pd$acquirer_name_unique[i]
+#   #   ## vertex index
+#   #   idx.t <- which(V(gmmc)$vertex.names == name.t)
+#   #   idx.a <- which(V(gmmc)$vertex.names == name.a)
+#   #   if (length(idx.a)==0) {
+#   #     if (i %% 100 == 0) cat(sprintf(' skipping [i=%04s] %s-->%s\n',i,name.a,name.t))
+#   #     next  ## skip if acquirer isn't in network
+#   #   }
+#   #   ## indices of firms in markets of acquiring firm
+#   #   js <- unname(which(m.ms[idx.a,] > 0))
+#   #   ## indices of competitors of acquiring firm
+#   #   idx.comp <- which(apply(m.ms, 1, function(x) sum(x[js]) > 0))
+#   #   ## increment 
+#   #   target.in.net <- length(idx.t)>0  ## target exists in network
+#   #   is.cur.market.acq <- ifelse(target.in.net, idx.t %in% idx.comp, FALSE)  ## target in competitors
+#   #   if (is.cur.market.acq) {
+#   #     al[[name.a]]$cur <- al[[name.a]]$cur + 1
+#   #   } else {
+#   #     al[[name.a]]$new <- al[[name.a]]$new + 1
+#   #   }
+#   # }
+#   # ## ASSIGN DVs
+#   # tdf$y.new <- sapply(al, function(x)x$new)
+#   # tdf$y.cur <- sapply(al, function(x)x$cur)
+#   
+# 
+#   ##-----------------
+#   ## RavenPack Actions  (alternative Acquisitions DV; 2nd )
+#   ##-----------------
+#   cat('  computing RavenPack action counts\n')
+#   rvnsub <- rvn[rvn$year==periods[t], ] ## ravepack data subset
+#   n <- vcount(gmmc)
+#   
+#   ## loop each action type to set
+#   V(gmmc)$rp_all <- 0
+#   for (j in 1:nrow(.rptmp)) {
+#     val <- getRpActionCount(rvnsub, V(gmmc)$vertex.names, cbrpmap, .rptmp$rp[j])
+#     ## increment action count to total intensity "rp_all"
+#     V(gmmc)$rp_all <- V(gmmc)$rp_all + val
+#     ## set action count to new attributes
+#     gmmc <- igraph::set.vertex.attribute(gmmc, name=.rptmp$dfreg[j], value=val)
+#     ##---------------------------------------------------------------
+#     ## PRESSURE 1: vertex-weighted degree (count of rivals actions)
+#     ##---------------------------------------------------------------
+#     wdeg_val <- getNeighborsAttrSum(gmmc, .rptmp$dfreg[j])
+#     wdeg_name <- sprintf('wdeg_%s',.rptmp$dfreg[j])
+#     gmmc <- igraph::set.vertex.attribute(gmmc, name=wdeg_name, value=wdeg_val)
+#     ## TODO: add weighted eigen centrality (using vertex dyad sums as edge weights)
+#     ##        as alternative measure PRESSURE 2
+#     ##---------------------------------------------------------------
+#     ##  Add attributes to Regression Dataframe
+#     ##---------------------------------------------------------------
+#     tdf[, .rptmp$dfreg[j] ] <- val
+#     tdf[, wdeg_name ] <- wdeg_val
+#     tdf[, 'rp_all'] <- V(gmmc)$rp_all
+#   }
+# 
+#   ## add aggregate action measures
+#   tdf$rp_NON_acquisitions <- tdf$rp_all - tdf$rp_Acquisitions
+#   tdf$rp_net_relations <- tdf$rp_New_product + tdf$rp_Market_expansions ## market expansions + product market entires
+#   tdf$rp_net_invariant <- (tdf$rp_Capacity + tdf$rp_Legal + 
+#                              tdf$rp_Marketing + tdf$rp_Pricing +
+#                              tdf$rp_Strategic_alliances) ## excluding acquisitions, new_product, markte_expansions
+#   
+#   
+#   ##-------------------------
+#   ## append dataframe
+#   dfl <- rbind(dfl, tdf)   
+#   
+# }
+# 
+# 
+# ## SAVE DATA
+# firmfile <- sprintf('compamb_mmc_panel_RPactions_regression_df_ego-%s_d%s_%s-%s.csv', 
+#                     firm_i_ego, d, periods[1], periods[length(periods)])
+# write.csv(dfl, file=file.path(data_dir,firmfile))
 
 
 
